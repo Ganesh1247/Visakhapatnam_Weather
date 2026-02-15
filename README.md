@@ -74,6 +74,24 @@ EcoGlance/
    ```
    Access the dashboard at `http://127.0.0.1:5000`.
 
+## 🌐 Deployment
+
+### Deploying to Render
+
+The application is configured for easy deployment on Render's free tier.
+
+**⚠️ Important:** On the free tier, the database is **ephemeral** (wiped on each deployment). Users must re-register after each update.
+
+For detailed deployment instructions and limitations, see [`RENDER_DEPLOYMENT.md`](RENDER_DEPLOYMENT.md).
+
+**Quick Deploy:**
+1. Push code to GitHub
+2. Connect repository on Render
+3. Render auto-detects Python and uses `render.yaml` configuration
+4. Access your app at `https://your-app.onrender.com`
+
+**Upgrade to paid plan (~$7/month)** to enable persistent storage and keep user data across deployments.
+
 ## 📊 Model Performance
 
 Our hybrid model achieves state-of-the-art performance for local forecasting:
