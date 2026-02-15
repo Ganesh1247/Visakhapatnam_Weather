@@ -1,0 +1,42 @@
+# Implementation Plan - Hybrid LSTM + XGBoost Weather & Air Quality Prediction
+
+## Goal
+Build a hybrid model combining LSTM (pre-trained on 16 years of weather data) and XGBoost (trained on 3 years of combined data) to predict **both** air quality and future weather conditions.
+
+## User Review Required
+- **Target Variables**:
+  - **Air Quality**: `pm10`, `pm2_5`, `carbon_monoxide`, `nitrogen_dioxide`, `ozone`, `sulphur_dioxide`
+  - **Weather**: `temp_avg`, `temp_min`, `temp_max`, `humidity`, `rainfall`, `wind_speed`
+- **Forecasting Horizon**: 1-day ahead prediction.
+
+## Proposed Changes
+
+### Data Inspection [DONE]
+- Identified target columns in [final_dataset.csv](file:///c:/Users/koila/DTI.FINAL/final_dataset.csv).
+
+### Preprocessing & Training [NEW]
+- Create `train_hybrid_model.py`:
+  - **Data Loading**: Load weather (16y) and combined (3y) datasets.
+  - **Preprocessing**: 
+    - Normalize features (MinMaxScaling).
+    - Create sequences (X: 14 days history -> Y: Next day [Air Qual + Weather]).
+  - **Stage 1: LSTM Pre-training (Weather Only)**:
+    - Train on 16 years weather data.
+    - Loss function: MSE on Weather features.
+  - **Stage 2: LSTM Fine-tuning (Combined)**:
+    - Unfreeze last layers.
+    - Add dense output verification for *all* targets (Air + Weather).
+    - Train on 3 years combined data.
+  - **Stage 3: XGBoost Training**:
+    - Build separate XGBoost models for *each* target variable (XGBoost doesn't natively support multi-output in the same way, usually chained or separate models are best).
+    - Train on 3 years features.
+  - **Stage 4: Ensemble**:
+    - Average predictions from LSTM and XGBoost for each target.
+
+### Visualizations [NEW]
+- Plot "Actual vs Predicted" for PM2.5, Temperature, etc.
+- Correlation heatmap between Weather and Air Quality.
+
+## Verification Plan
+- Verify low MSE/MAE on both Weather and Air Quality metrics on the test set.
+

@@ -1,0 +1,42 @@
+# Project Walkthrough: Hybrid LSTM + XGBoost for Air Quality & Weather Prediction
+
+I have successfully implemented the hybrid model pipeline that combines LSTM (pre-trained on 16 years of weather data) and XGBoost (trained on tabular features) to predict both air quality and weather.
+
+## Key Accomplishments
+- **Implemented [preprocessing.py](file:///c:/Users/koila/DTI.FINAL/preprocessing.py)**: Handles scaling, sequence generation, and aligns features between weather-only and combined datasets. Use columns verified from your data (incl. `rainfall`, `pm2_5`).
+- **Implemented [train_hybrid_model.py](file:///c:/Users/koila/DTI.FINAL/train_hybrid_model.py)**: The main driver script that:
+  - **Stage 1**: Pre-trains LSTM on 16 years of weather data (Auto-Forecasting).
+  - **Stage 2**: Fine-tunes the LSTM on the 3-year combined dataset.
+  - **Stage 3**: Trains separate XGBoost regressors for each target (Air Quality + Weather).
+  - **Stage 4**: Ensembles predictions (Average of LSTM + XGBoost) and evaluates performance.
+
+## Results
+The model predicts the following targets for the next day:
+- **Air Quality**: `pm10`, `pm2_5`, `carbon_monoxide`, `nitrogen_dioxide`, `ozone`, `sulphur_dioxide`
+- **Weather**: `temp_avg`, `temp_min`, `temp_max`, `humidity`, `rainfall`, `wind_speed`
+- **Metrics**: Detailed MSE, MAE, and R2 scores are saved in `evaluation_metrics.csv`.
+
+## Artifacts Created
+- [models/lstm_pretrained_weather.h5](file:///c:/Users/koila/DTI.FINAL/models/lstm_pretrained_weather.h5): The weather-aware base model.
+- [models/lstm_finetuned_hybrid.h5](file:///c:/Users/koila/DTI.FINAL/models/lstm_finetuned_hybrid.h5): The final hybrid-tuned LSTM.
+- `plots/*.png`: Visualizations of Actual vs Predicted values for all targets.
+- `evaluation_metrics.csv`: CSV file containing model performance metrics.
+
+## How to Run
+To retrain or run the pipeline again:
+```bash
+python train_hybrid_model.py
+```
+
+## Visualizations
+Here are some of the generated prediction plots:
+
+````carousel
+![PM2.5 Prediction](/c:/Users/koila/DTI.FINAL/plots/pred_pm2_5.png)
+<!-- slide -->
+![PM10 Prediction](/c:/Users/koila/DTI.FINAL/plots/pred_pm10.png)
+<!-- slide -->
+![Temperature Prediction](/c:/Users/koila/DTI.FINAL/plots/pred_temp_avg.png)
+<!-- slide -->
+![Humidity Prediction](/c:/Users/koila/DTI.FINAL/plots/pred_humidity.png)
+````
