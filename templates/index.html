@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoGlance | AI Weather & Air Quality</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        dark: {
+                            900: '#0B1120',
+                            800: '#162032',
+                            700: '#1E293B',
+                        },
+                        light: {
+                            50: '#F8FAFC',
+                            100: '#F1F5F9',
+                            200: '#E2E8F0',
+                        },
+                        brand: {
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            /* Dark Mode Glass */
+            .glass {
+                @apply bg-dark-800/80 backdrop-blur-md border border-white/10 text-white;
+            }
+            .glass-panel {
+                @apply bg-dark-800/60 backdrop-blur-lg border border-white/5 shadow-xl text-white;
+            }
+            
+            /* Light Mode */
+            .light-glass {
+                @apply bg-white/80 backdrop-blur-md border border-slate-200 text-slate-800 shadow-sm;
+            }
+            .light-panel {
+                @apply bg-white border border-slate-200 shadow-sm text-slate-800;
+            }
+        }
+        
+        body {
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        /* Dark Mode Background */
+        body.dark {
+            background-color: #0B1120;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.08), transparent 25%), 
+                radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.08), transparent 25%);
+        }
+
+        /* Light Mode Background */
+        body:not(.dark) {
+            background-color: #F8FAFC;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.05), transparent 40%), 
+                radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.05), transparent 40%);
+        }
+    </style>
+</head>
+
+<body
+    class="font-sans antialiased min-h-screen selection:bg-brand-500 selection:text-white transition-colors duration-500 flex flex-col">
+
+    <!-- Top Navigation -->
+    <nav class="fixed top-0 w-full z-50 border-b transition-all duration-300 dark:glass dark:border-white/5 light-glass"
+        id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- Logo -->
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-lg dark:shadow-brand-500/20 shadow-brand-500/10">
+                        <i class="ri-leaf-line text-xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-heading font-bold text-xl tracking-tight dark:text-white text-slate-800">
+                            EcoGlance</h1>
+                        <p class="text-xs dark:text-gray-400 text-slate-500 font-medium tracking-wide">AI FORECAST</p>
+                    </div>
+                </div>
+
+                <!-- Center: Location -->
+                <div class="hidden md:flex flex-col items-center">
+                    <div
+                        class="flex items-center gap-2 text-sm px-4 py-1.5 rounded-full transition cursor-pointer dark:text-gray-300 dark:bg-white/5 dark:border-white/5 dark:hover:bg-white/10 bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200">
+                        <i class="ri-map-pin-line text-brand-500"></i>
+                        <span class="font-medium">Visakhapatnam, IN</span>
+                    </div>
+                </div>
+
+                <!-- Right: Controls -->
+                <div class="flex items-center gap-3">
+
+                    <!-- Clean Model Dropdown -->
+                    <div class="relative group hidden sm:block mr-2">
+                        <select id="method-select" onchange="setMethod(this.value)"
+                            class="appearance-none cursor-pointer pl-9 pr-8 py-2 rounded-lg text-sm font-medium border focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all dark:bg-dark-900/50 dark:border-white/10 dark:text-gray-200 dark:hover:bg-dark-900 bg-white border-slate-200 text-slate-700 hover:bg-slate-50">
+                            <option value="mc_dropout">MC Dropout (Balanced)</option>
+                            <option value="quantile">Quantile (Robust)</option>
+                            <option value="conformal">Conformal (Strict)</option>
+                        </select>
+                        <div
+                            class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 dark:text-brand-400 text-brand-500">
+                            <i class="ri-cpu-line text-lg"></i>
+                        </div>
+                        <div
+                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 dark:text-gray-400 text-slate-400">
+                            <i class="ri-arrow-down-s-line"></i>
+                        </div>
+                    </div>
+
+                    <button onclick="toggleTheme()"
+                        class="w-10 h-10 flex items-center justify-center rounded-lg transition-all dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10 text-slate-400 hover:text-slate-800 hover:bg-slate-100 border dark:border-transparent border-slate-200 bg-white dark:bg-transparent"
+                        title="Toggle Theme">
+                        <i class="ri-moon-line text-xl dark:hidden"></i>
+                        <i class="ri-sun-line text-xl hidden dark:block"></i>
+                    </button>
+
+                    <button onclick="fetchPrediction()" id="refresh-btn"
+                        class="w-10 h-10 flex items-center justify-center rounded-lg transition-all group dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10 text-slate-400 hover:text-slate-800 hover:bg-slate-100 border dark:border-transparent border-slate-200 bg-white dark:bg-transparent"
+                        title="Refresh Data">
+                        <i class="ri-refresh-line text-xl group-hover:rotate-180 transition-transform duration-500"></i>
+                    </button>
+
+                    <button onclick="document.getElementById('stats-modal').classList.remove('hidden')"
+                        class="w-10 h-10 flex items-center justify-center rounded-lg transition-all dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10 text-slate-400 hover:text-slate-800 hover:bg-slate-100 border dark:border-transparent border-slate-200 bg-white dark:bg-transparent"
+                        title="View Statistics">
+                        <i class="ri-bar-chart-box-line text-xl"></i>
+                    </button>
+
+                    <div class="h-8 w-px dark:bg-white/10 bg-slate-200 mx-1"></div>
+
+                    <a href="/logout"
+                        class="flex items-center gap-2 text-sm font-medium transition group dark:text-gray-400 dark:hover:text-white text-slate-500 hover:text-slate-800">
+                        <span class="hidden md:inline">Sign Out</span>
+                        <i class="ri-logout-box-r-line group-hover:translate-x-1 transition-transform"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <!-- Added pb-32 to fix footer overlap -->
+    <main class="pt-28 pb-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto animate-fade-in flex-grow w-full">
+
+        <!-- Dashboard Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10">
+
+            <!-- LEFT COLUMN: Hero Weather (8 cols) -->
+            <div class="lg:col-span-8 space-y-6">
+
+                <!-- 1. Hero Card -->
+                <div
+                    class="rounded-3xl p-8 relative overflow-hidden group transition-colors dark:glass-panel light-panel bg-white">
+                    <!-- Background Glow (Dark Only) -->
+                    <div
+                        class="absolute -top-20 -right-20 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl group-hover:bg-brand-500/20 transition duration-1000 dark:block hidden">
+                    </div>
+
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center relative z-10">
+                        <div>
+                            <div class="flex items-center gap-3 mb-2">
+                                <span
+                                    class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-500/10 text-brand-600 border border-brand-500/20">Now</span>
+                                <span class="dark:text-gray-400 text-slate-500 text-sm font-medium"
+                                    id="current-date">--</span>
+                            </div>
+                            <h2 class="text-5xl md:text-7xl font-heading font-bold dark:text-white text-slate-800 tracking-tighter mb-2"
+                                id="temp-main">--°</h2>
+                            <p class="text-lg flex items-center gap-2 dark:text-gray-300 text-slate-600">
+                                <span id="weather-desc" class="font-medium">--</span>
+                                <span class="w-1 h-1 rounded-full bg-current opacity-50"></span>
+                                <span class="dark:text-gray-400 text-slate-500">Feels like <span
+                                        id="feels-like">--°</span></span>
+                            </p>
+                        </div>
+
+                        <div class="mt-6 md:mt-0 text-center">
+                            <!-- Animated Icon Container -->
+                            <div class="text-8xl md:text-9xl filter drop-shadow-xl animate-pulse-slow transition-transform hover:scale-110 duration-500"
+                                id="weather-icon-main">
+                                ☀️
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mini Stats Grid -->
+                    <div
+                        class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-8 border-t dark:border-white/5 border-slate-100">
+                        <div
+                            class="stat-item p-4 rounded-2xl transition dark:bg-white/5 dark:hover:bg-white/10 bg-slate-50 hover:bg-slate-100">
+                            <div class="dark:text-gray-400 text-slate-500 text-xs mb-1 uppercase tracking-wider">
+                                Humidity</div>
+                            <div class="text-xl font-semibold flex items-center gap-2 dark:text-white text-slate-800">
+                                <i class="ri-drop-line text-blue-500"></i>
+                                <span id="humidity-detail">--%</span>
+                            </div>
+                        </div>
+                        <div
+                            class="stat-item p-4 rounded-2xl transition dark:bg-white/5 dark:hover:bg-white/10 bg-slate-50 hover:bg-slate-100">
+                            <div class="dark:text-gray-400 text-slate-500 text-xs mb-1 uppercase tracking-wider">Wind
+                            </div>
+                            <div class="text-xl font-semibold flex items-center gap-2 dark:text-white text-slate-800">
+                                <i class="ri-windy-line text-cyan-500"></i>
+                                <span id="wind-detail">-- m/s</span>
+                            </div>
+                        </div>
+                        <div
+                            class="stat-item p-4 rounded-2xl transition dark:bg-white/5 dark:hover:bg-white/10 bg-slate-50 hover:bg-slate-100">
+                            <div class="dark:text-gray-400 text-slate-500 text-xs mb-1 uppercase tracking-wider">
+                                Pressure</div>
+                            <div class="text-xl font-semibold flex items-center gap-2 dark:text-white text-slate-800">
+                                <i class="ri-speed-mini-line text-purple-500"></i>
+                                <span>1012 hPa</span>
+                            </div>
+                        </div>
+                        <div
+                            class="stat-item p-4 rounded-2xl transition dark:bg-white/5 dark:hover:bg-white/10 bg-slate-50 hover:bg-slate-100">
+                            <div class="dark:text-gray-400 text-slate-500 text-xs mb-1 uppercase tracking-wider">
+                                Rainfall</div>
+                            <div class="text-xl font-semibold flex items-center gap-2 dark:text-white text-slate-800">
+                                <i class="ri-umbrella-line text-indigo-500"></i>
+                                <span id="rain-detail">-- mm</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Charts Section -->
+                <div class="rounded-3xl p-6 transition-colors dark:glass-panel light-panel bg-white">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3
+                            class="font-heading font-semibold text-lg flex items-center gap-2 dark:text-white text-slate-800">
+                            <i class="ri-line-chart-line text-brand-500"></i> Trends & Prediction
+                        </h3>
+                        <div class="flex gap-2">
+                            <button
+                                class="text-xs px-2 py-1 rounded bg-brand-500/10 text-brand-600 font-medium">Temperature</button>
+                            <button
+                                class="text-xs px-2 py-1 rounded bg-green-500/10 text-green-600 font-medium">PM2.5</button>
+                        </div>
+                    </div>
+                    <div class="h-64 w-full relative">
+                        <!-- Chart Canvas -->
+                        <canvas id="forecastChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- 3. 7-Day Forecast (Horizontal Scroll) -->
+                <div class="rounded-3xl p-6 transition-colors dark:glass-panel light-panel bg-white">
+                    <h3
+                        class="font-heading font-semibold text-lg mb-4 flex items-center gap-2 dark:text-white text-slate-800">
+                        <i class="ri-calendar-event-line text-purple-500"></i> 7-Day Outlook
+                    </h3>
+                    <div class="flex gap-4 overflow-x-auto pb-4 scrollbar-hide" id="forecast-list">
+                        <!-- Forecast items injected via JS -->
+                        <div
+                            class="min-w-[120px] p-4 rounded-2xl flex flex-col items-center justify-center gap-2 animate-pulse dark:bg-white/5 bg-slate-100">
+                            <div class="h-4 w-12 rounded dark:bg-white/10 bg-slate-200"></div>
+                            <div class="h-8 w-8 rounded-full dark:bg-white/10 bg-slate-200"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: Air Quality & Health (4 cols) -->
+            <div class="lg:col-span-4 space-y-6">
+
+                <!-- 4. AQI Gauge Card -->
+                <div
+                    class="rounded-3xl p-8 text-center relative overflow-hidden transition-colors dark:glass-panel light-panel bg-white">
+                    <h3
+                        class="font-heading font-semibold text-lg mb-6 flex items-center justify-center gap-2 dark:text-white text-slate-800">
+                        <i class="ri-lungs-line text-green-500"></i> Air Quality Index
+                    </h3>
+
+                    <div class="relative w-48 h-48 mx-auto mb-6">
+                        <!-- Circular Progress SVG -->
+                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                            <!-- Track -->
+                            <circle cx="50" cy="50" r="45" fill="none" class="dark:stroke-gray-700 stroke-slate-200"
+                                stroke-width="8" />
+                            <!-- Progress -->
+                            <circle id="aqi-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#aqiGradient)"
+                                stroke-width="8" stroke-dasharray="283" stroke-dashoffset="283" stroke-linecap="round"
+                                class="transition-all duration-1000 ease-out" />
+                            <defs>
+                                <linearGradient id="aqiGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#10b981" />
+                                    <stop offset="50%" stop-color="#eab308" />
+                                    <stop offset="100%" stop-color="#ef4444" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+
+                        <!-- Center Value -->
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span class="text-4xl font-bold font-heading dark:text-white text-slate-800"
+                                id="pm25-large">--</span>
+                            <span class="text-xs dark:text-gray-400 text-slate-500 mt-1">PM2.5 µg/m³</span>
+                        </div>
+                    </div>
+
+                    <div class="inline-block px-4 py-1.5 rounded-full text-sm font-semibold border dark:border-white/10 dark:bg-white/5 border-slate-200 bg-slate-100 text-slate-600 dark:text-gray-200"
+                        id="aqi-status-badge">
+                        Loading...
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mt-8 pt-6 border-t dark:border-white/5 border-slate-100">
+                        <div class="text-center">
+                            <div class="dark:text-gray-400 text-slate-500 text-xs uppercase mb-1">PM10</div>
+                            <div class="text-lg font-semibold dark:text-white text-slate-800" id="pm10-metric">--</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="dark:text-gray-400 text-slate-500 text-xs uppercase mb-1">SO2</div>
+                            <div class="text-lg font-semibold dark:text-white text-slate-800">12.5</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Health Recommendations -->
+                <!-- Removed h-full to prevent layout stretch/overlap issues -->
+                <div class="rounded-3xl p-6 transition-colors dark:glass-panel light-panel bg-white">
+                    <h3
+                        class="font-heading font-semibold text-lg mb-4 flex items-center gap-2 dark:text-white text-slate-800">
+                        <i class="ri-heart-pulse-line text-red-500"></i> Health Advisory
+                    </h3>
+
+                    <div class="space-y-4">
+                        <div
+                            class="p-4 rounded-2xl dark:bg-white/5 bg-slate-50 border dark:border-white/5 border-slate-100">
+                            <div class="flex items-start gap-3">
+                                <div
+                                    class="w-8 h-8 rounded-full bg-brand-500/10 flex items-center justify-center flex-shrink-0 text-brand-500">
+                                    <i class="ri-lightbulb-flash-line" id="rec-icon"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium dark:text-white text-slate-800 text-sm mb-1" id="rec-title">
+                                        Insight</h4>
+                                    <p class="text-xs dark:text-gray-400 text-slate-500 leading-relaxed"
+                                        id="rec-summary">Analyzing...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4
+                                class="text-xs font-semibold text-green-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                <i class="ri-check-double-line"></i> Recommended
+                            </h4>
+                            <ul class="space-y-2" id="rec-do">
+                                <li class="text-sm dark:text-gray-400 text-slate-600 flex items-start gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></span>
+                                    <span>Wear a mask outdoors</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div id="rec-avoid-section" class="hidden">
+                            <h4
+                                class="text-xs font-semibold text-red-500 uppercase tracking-widest mb-3 mt-6 flex items-center gap-2">
+                                <i class="ri-prohibited-line"></i> Avoid
+                            </h4>
+                            <ul class="space-y-2" id="rec-avoid">
+                                <li class="text-sm dark:text-gray-400 text-slate-600 flex items-start gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 flex-shrink-0"></span>
+                                    <span>Outdoor exercise</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- How It Works Section -->
+        <div class="mt-12 mb-8">
+            <h3 class="text-2xl font-heading font-semibold text-center mb-8 dark:text-white text-slate-800">Model
+                Intelligence</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- MC Dropout -->
+                <div class="p-6 rounded-3xl dark:glass-panel light-panel bg-white border border-slate-200">
+                    <div
+                        class="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 mb-4">
+                        <i class="ri-brain-line text-xl"></i>
+                    </div>
+                    <h4 class="text-lg font-semibold mb-2 dark:text-white text-slate-800">MC Dropout</h4>
+                    <p class="text-sm dark:text-gray-400 text-slate-500 leading-relaxed">
+                        Simulates multiple "possible futures" by randomly disabling neurons in the neural network to
+                        calculate uncertainty.
+                    </p>
+                    <div class="mt-4 text-xs font-bold text-blue-500 uppercase tracking-wide">Best For: General Weather
+                    </div>
+                </div>
+
+                <!-- Quantile -->
+                <div class="p-6 rounded-3xl dark:glass-panel light-panel bg-white border border-slate-200">
+                    <div
+                        class="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500 mb-4">
+                        <i class="ri-bar-chart-grouped-line text-xl"></i>
+                    </div>
+                    <h4 class="text-lg font-semibold mb-2 dark:text-white text-slate-800">Quantile Regression</h4>
+                    <p class="text-sm dark:text-gray-400 text-slate-500 leading-relaxed">
+                        Predicts a median value and a confidence interval range (10th-90th percentile), making it
+                        resistant to data outliers.
+                    </p>
+                    <div class="mt-4 text-xs font-bold text-purple-500 uppercase tracking-wide">Best For: Robust Data
+                    </div>
+                </div>
+
+                <!-- Conformal -->
+                <div class="p-6 rounded-3xl dark:glass-panel light-panel bg-white border border-slate-200">
+                    <div
+                        class="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 mb-4">
+                        <i class="ri-shield-check-line text-xl"></i>
+                    </div>
+                    <h4 class="text-lg font-semibold mb-2 dark:text-white text-slate-800">Conformal Prediction</h4>
+                    <p class="text-sm dark:text-gray-400 text-slate-500 leading-relaxed">
+                        A rigorous statistical framework that guarantees with 90% confidence that the true value falls
+                        within the prediction.
+                    </p>
+                    <div class="mt-4 text-xs font-bold text-orange-500 uppercase tracking-wide">Best For: Safety
+                        Critical</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Updated Footer -->
+    <footer class="border-t dark:border-white/5 border-slate-200 dark:bg-dark-900 bg-slate-50 relative z-50">
+        <div class="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+
+                <!-- About Section -->
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <i class="ri-leaf-line text-brand-500 text-xl"></i>
+                        <span class="font-heading font-bold text-xl dark:text-white text-slate-800">EcoGlance</span>
+                    </div>
+                    <p class="text-sm dark:text-gray-400 text-slate-500 leading-relaxed">
+                        EcoGlance is a cutting-edge weather and air quality forecasting platform designed to provide
+                        accurate, hyper-local predictions. We combine advanced AI with real-time data to help you plan
+                        your day safely.
+                    </p>
+                </div>
+
+                <!-- Methodology Section -->
+                <div>
+                    <h4 class="font-heading font-semibold dark:text-white text-slate-800 mb-4">Methodology</h4>
+                    <p class="text-sm dark:text-gray-400 text-slate-500 leading-relaxed">
+                        Our engine utilizes a <strong>Hybrid AI Architecture</strong>. We use Long Short-Term Memory
+                        (<strong>LSTM</strong>) networks to capture temporal weather patterns, reinforced by
+                        <strong>XGBoost</strong> for residual error correction and precise feature mapping.
+                    </p>
+                </div>
+
+                <!-- Contact Section -->
+                <div>
+                    <h4 class="font-heading font-semibold dark:text-white text-slate-800 mb-4">Contact Us</h4>
+                    <ul class="space-y-3">
+                        <li class="flex items-center gap-3 text-sm dark:text-gray-400 text-slate-500">
+                            <div
+                                class="w-8 h-8 rounded-full bg-brand-500/10 flex items-center justify-center text-brand-500">
+                                <i class="ri-phone-line"></i>
+                            </div>
+                            <span class="font-medium">+91 8790627210</span>
+                        </li>
+                        <li class="flex items-center gap-3 text-sm dark:text-gray-400 text-slate-500">
+                            <div
+                                class="w-8 h-8 rounded-full bg-brand-500/10 flex items-center justify-center text-brand-500">
+                                <i class="ri-mail-line"></i>
+                            </div>
+                            <span>support@ecoglance.ai</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div
+                class="mt-12 pt-8 border-t dark:border-white/5 border-slate-200 text-center text-xs dark:text-gray-600 text-slate-400">
+                &copy; 2026 EcoGlance Inc. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Stats Modal -->
+    <div id="stats-modal" class="fixed inset-0 z-[100] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
+            onclick="document.getElementById('stats-modal').classList.add('hidden')"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div
+                class="dark:bg-dark-800 bg-white border dark:border-white/10 border-gray-200 rounded-3xl w-full max-w-3xl transform transition-all shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                <div
+                    class="p-6 border-b dark:border-white/10 border-gray-100 flex justify-between items-center dark:bg-dark-900/50 bg-gray-50">
+                    <h3 class="text-xl font-heading font-semibold dark:text-white text-gray-800">📊 Model Diagnostics
+                    </h3>
+                    <button onclick="document.getElementById('stats-modal').classList.add('hidden')"
+                        class="dark:text-gray-400 text-gray-500 hover:text-red-500 transition">
+                        <i class="ri-close-circle-line text-2xl"></i>
+                    </button>
+                </div>
+                <div class="p-6 overflow-y-auto">
+                    <p class="dark:text-gray-400 text-gray-600 text-sm mb-6">Historical performance metrics (RMSE, MAE,
+                        R²) on test set.</p>
+
+                    <div class="overflow-x-auto rounded-xl border dark:border-white/5 border-gray-200">
+                        <table class="w-full text-sm text-left dark:text-gray-400 text-gray-600">
+                            <thead
+                                class="text-xs uppercase dark:bg-white/5 bg-gray-100 dark:text-gray-200 text-gray-700">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">Target Variable</th>
+                                    <th scope="col" class="px-6 py-3">RMSE</th>
+                                    <th scope="col" class="px-6 py-3">MAE</th>
+                                    <th scope="col" class="px-6 py-3">R² Score</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stats-body" class="divide-y dark:divide-white/5 divide-gray-100">
+                                <tr>
+                                    <td colspan="4" class="px-6 py-4 text-center">Loading metrics...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading"
+        class="fixed inset-0 z-[200] dark:bg-dark-900/80 bg-white/80 backdrop-blur-md flex flex-col items-center justify-center transition-opacity"
+        style="display: none;">
+        <div class="w-16 h-16 border-4 border-brand-500/30 border-t-brand-500 rounded-full animate-spin mb-4"></div>
+        <div class="dark:text-white text-slate-800 font-heading font-medium text-lg animate-pulse">Running AI
+            Forecast...</div>
+    </div>
+
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        let currentMethod = 'mc_dropout';
+
+        // --- THEME & UI ---
+        function toggleTheme() {
+            const html = document.documentElement;
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.theme = 'light';
+            } else {
+                html.classList.add('dark');
+                localStorage.theme = 'dark';
+            }
+            // Re-render chart to update colors
+            if (currentDataCache) initChart(currentDataCache.forecast);
+        }
+
+        // Init Theme
+        if (localStorage.theme === 'light') {
+            document.documentElement.classList.remove('dark');
+        } else {
+            document.documentElement.classList.add('dark');
+        }
+
+        function setMethod(method) {
+            currentMethod = method;
+            fetchPrediction();
+        }
+
+        // --- CHART JS ---
+        let forecastChart = null;
+        let currentDataCache = null;
+
+        function initChart(forecastData) {
+            if (!forecastData || forecastData.length === 0) return;
+            currentDataCache = { forecast: forecastData };
+
+            const ctxCheck = document.getElementById('forecastChart');
+            if (!ctxCheck) return;
+
+            const ctx = ctxCheck.getContext('2d');
+            const isDark = document.documentElement.classList.contains('dark');
+
+            // Labels (Days)
+            const labels = forecastData.map(d => getDayName(d.date));
+            // Data Parsing
+            const tempData = forecastData.map(d => parseFloat(d.temp_avg) || 0);
+            const pmData = forecastData.map(d => parseFloat(d.pm2_5) || 0);
+
+            if (forecastChart) forecastChart.destroy();
+
+            // Chart Colors
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+            const textColor = isDark ? '#9ca3af' : '#64748b';
+
+            const gradientTemp = ctx.createLinearGradient(0, 0, 0, 400);
+            gradientTemp.addColorStop(0, 'rgba(56, 189, 248, 0.5)');
+            gradientTemp.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+
+            const gradientPM = ctx.createLinearGradient(0, 0, 0, 400);
+            gradientPM.addColorStop(0, 'rgba(16, 185, 129, 0.5)');
+            gradientPM.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+            forecastChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Temp (°C)',
+                            data: tempData,
+                            borderColor: '#38bdf8',
+                            backgroundColor: gradientTemp,
+                            borderWidth: 3,
+                            pointBackgroundColor: isDark ? '#0B1120' : '#ffffff',
+                            pointBorderColor: '#38bdf8',
+                            fill: true,
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'PM2.5',
+                            data: pmData,
+                            borderColor: '#10b981',
+                            backgroundColor: gradientPM,
+                            borderWidth: 3,
+                            pointBackgroundColor: isDark ? '#0B1120' : '#ffffff',
+                            pointBorderColor: '#10b981',
+                            fill: true,
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { labels: { color: textColor, font: { family: 'Inter', size: 12 } } },
+                        tooltip: {
+                            backgroundColor: isDark ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                            titleColor: isDark ? '#fff' : '#0f172a',
+                            bodyColor: isDark ? '#cbd5e1' : '#334155',
+                            borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                            borderWidth: 1,
+                            padding: 10
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: gridColor }, ticks: { color: textColor } },
+                        y: { type: 'linear', display: true, position: 'left', grid: { color: gridColor }, ticks: { color: textColor } },
+                        y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#10b981' } }
+                    }
+                }
+            });
+        }
+
+        // --- HELPERS ---
+        function getDayName(dateStr) {
+            const d = new Date(dateStr);
+            return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()];
+        }
+
+        function getWeatherIcon(rainfall, temp) {
+            if (rainfall > 15) return "⛈️";
+            if (rainfall > 5) return "🌧️";
+            if (rainfall > 0.5) return "🌦️";
+            if (temp > 35) return "🔥";
+            if (temp > 30) return "☀️";
+            return "🌤️";
+        }
+
+        function getAQIColor(pm25) {
+            const cls = { bg: 'bg-green-500/20', text: 'text-green-500', hex: '#10b981' };
+            if (pm25 > 30) { cls.bg = 'bg-yellow-500/20'; cls.text = 'text-yellow-500'; cls.hex = '#facc15'; }
+            if (pm25 > 60) { cls.bg = 'bg-orange-500/20'; cls.text = 'text-orange-500'; cls.hex = '#f97316'; }
+            if (pm25 > 90) { cls.bg = 'bg-red-500/20'; cls.text = 'text-red-500'; cls.hex = '#ef4444'; }
+            return cls;
+        }
+
+        // --- FETCH LOGIC ---
+        async function fetchPrediction() {
+            const loading = document.getElementById('loading');
+            loading.style.display = 'flex';
+
+            try {
+                const res = await fetch(`/predict?method=${currentMethod}`);
+                const data = await res.json();
+
+                if (data.error) throw new Error(data.error);
+
+                // 1. Update Hero
+                document.getElementById('temp-main').textContent = parseFloat(data.data.temp_avg).toFixed(0) + '°';
+                document.getElementById('feels-like').textContent = parseFloat(data.data.temp_avg).toFixed(0) + '°';
+                document.getElementById('humidity-detail').textContent = parseFloat(data.data.humidity).toFixed(0) + '%';
+                document.getElementById('wind-detail').textContent = parseFloat(data.data.wind_speed).toFixed(1) + ' m/s';
+                document.getElementById('rain-detail').textContent = parseFloat(data.data.rainfall).toFixed(1) + ' mm';
+
+                const weatherIcon = getWeatherIcon(data.data.rainfall, data.data.temp_avg);
+                document.getElementById('weather-icon-main').textContent = weatherIcon;
+
+                let condition = 'Sunny';
+                if (data.data.rainfall > 5) condition = 'Rainy';
+                else if (data.data.rainfall > 0.5) condition = 'Light Rain';
+                else if (data.data.cloud_cover > 50) condition = 'Cloudy'; // FIXED SYNTAX
+                document.getElementById('weather-desc').textContent = condition;
+
+                // Date
+                const dateObj = new Date(data.prediction_date);
+                document.getElementById('current-date').textContent = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+                // 2. AQI Gauge
+                const pm25 = parseFloat(data.data.pm2_5) || 0;
+                document.getElementById('pm25-large').textContent = pm25.toFixed(0);
+                document.getElementById('pm10-metric').textContent = data.data.pm10 + ' µg/m³';
+                document.getElementById('aqi-status-badge').textContent = data.aqi.status;
+
+                // Gauge Animation
+                const circle = document.getElementById('aqi-ring');
+                const radius = 45;
+                const circumference = 2 * Math.PI * radius;
+                const percentage = Math.min(pm25 / 200, 1);
+                const offset = circumference - (percentage * circumference);
+                circle.style.strokeDashoffset = offset;
+
+                // 3. Health & Recommendations
+                if (data.aqi.recommendations) {
+                    const rec = data.aqi.recommendations;
+                    document.getElementById('rec-title').textContent = rec.title;
+                    document.getElementById('rec-summary').textContent = rec.summary;
+                    document.getElementById('rec-do').innerHTML = rec.do.slice(0, 3).map(x =>
+                        `<li class="text-sm dark:text-gray-400 text-slate-600 flex items-start gap-2">
+                             <span class="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></span><span>${x}</span>
+                        </li>`).join('');
+
+                    const avoidList = document.getElementById('rec-avoid');
+                    if (rec.avoid && rec.avoid.length) {
+                        document.getElementById('rec-avoid-section').classList.remove('hidden');
+                        avoidList.innerHTML = rec.avoid.slice(0, 2).map(x =>
+                            `<li class="text-sm dark:text-gray-400 text-slate-600 flex items-start gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 flex-shrink-0"></span><span>${x}</span>
+                            </li>`).join('');
+                    } else {
+                        document.getElementById('rec-avoid-section').classList.add('hidden');
+                    }
+                }
+
+                // 4. Forecast List
+                const list = document.getElementById('forecast-list');
+                list.innerHTML = '';
+                data.forecast.forEach(d => {
+                    const dTemp = parseFloat(d.temp_avg).toFixed(0);
+                    const dPM = parseFloat(d.pm2_5).toFixed(0);
+                    const dRain = parseFloat(d.rainfall);
+                    const dIcon = getWeatherIcon(dRain, dTemp);
+                    const aqiStyle = getAQIColor(dPM);
+
+                    const item = document.createElement('div');
+                    item.className = 'min-w-[130px] p-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition hover:-translate-y-1 dark:bg-white/5 bg-slate-50 border dark:border-white/5 border-slate-200';
+                    item.innerHTML = `
+                        <div class="text-xs dark:text-gray-400 text-slate-500 font-medium">${getDayName(d.date)}</div>
+                        <div class="text-3xl my-1">${dIcon}</div>
+                        <div class="text-xl font-bold dark:text-white text-slate-800">${dTemp}°</div>
+                        <div class="w-full flex items-center justify-between mt-2 px-1">
+                            <span class="text-xs ${aqiStyle.text} font-medium">PM ${dPM}</span>
+                            <span class="text-xs text-blue-400"><i class="ri-drop-fill"></i> ${dRain.toFixed(0)}</span>
+                        </div>
+                     `;
+                    list.appendChild(item);
+                });
+
+                // 5. Update Chart
+                initChart(data.forecast);
+
+                // Fetch stats quietly
+                fetchStats();
+
+            } catch (e) {
+                console.error(e);
+                alert('Connection Error: ' + e.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        async function fetchStats() {
+            try {
+                const res = await fetch('/stats');
+                const data = await res.json();
+                const tbody = document.getElementById('stats-body');
+                if (data.length === 0) return;
+                tbody.innerHTML = data.map(row => `
+                    <tr>
+                        <td class="px-6 py-4 font-medium dark:text-white text-slate-800">${row.target || 'N/A'}</td>
+                        <td class="px-6 py-4 text-brand-500">${parseFloat(row.rmse).toFixed(3)}</td>
+                        <td class="px-6 py-4 dark:text-gray-300 text-slate-600">${parseFloat(row.mae).toFixed(3)}</td>
+                        <td class="px-6 py-4 text-green-500">${parseFloat(row.r2).toFixed(3)}</td>
+                    </tr>`).join('');
+            } catch (e) { }
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            setMethod('mc_dropout');
+        });
+
+    </script>
+</body>
+
+</html>
