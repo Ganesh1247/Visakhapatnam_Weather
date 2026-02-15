@@ -37,76 +37,85 @@ SEQ_LENGTH = 14
 LAT = 17.6868
 LON = 83.2185
 
-# 1. Init Preprocessor & Models
-print("Loading scientifically improved models...")
+# Models global state
+lstm_full = None
+feature_extractor = None
+xgb_models = {}
+mc_predictor = None
+quantile_predictor = None
+conformal_predictor = None
+models_loaded = False
+models_lock = threading.Lock()
+
+def load_models_lazy():
+    global lstm_full, feature_extractor, xgb_models, mc_predictor, quantile_predictor, conformal_predictor, models_loaded
+    with models_lock:
+        if models_loaded:
+            return
+        
+        print("Loading scientifically improved models (lazy)...")
+        # Base DIRs
+        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        MODELS_DIR = os.path.join(BASE_DIR, 'models')
+        
+        # Load LSTM
+        try:
+            lstm_full = load_model(os.path.join(MODELS_DIR, "lstm_hybrid_chain.h5"), compile=False)
+            feature_extractor = Model(inputs=lstm_full.input, outputs=lstm_full.get_layer('lstm_embeddings').output)
+            print("LSTM Feature Extractor loaded.")
+        except Exception as e:
+            print(f"Error loading LSTM: {e}")
+        
+        # Load XGB Models
+        active_targets = [t for t in preprocessor.target_columns if t != 'ozone']
+        for target in active_targets:
+            try:
+                path = os.path.join(MODELS_DIR, f"xgb_chain_{target}.pkl")
+                if os.path.exists(path):
+                    with open(path, "rb") as f:
+                        xgb_models[target] = pickle.load(f)
+            except:
+                print(f"Warning: XGB model for {target} not found.")
+        
+        # Initialize MC Dropout Predictor
+        try:
+            if lstm_full and xgb_models:
+                mc_predictor = MCDropoutPredictor(
+                    lstm_model=lstm_full,
+                    feature_extractor=feature_extractor,
+                    xgb_models=xgb_models,
+                    preprocessor=preprocessor,
+                    n_iter=50
+                )
+                print("MC Dropout Predictor Initialized.")
+        except Exception as e:
+            print(f"Error initializing MC Predictor: {e}")
+        
+        try:
+            quantile_predictor = QuantileRegressor()
+            print("Quantile Predictor Initialized.")
+        except Exception as e:
+            print(f"Error initializing Quantile Predictor: {e}")
+        
+        try:
+            conformal_predictor = ConformalPredictor()
+            print("Conformal Predictor Initialized.")
+        except Exception as e:
+            print(f"Error initializing Conformal Predictor: {e}")
+            
+        models_loaded = True
+
+# 1. Preprocessor fit (needs global data at startup for scalers)
+print("Initializing Preprocessor...")
 preprocessor = DataPreprocessor(sequence_length=SEQ_LENGTH)
-# Init scaler logic
-# Data files are in ../data/ relative to src/
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
-MODELS_DIR = os.path.join(BASE_DIR, 'models')
-
 df_weather = pd.read_csv(os.path.join(DATA_DIR, "final_weather_dataset_2010-2025.csv"))
 df_combined = pd.read_csv(os.path.join(DATA_DIR, "final_dataset.csv"))
-
 df_weather_log = preprocessor.apply_log_transform(df_weather)
 df_combined_log = preprocessor.apply_log_transform(df_combined)
 preprocessor.fit_scalers(df_weather_log, df_combined_log)
 
-# Load LSTM
-try:
-    lstm_full = load_model(os.path.join(MODELS_DIR, "lstm_hybrid_chain.h5"), compile=False)
-    feature_extractor = Model(inputs=lstm_full.input, outputs=lstm_full.get_layer('lstm_embeddings').output)
-    print("LSTM Feature Extractor loaded.")
-except Exception as e:
-    print(f"Error loading LSTM: {e}")
-
-# Load XGB Models
-xgb_models = {}
-# Filter ozone out
-active_targets = [t for t in preprocessor.target_columns if t != 'ozone']
-
-for target in active_targets:
-    try:
-        path = os.path.join(MODELS_DIR, f"xgb_chain_{target}.pkl")
-        if os.path.exists(path):
-            with open(path, "rb") as f:
-                xgb_models[target] = pickle.load(f)
-    except:
-        print(f"Warning: XGB model for {target} not found.")
-
-# Initialize MC Dropout Predictor
-# Note: We need the full LSTM model for training=True (Dropout)
-# In current code, 'lstm_full' is the full model. 'feature_extractor' is a sub-model.
-# If feature_extractor was created by `Model(inputs=lstm_full.input, ...)` it shares layers.
-# So calling feature_extractor(x, training=True) should enable dropout in the shared layers.
-mc_predictor = None
-try:
-    if lstm_full and xgb_models:
-        mc_predictor = MCDropoutPredictor(
-            lstm_model=lstm_full,
-            feature_extractor=feature_extractor,
-            xgb_models=xgb_models,
-            preprocessor=preprocessor,
-            n_iter=50
-        )
-        print("MC Dropout Predictor Initialized.")
-except Exception as e:
-    print(f"Error initializing MC Predictor: {e}")
-
-quantile_predictor = None
-try:
-    quantile_predictor = QuantileRegressor()
-    print("Quantile Predictor Initialized.")
-except Exception as e:
-    print(f"Error initializing Quantile Predictor: {e}")
-
-conformal_predictor = None
-try:
-    conformal_predictor = ConformalPredictor()
-    print("Conformal Predictor Initialized.")
-except Exception as e:
-    print(f"Error initializing Conformal Predictor: {e}")
 
 # Caching
 # Simple dictionary: { 'last_updated': timestamp, 'data': response_json }
@@ -379,6 +388,9 @@ def index():
 @app.route('/predict', methods=['GET'])
 def predict():
     try:
+        # Lazy load models if not already loaded
+        load_models_lazy()
+        
         method = request.args.get('method', 'mc_dropout')
         
         # Check Cache (only if method is mc_dropout for now, or key it by method)
