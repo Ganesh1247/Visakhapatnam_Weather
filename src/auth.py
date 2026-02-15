@@ -93,19 +93,23 @@ def send_otp_email(email, otp):
         
         msg.attach(MIMEText(html_body, 'html'))
         
-        # Send email via Gmail SMTP
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-            server.login(SENDER_EMAIL, SENDER_PASSWORD)
-            server.send_message(msg)
-        
-        print(f"[OK] OTP sent successfully to {email}")
-        return True
-        
-    except smtplib.SMTPAuthenticationError:
-        print("[ERROR] Email authentication failed. Check your Gmail App Password.")
-        print(f"[FALLBACK] OTP for {email}: {otp}")
-        return True  # Still return success so login works
-        
+        # Send email via Gmail SMTP with timeout
+        try:
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=10) as server:
+                server.login(SENDER_EMAIL, SENDER_PASSWORD)
+                server.send_message(msg)
+            
+            print(f"[OK] OTP sent successfully to {email}")
+            return True
+        except smtplib.SMTPAuthenticationError:
+            print("[ERROR] Email authentication failed. Check your Gmail App Password.")
+            print(f"[FALLBACK] OTP for {email}: {otp}")
+            return True  # Still return success so login works
+        except Exception as smtp_error:
+            print(f"[ERROR] SMTP error: {smtp_error}")
+            print(f"[FALLBACK] OTP for {email}: {otp}")
+            return True  # Still return success so login works
+            
     except Exception as e:
         print(f"[ERROR] Email error: {e}")
         print(f"[FALLBACK] OTP for {email}: {otp}")
