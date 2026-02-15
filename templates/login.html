@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - EcoGlance | Air Quality & Weather</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0f1419;
+            --bg-card: #1a2332;
+            --accent: #00d4aa;
+            --accent-hover: #00b894;
+            --text: #e7e9ea;
+            --text-muted: #8b98a5;
+            --border: #38444d;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-dark);
+            background-image: 
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 212, 170, 0.15), transparent),
+                radial-gradient(ellipse 60% 40% at 100% 100%, rgba(88, 101, 242, 0.1), transparent);
+            padding: 20px;
+        }
+
+        .login-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 48px 44px;
+            max-width: 440px;
+            width: 100%;
+            animation: fadeSlide 0.5s ease;
+        }
+
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(-16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .logo span {
+            font-size: 42px;
+        }
+
+        h1 {
+            color: var(--text);
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 15px;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 28px;
+            background: var(--bg-dark);
+            padding: 4px;
+            border-radius: 12px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 15px;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--text);
+        }
+
+        .tab.active {
+            background: var(--accent);
+            color: var(--bg-dark);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--bg-dark);
+            color: var(--text);
+            font-size: 15px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        input::placeholder {
+            color: var(--text-muted);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        button.primary {
+            width: 100%;
+            padding: 16px;
+            background: var(--accent);
+            color: var(--bg-dark);
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+
+        button.primary:hover:not(:disabled) {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        button.primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            width: 100%;
+            padding: 14px;
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: inherit;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.2s;
+        }
+
+        button.secondary:hover {
+            border-color: var(--text-muted);
+            color: var(--text);
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .message.success {
+            background: rgba(0, 212, 170, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(0, 212, 170, 0.3);
+        }
+
+        .message.error {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .section { display: none; }
+        .section.active { display: block; }
+
+        .otp-hint {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        .password-hint {
+            color: var(--text-muted);
+            font-size: 12px;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="logo">🌤️</div>
+        <h1>EcoGlance</h1>
+        <p class="subtitle">7-Day Weather & Air Quality Forecast</p>
+        <p class="otp-hint" style="text-align: center; margin-bottom: 20px; font-size: 12px;">Use <strong>http://127.0.0.1:5000</strong> (not file://)</p>
+
+        <div id="message" class="message"></div>
+
+        <!-- Tab: Login vs Sign up -->
+        <div class="tabs">
+            <button class="tab active" id="tabLogin" onclick="showLogin()">Login</button>
+            <button class="tab" id="tabSignup" onclick="showSignup()">Sign up</button>
+        </div>
+
+        <!-- Login Section (username/password) -->
+        <div id="loginSection" class="section active">
+            <div class="form-group">
+                <label for="loginUser">Username or Email</label>
+                <input type="text" id="loginUser" placeholder="Enter username or email" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="loginPass">Password</label>
+                <input type="password" id="loginPass" placeholder="Enter password" autocomplete="current-password">
+            </div>
+            <button class="primary" id="loginBtn">Sign in</button>
+            <p class="otp-hint" style="margin-top: 16px; text-align: center;">New user? Switch to Sign up to create an account with OTP.</p>
+        </div>
+
+        <!-- Sign up: Email + OTP -->
+        <div id="signupSection" class="section">
+            <div id="emailStep">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" placeholder="your@email.com" autocomplete="email">
+                </div>
+                <button class="primary" id="sendOtpBtn">Send OTP</button>
+            </div>
+
+            <div id="otpStep" style="display: none;">
+                <div class="form-group">
+                    <label for="otp">Enter 6-digit OTP</label>
+                    <input type="text" id="otp" placeholder="000000" maxlength="6" pattern="[0-9]{6}">
+                    <p class="otp-hint">Check your email for the verification code</p>
+                </div>
+                <button class="primary" id="verifyBtn">Verify OTP</button>
+                <button class="secondary" id="otpBackBtn">Back</button>
+            </div>
+
+            <!-- New user: Set username & password -->
+            <div id="credentialsStep" style="display: none;">
+                <p class="subtitle" style="margin-bottom: 20px;">Create your login credentials for next time</p>
+                <div class="form-group">
+                    <label for="newUsername">Choose a username</label>
+                    <input type="text" id="newUsername" placeholder="At least 3 characters" minlength="3">
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">Choose a password</label>
+                    <input type="password" id="newPassword" placeholder="At least 6 characters" minlength="6">
+                    <p class="password-hint">You'll use this with your username to log in without OTP next time.</p>
+                </div>
+                <button class="primary" id="setCredsBtn">Create account & Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const message = document.getElementById('message');
+        const tabLogin = document.getElementById('tabLogin');
+        const tabSignup = document.getElementById('tabSignup');
+        const loginSection = document.getElementById('loginSection');
+        const signupSection = document.getElementById('signupSection');
+        const emailStep = document.getElementById('emailStep');
+        const otpStep = document.getElementById('otpStep');
+        const credentialsStep = document.getElementById('credentialsStep');
+
+        const loginUser = document.getElementById('loginUser');
+        const loginPass = document.getElementById('loginPass');
+        const loginBtn = document.getElementById('loginBtn');
+        const emailInput = document.getElementById('email');
+        const otpInput = document.getElementById('otp');
+        const sendOtpBtn = document.getElementById('sendOtpBtn');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const otpBackBtn = document.getElementById('otpBackBtn');
+        const newUsername = document.getElementById('newUsername');
+        const newPassword = document.getElementById('newPassword');
+        const setCredsBtn = document.getElementById('setCredsBtn');
+
+        let currentEmail = '';
+
+        function showMessage(text, type) {
+            message.textContent = text;
+            message.className = `message ${type}`;
+            message.style.display = 'block';
+            setTimeout(() => { message.style.display = 'none'; }, 5000);
+        }
+
+        function showLogin() {
+            tabLogin.classList.add('active');
+            tabSignup.classList.remove('active');
+            loginSection.classList.add('active');
+            signupSection.classList.remove('active');
+            message.style.display = 'none';
+        }
+
+        function showSignup() {
+            tabSignup.classList.add('active');
+            tabLogin.classList.remove('active');
+            signupSection.classList.add('active');
+            loginSection.classList.remove('active');
+            message.style.display = 'none';
+            // Reset signup flow
+            emailStep.style.display = 'block';
+            otpStep.style.display = 'none';
+            credentialsStep.style.display = 'none';
+        }
+
+        function resetSignupSteps() {
+            emailStep.style.display = 'block';
+            otpStep.style.display = 'none';
+            credentialsStep.style.display = 'none';
+            emailInput.value = '';
+            otpInput.value = '';
+            newUsername.value = '';
+            newPassword.value = '';
+        }
+
+        // Login with username/password
+        loginBtn.addEventListener('click', async () => {
+            const user = loginUser.value.trim();
+            const pass = loginPass.value;
+            if (!user || !pass) {
+                showMessage('Please enter username and password', 'error');
+                return;
+            }
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Signing in...';
+
+            try {
+                const res = await fetch('/login-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.redirect) {
+                    showMessage('Welcome back!', 'success');
+                    setTimeout(() => { window.location.href = '/'; }, 800);
+                } else {
+                    showMessage(data.error || 'Invalid credentials', 'error');
+                }
+            } catch (err) {
+                console.error('Request error:', err);
+                const msg = (err.message || '').toLowerCase().includes('fetch') ? 'Cannot connect. Run "python app.py" in terminal, then open http://127.0.0.1:5000' : 'Request failed. Try again or check console (F12).';
+                showMessage(msg, 'error');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Sign in';
+            }
+        });
+
+        // Send OTP
+        sendOtpBtn.addEventListener('click', async () => {
+            const email = emailInput.value.trim();
+            if (!email || !email.includes('@')) {
+                showMessage('Please enter a valid email', 'error');
+                return;
+            }
+
+            sendOtpBtn.disabled = true;
+            sendOtpBtn.textContent = 'Sending...';
+
+            try {
+                const res = await fetch('/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    currentEmail = email;
+                    showMessage(data.message || 'OTP sent to your email', 'success');
+                    emailStep.style.display = 'none';
+                    otpStep.style.display = 'block';
+                } else {
+                    showMessage(data.error || 'Failed to send OTP', 'error');
+                }
+            } catch (err) {
+                console.error('Request error:', err);
+                const msg = (err.message || '').toLowerCase().includes('fetch') ? 'Cannot connect. Run "python app.py" in terminal, then open http://127.0.0.1:5000' : 'Request failed. Try again or check console (F12).';
+                showMessage(msg, 'error');
+            } finally {
+                sendOtpBtn.disabled = false;
+                sendOtpBtn.textContent = 'Send OTP';
+            }
+        });
+
+        // Verify OTP
+        verifyBtn.addEventListener('click', async () => {
+            const otp = otpInput.value.trim();
+            if (!otp || otp.length !== 6) {
+                showMessage('Please enter the 6-digit OTP', 'error');
+                return;
+            }
+
+            verifyBtn.disabled = true;
+            verifyBtn.textContent = 'Verifying...';
+
+            try {
+                const res = await fetch('/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentEmail, otp })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    if (data.needs_setup) {
+                        showMessage('Set your username and password', 'success');
+                        otpStep.style.display = 'none';
+                        credentialsStep.style.display = 'block';
+                    } else if (data.redirect) {
+                        showMessage('Login successful!', 'success');
+                        setTimeout(() => { window.location.href = '/'; }, 800);
+                    }
+                } else {
+                    showMessage(data.error || 'Invalid OTP', 'error');
+                }
+            } catch (err) {
+                console.error('Request error:', err);
+                const msg = (err.message || '').toLowerCase().includes('fetch') ? 'Cannot connect. Run "python app.py" in terminal, then open http://127.0.0.1:5000' : 'Request failed. Try again or check console (F12).';
+                showMessage(msg, 'error');
+            } finally {
+                verifyBtn.disabled = false;
+                verifyBtn.textContent = 'Verify OTP';
+            }
+        });
+
+        otpBackBtn.addEventListener('click', () => {
+            otpStep.style.display = 'none';
+            emailStep.style.display = 'block';
+            otpInput.value = '';
+        });
+
+        // Set credentials
+        setCredsBtn.addEventListener('click', async () => {
+            const username = newUsername.value.trim();
+            const password = newPassword.value;
+            if (!username || username.length < 3) {
+                showMessage('Username must be at least 3 characters', 'error');
+                return;
+            }
+            if (!password || password.length < 6) {
+                showMessage('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            setCredsBtn.disabled = true;
+            setCredsBtn.textContent = 'Creating...';
+
+            try {
+                const res = await fetch('/set-credentials', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.redirect) {
+                    showMessage('Account created! Redirecting...', 'success');
+                    setTimeout(() => { window.location.href = '/'; }, 1000);
+                } else {
+                    showMessage(data.error || 'Failed to create account', 'error');
+                }
+            } catch (err) {
+                console.error('Request error:', err);
+                const msg = (err.message || '').toLowerCase().includes('fetch') ? 'Cannot connect. Run "python app.py" in terminal, then open http://127.0.0.1:5000' : 'Request failed. Try again or check console (F12).';
+                showMessage(msg, 'error');
+            } finally {
+                setCredsBtn.disabled = false;
+                setCredsBtn.textContent = 'Create account & Continue';
+            }
+        });
+
+        // Enter key
+        [loginUser, loginPass].forEach(el => el.addEventListener('keypress', e => { if (e.key === 'Enter') loginBtn.click(); }));
+        emailInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendOtpBtn.click(); });
+        otpInput.addEventListener('keypress', e => { if (e.key === 'Enter') verifyBtn.click(); });
+        newUsername.addEventListener('keypress', e => { if (e.key === 'Enter') newPassword.focus(); });
+        newPassword.addEventListener('keypress', e => { if (e.key === 'Enter') setCredsBtn.click(); });
+    </script>
+</body>
+
+</html>
