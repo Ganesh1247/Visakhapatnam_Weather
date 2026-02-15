@@ -2,8 +2,11 @@ services:
   - type: web
     name: weather-app
     env: python
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    buildCommand: |
+      pip install --upgrade pip &&
+      pip install -r requirements.txt &&
+      mkdir -p data
+    startCommand: cd src && gunicorn app:app --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0

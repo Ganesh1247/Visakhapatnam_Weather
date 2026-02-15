@@ -15,6 +15,9 @@ DB_PATH = os.path.join(BASE_DIR, 'data', 'users.db')
 
 # Database initialization
 def init_db():
+    # Ensure directory exists
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS users

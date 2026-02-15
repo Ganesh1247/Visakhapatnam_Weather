@@ -15,7 +15,7 @@ from preprocessing import DataPreprocessor
 from datetime import datetime, timedelta
 from auth import (
     init_db, generate_otp, send_otp_email, login_required,
-    user_has_credentials, set_user_credentials, verify_password
+    user_has_credentials, set_user_credentials, verify_password, DB_PATH
 )
 from backend.uncertainty.mc_dropout import MCDropoutPredictor
 from backend.uncertainty.quantile import QuantileRegressor
@@ -275,7 +275,7 @@ def signup():
     otp = generate_otp()
     otp_expiry = datetime.now() + timedelta(minutes=5)
     
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     try:
         # Update OTP only; don't overwrite username/password
@@ -306,7 +306,7 @@ def verify_otp():
     if not email or not otp:
         return jsonify({'error': 'Email and OTP required'}), 400
     
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('SELECT otp, otp_expiry FROM users WHERE email = ?', (email,))
     result = c.fetchone()
