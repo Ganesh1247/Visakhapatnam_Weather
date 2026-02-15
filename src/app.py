@@ -44,11 +44,12 @@ xgb_models = {}
 mc_predictor = None
 quantile_predictor = None
 conformal_predictor = None
+active_targets = []
 models_loaded = False
 models_lock = threading.Lock()
 
 def load_models_lazy():
-    global lstm_full, feature_extractor, xgb_models, mc_predictor, quantile_predictor, conformal_predictor, models_loaded
+    global lstm_full, feature_extractor, xgb_models, mc_predictor, quantile_predictor, conformal_predictor, active_targets, models_loaded
     with models_lock:
         if models_loaded:
             return
@@ -103,7 +104,16 @@ def load_models_lazy():
         except Exception as e:
             print(f"Error initializing Conformal Predictor: {e}")
             
+        # Final Verification
+        if feature_extractor is None:
+            print("[CRITICAL] feature_extractor failed to initialize!")
+        if not xgb_models:
+            print("[CRITICAL] No XGB models were loaded!")
+        if mc_predictor is None:
+            print("[CRITICAL] mc_predictor failed to initialize!")
+            
         models_loaded = True
+        print(f"Model initialization complete. Success status: {not (feature_extractor is None)}")
 
 # 1. Preprocessor fit (needs global data at startup for scalers)
 print("Initializing Preprocessor...")
@@ -391,6 +401,8 @@ def predict():
         # Lazy load models if not already loaded
         load_models_lazy()
         
+        global lstm_full, feature_extractor, xgb_models, mc_predictor, quantile_predictor, conformal_predictor, active_targets, preprocessor
+        
         method = request.args.get('method', 'mc_dropout')
         
         # Check Cache (only if method is mc_dropout for now, or key it by method)
@@ -529,7 +541,12 @@ def predict():
             
             # Helper to finalize standard prediction
             def run_standard_predict(day_result):
-                 # Predict Embeddings
+                global feature_extractor, xgb_models, active_targets, preprocessor
+                
+                if feature_extractor is None:
+                    raise ValueError("feature_extractor is not initialized")
+                
+                # Predict Embeddings
                 embeddings = feature_extractor.predict(X_input, verbose=0)
                 # ... (Standard XGB Feature Construction) ...
                 # Reuse code logic effectively...
