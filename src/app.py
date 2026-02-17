@@ -61,26 +61,32 @@ def load_models_lazy():
         
         # Load LSTM
         try:
-            lstm_full = load_model(os.path.join(MODELS_DIR, "lstm_hybrid_chain.h5"), compile=False)
-            feature_extractor = Model(inputs=lstm_full.input, outputs=lstm_full.get_layer('lstm_embeddings').output)
-            print("LSTM Feature Extractor loaded.")
+            model_path = os.path.join(MODELS_DIR, "lstm_hybrid_chain.h5")
+            if os.path.exists(model_path):
+                lstm_full = load_model(model_path, compile=False)
+                feature_extractor = Model(inputs=lstm_full.input, outputs=lstm_full.get_layer('lstm_embeddings').output)
+                print("LSTM Feature Extractor loaded.")
+            else:
+                print(f"[CRITICAL] LSTM model file not found at {model_path}")
         except Exception as e:
             print(f"Error loading LSTM: {e}")
         
         # Load XGB Models
         active_targets = [t for t in preprocessor.target_columns if t != 'ozone']
+        loaded_xgb_count = 0
         for target in active_targets:
             try:
                 path = os.path.join(MODELS_DIR, f"xgb_chain_{target}.pkl")
                 if os.path.exists(path):
                     with open(path, "rb") as f:
                         xgb_models[target] = pickle.load(f)
-            except:
-                print(f"Warning: XGB model for {target} not found.")
+                        loaded_xgb_count += 1
+            except Exception as e:
+                print(f"Warning: Failed to load XGB model for {target}: {e}")
         
-        # Initialize MC Dropout Predictor
+        # Initialize Predictors
         try:
-            if lstm_full and xgb_models:
+            if feature_extractor and xgb_models:
                 mc_predictor = MCDropoutPredictor(
                     lstm_model=lstm_full,
                     feature_extractor=feature_extractor,
@@ -109,11 +115,13 @@ def load_models_lazy():
             print("[CRITICAL] feature_extractor failed to initialize!")
         if not xgb_models:
             print("[CRITICAL] No XGB models were loaded!")
-        if mc_predictor is None:
-            print("[CRITICAL] mc_predictor failed to initialize!")
-            
-        models_loaded = True
-        print(f"Model initialization complete. Success status: {not (feature_extractor is None)}")
+        
+        # Only set loaded if critical components are present
+        if feature_extractor and xgb_models:
+            models_loaded = True
+            print("Model initialization successful.")
+        else:
+            print("Model initialization incomplete - will retry on next request.")
 
 # 1. Preprocessor fit (needs global data at startup for scalers)
 print("Initializing Preprocessor...")
@@ -428,6 +436,10 @@ def predict():
         if df_hist is None or len(df_hist) == 0:
             return jsonify({'error': 'Failed to fetch historical data'}), 500
 
+        # Verify Models are ready
+        if feature_extractor is None:
+            return jsonify({'error': 'AI Intelligence Core failed to initialize. This usually happens during server spin-up. Please try again in 30 seconds.'}), 503
+
         # Continuous timeline logic
         df_hist['date'] = pd.to_datetime(df_hist['date'])
         df_fore['date'] = pd.to_datetime(df_fore['date'])
@@ -488,8 +500,9 @@ def predict():
             # Entire 7-day forecast in ONE vectorized call
             mc_batch_results = mc_predictor.predict_with_uncertainty(X_lstm_batch, base_feat_list)
             
-            # For non-PM variables, we still need standard predictions (could be vectorized too, but they're fast)
             # Embedding extraction for standard path (one pass for all 7 days)
+            if feature_extractor is None:
+                raise ValueError("Neural Feature Extractor not initialized")
             embeddings_batch = feature_extractor.predict(X_lstm_batch, verbose=0)
             
             for i in range(forecast_days):
@@ -528,6 +541,8 @@ def predict():
 
         else:
             # Fallback for Quantile/Conformal/Standard (Looping standard is still fast)
+            if feature_extractor is None:
+                raise ValueError("Neural Feature Extractor not initialized")
             embeddings_batch = feature_extractor.predict(X_lstm_batch, verbose=0)
             for i in range(forecast_days):
                 day_res = {'date': target_dates[i]}
