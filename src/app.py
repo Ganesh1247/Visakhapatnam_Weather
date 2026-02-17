@@ -385,9 +385,16 @@ def login_password():
         return jsonify({'success': True, 'message': 'Login successful', 'redirect': True})
     return jsonify({'error': 'Invalid username or password'}), 401
 
+@app.route('/continue-guest', methods=['GET'])
+def continue_guest():
+    session['guest_access'] = True
+    session.pop('user_email', None)
+    return redirect(url_for('index'))
+
 @app.route('/logout', methods=['GET'])
 def logout():
     session.pop('user_email', None)
+    session.pop('guest_access', None)
     return redirect(url_for('login_page'))
 
 @app.route('/')
@@ -405,85 +412,35 @@ def predict():
         
         method = request.args.get('method', 'mc_dropout')
         
-        # Check Cache (only if method is mc_dropout for now, or key it by method)
+        # 1. Caching Check (Method-specific)
         cache_key = f'forecast_{method}'
-        # We need to change cache structure or just bypass cache for non-default methods for now
-        # Or simplistic: clear cache if method changes? No.
-        # Let's bypass cache if method is not default, or update cache key logic.
-        
-        # For this demo, let's keep cache simple: caching only default 'mc_dropout'.
-        if method == 'mc_dropout':
-             with forecast_cache['lock']:
-                now = time.time()
-                if forecast_cache['data'] and (now - forecast_cache['last_updated'] < CACHE_DURATION):
-                    print("Serving from cache.")
-                    return jsonify(forecast_cache['data'])
+        with forecast_cache['lock']:
+            now = time.time()
+            if forecast_cache.get(cache_key) and (now - forecast_cache.get(f'{cache_key}_time', 0) < CACHE_DURATION):
+                print(f"Serving {method} from cache.")
+                return jsonify(forecast_cache[cache_key])
 
-        # If not cached or expired, compute.
-        # Fetch Data
+        # 2. Data Fetching & Preparation
         hist_json, fore_json = fetch_weather_data()
-        
         df_hist = parse_meteo(hist_json)
         df_fore = parse_meteo(fore_json)
         
         if df_hist is None or len(df_hist) == 0:
-            return jsonify({'error': 'Failed to fetch historical data (Open-Meteo Archive empty)'}), 500
+            return jsonify({'error': 'Failed to fetch historical data'}), 500
 
-        # Combine Data: [Past Archive] + [Forecast as filler] + [Future 7]
-        # Open-Meteo Archive has a 2-day delay.
-        # df_hist usually ends 2 days ago.
-        # df_fore starts today.
-        # missing_days = [Yesterday, Today]
-        
-        # Ensure 'date' is datetime objects for comparison
+        # Continuous timeline logic
         df_hist['date'] = pd.to_datetime(df_hist['date'])
         df_fore['date'] = pd.to_datetime(df_fore['date'])
-        
-        last_hist_date = df_hist['date'].iloc[-1]
-        first_fore_date = df_fore['date'].iloc[0]
-        
-        # Missing data filler: from forecast API but for the dates between hist and fore
-        # Usually this covers 'Yesterday' if history ends 2 days ago.
-        df_gap_filler = df_fore[df_fore['date'] < first_fore_date] # Usually empty based on Open-Meteo behavior
-        
-        # Correct approach:
-        # We need a continuous timeline. 
-        # Archive might end at T-2. Forecast starts at T. 
-        # We use Archive for up to T-2.
-        # We use the 'forecast' API for T-1, T, T+1... 
-        # Wait, the forecast API usually includes 'today' and maybe 'yesterday' in some configurations.
-        # Let's check our diagnostic. Diagnostic showed: 2026-02-09 (Archive) and 2026-02-11 (Forecast).
-        # So 2026-02-10 is missing.
-        
-        # Simple fix: Use the forecast data for everything it provides, and history for the rest.
         df_combined_full = pd.concat([df_hist, df_fore], ignore_index=True)
         df_combined_full = df_combined_full.drop_duplicates(subset=['date']).sort_values('date').reset_index(drop=True)
-        
-        # Interpolate missing days if any (like Feb 10)
         df_combined_full = df_combined_full.set_index('date').resample('D').asfreq().reset_index()
         
-        # Fill missing weather features using interpolation or forward fill
         for col in preprocessor.weather_features:
             if col != 'season':
                 df_combined_full[col] = df_combined_full[col].interpolate(method='linear').ffill().bfill()
         
-        # Identify the start of "official" forecast (from df_fore)
-        # We want to predict for the days in df_fore future
         df_fore_future = df_fore[df_fore['date'] >= pd.to_datetime(datetime.now().date())].reset_index(drop=True)
-        
-        # We need to ensure df_combined_full has enough history for the FIRST forecast day
-        first_forecast_date = df_fore_future.iloc[0]['date']
-        hist_before_forecast = df_combined_full[df_combined_full['date'] < first_forecast_date]
-        
-        if len(hist_before_forecast) < SEQ_LENGTH:
-            # If still insufficient, we might need a longer historical pull
-            # But let's assume the previous days in combo are enough.
-            # If not, seq_length windowing will fail later.
-            pass
-
         df_full = df_combined_full.copy()
-        
-        # Clean NaNs and Season
         df_full['date_temp'] = pd.to_datetime(df_full['date'])
         df_full['season'] = df_full['date_temp'].dt.month.apply(get_season)
         df_full = df_full.drop('date_temp', axis=1)
@@ -491,217 +448,163 @@ def predict():
         for col in preprocessor.weather_features:
             df_full[col] = df_full[col].fillna(0)
 
-        forecasts = []
-        forecast_cache_days = min(7, len(df_fore_future)) # Predict for up to 7 days
+        # 3. Batch Preparation for Vectorized Inference
+        forecast_days = min(7, len(df_fore_future))
+        X_lstm_batch = []
+        base_feat_list = []
+        target_dates = []
         
-        for i in range(forecast_cache_days):
+        for i in range(forecast_days):
             target_date = df_fore_future.iloc[i]['date']
+            target_dates.append(target_date)
             
-            # 1. Prepare LSTM Input
+            # LSTM Window
             window = df_full.iloc[i : i + SEQ_LENGTH]
             X_data = window[preprocessor.lstm_features].values
             X_scaled = preprocessor.scaler_lstm.transform(X_data)
-            X_input = X_scaled.reshape(1, SEQ_LENGTH, len(preprocessor.lstm_features))
+            X_lstm_batch.append(X_scaled)
             
-            # 2. Prepare Base Features for XGBoost
+            # Static Features for XGBoost
             target_row = df_full.iloc[i + SEQ_LENGTH]
-            
-            # Base features dict
-            feat_dict = {}
-            for col in preprocessor.lstm_features:
-                feat_dict[col] = float(target_row[col])
-                
+            feat_dict = {col: float(target_row[col]) for col in preprocessor.lstm_features}
             d = pd.to_datetime(target_date)
-            feat_dict['month'] = d.month
-            feat_dict['day_of_week'] = d.dayofweek
-            feat_dict['day'] = d.day
-            feat_dict['is_weekend'] = 1 if d.weekday() in (5, 6) else 0
-            
-            if 'wind_direction' in target_row:
-                angle_rad = np.deg2rad(float(target_row['wind_direction']))
-                feat_dict['wind_dir_sin'] = float(np.sin(angle_rad))
-                feat_dict['wind_dir_cos'] = float(np.cos(angle_rad))
-            else:
-                feat_dict['wind_dir_sin'] = 0.0
-                feat_dict['wind_dir_cos'] = 0.0
+            feat_dict.update({
+                'month': d.month,
+                'day_of_week': d.dayofweek,
+                'day': d.day,
+                'is_weekend': 1 if d.weekday() in (5, 6) else 0,
+                'wind_dir_sin': float(np.sin(np.deg2rad(float(target_row['wind_direction'])))),
+                'wind_dir_cos': float(np.cos(np.deg2rad(float(target_row['wind_direction'])))),
+                'pressure_delta': float(target_row['pressure']) - float(df_full.iloc[i + SEQ_LENGTH - 1]['pressure'])
+            })
+            base_feat_list.append(feat_dict)
 
-            if 'pressure' in df_full.columns:
-                prev_row = df_full.iloc[i + SEQ_LENGTH - 1]
-                try:
-                    pressure_delta = float(target_row['pressure']) - float(prev_row['pressure'])
-                except:
-                    pressure_delta = 0.0
-                feat_dict['pressure_delta'] = pressure_delta
-            else:
-                feat_dict['pressure_delta'] = 0.0
+        X_lstm_batch = np.array(X_lstm_batch) # (7, 14, 10)
+
+        # 4. Vectorized Inference
+        forecasts = []
+        
+        if method == 'mc_dropout' and mc_predictor:
+            # Entire 7-day forecast in ONE vectorized call
+            mc_batch_results = mc_predictor.predict_with_uncertainty(X_lstm_batch, base_feat_list)
             
-            # 3. Uncertainty Inference (Method Selection)
-            day_result = {'date': target_date}
-            bias = get_bias_correction(target_date)
+            # For non-PM variables, we still need standard predictions (could be vectorized too, but they're fast)
+            # Embedding extraction for standard path (one pass for all 7 days)
+            embeddings_batch = feature_extractor.predict(X_lstm_batch, verbose=0)
             
-            # Helper to finalize standard prediction
-            def run_standard_predict(day_result):
-                global feature_extractor, xgb_models, active_targets, preprocessor
+            for i in range(forecast_days):
+                res = mc_batch_results[i]
+                day_res = {'date': target_dates[i]}
                 
-                if feature_extractor is None:
-                    raise ValueError("feature_extractor is not initialized")
-                
-                # Predict Embeddings
-                embeddings = feature_extractor.predict(X_input, verbose=0)
-                # ... (Standard XGB Feature Construction) ...
-                # Reuse code logic effectively...
-                # Note: This block is getting large. For production, refactor into helper function.
-                # Inline for now to minimize risk of breaking during refactor.
-                
-                feat_dict_std = feat_dict.copy()
-                for j in range(embeddings.shape[1]):
-                    feat_dict_std[f'emb_{j}'] = float(embeddings[0][j])
-                
-                # Define the exact feature names and order expected by XGBoost models
+                # Standard weather predictions
                 XGB_FEATURE_NAMES = [f'emb_{j}' for j in range(32)] + \
                                   preprocessor.lstm_features + \
                                   ['month', 'day_of_week', 'day', 'is_weekend', 'wind_dir_sin', 'wind_dir_cos', 'pressure_delta']
-
-                X_xgb_std = pd.DataFrame([feat_dict_std])[XGB_FEATURE_NAMES].astype('float32')
                 
+                # Consolidate feature dict and ensure all values are floats
+                feat_dict_std = base_feat_list[i].copy()
+                for j in range(32): 
+                    feat_dict_std[f'emb_{j}'] = float(embeddings_batch[i][j])
+                
+                # Create DataFrame with exact column names and float32 type
+                X_xgb = pd.DataFrame([feat_dict_std])[XGB_FEATURE_NAMES].astype('float32')
+                
+                # Non-PM Targets
+                for target in active_targets:
+                    if target not in ['pm2_5', 'pm10'] and target in xgb_models:
+                        day_res[target] = xgb_models[target].predict(X_xgb)[0]
+                
+                # PM Targets with MC Dropout Uncertainty
+                bias = get_bias_correction(target_dates[i])
+                for target in ['pm2_5', 'pm10']:
+                    if target in res:
+                        day_res[target] = res[target]['prediction'] + bias
+                        unc = res[target]['uncertainty'].copy()
+                        unc['confidence_90'] = [round(x + bias, 2) for x in unc['confidence_90']]
+                        unc['confidence_95'] = [round(x + bias, 2) for x in unc['confidence_95']]
+                        day_res[f'{target}_uncertainty'] = unc
+                
+                forecasts.append(day_res)
+
+        else:
+            # Fallback for Quantile/Conformal/Standard (Looping standard is still fast)
+            embeddings_batch = feature_extractor.predict(X_lstm_batch, verbose=0)
+            for i in range(forecast_days):
+                day_res = {'date': target_dates[i]}
+                bias = get_bias_correction(target_dates[i])
+                
+                feat_dict_std = base_feat_list[i].copy()
+                for j in range(32): 
+                    feat_dict_std[f'emb_{j}'] = float(embeddings_batch[i][j])
+                
+                XGB_FEATURE_NAMES = [f'emb_{j}' for j in range(32)] + \
+                                  preprocessor.lstm_features + \
+                                  ['month', 'day_of_week', 'day', 'is_weekend', 'wind_dir_sin', 'wind_dir_cos', 'pressure_delta']
+                
+                X_xgb = pd.DataFrame([feat_dict_std])[XGB_FEATURE_NAMES].astype('float32')
+                
+                # Standard Forward
                 for target in active_targets:
                     if target in xgb_models:
-                        try:
-                            if target in preprocessor.pm_targets:
-                                val = np.expm1(xgb_models[target].predict(X_xgb_std)[0])
-                                val = max(0, val) + bias
-                                day_result[target] = val
-                                if target == 'pm10': pm10_val = val
-                                if target == 'pm2_5': pm25_val = val
-                            else:
-                                val = xgb_models[target].predict(X_xgb_std)[0]
-                                day_result[target] = val
-                        except: pass
+                        val = xgb_models[target].predict(X_xgb)[0]
+                        if target in ['pm2_5', 'pm10']:
+                            val = np.expm1(val) + bias
+                        day_res[target] = max(0, val)
                 
-                return day_result, X_xgb_std # Return X_xgb_std for quantile if needed
+                # Add specialized uncertainty if needed
+                if method == 'quantile' and quantile_predictor:
+                    q_res = quantile_predictor.predict(X_xgb, bias)
+                    for target in ['pm2_5', 'pm10']:
+                        if target in q_res:
+                            day_res[target] = q_res[target]['prediction']
+                            day_res[f'{target}_uncertainty'] = q_res[target]['uncertainty']
+                elif method == 'conformal' and conformal_predictor:
+                   for target in ['pm2_5', 'pm10']:
+                        val = day_res.get(target)
+                        if val is not None:
+                            day_res[f'{target}_uncertainty'] = conformal_predictor.predict(val, target)
+                
+                forecasts.append(day_res)
 
-            # Dispatch
-            if method == 'mc_dropout' and mc_predictor:
-                # MC Dropout Logic
-                mc_out = mc_predictor.predict_with_uncertainty(X_input, feat_dict)
-                
-                # We still need standard prediction for weather variables not covered by MC
-                # So let's run standard first (it's fast) then overwrite PM
-                day_result, _ = run_standard_predict(day_result)
-                
-                for target in ['pm2_5', 'pm10']:
-                    if target in mc_out:
-                         res = mc_out[target]
-                         val = res['prediction'] + bias
-                         unc = res['uncertainty'].copy()
-                         unc['confidence_90'] = [round(x + bias, 2) for x in unc['confidence_90']]
-                         unc['confidence_95'] = [round(x + bias, 2) for x in unc['confidence_95']]
-                         day_result[target] = val
-                         day_result[f'{target}_uncertainty'] = unc
-            
-            elif method == 'quantile' and quantile_predictor:
-                # Quantile Regression Logic
-                 # 1. We need Features + Embeddings (Single Pass)
-                day_result, X_xgb_std = run_standard_predict(day_result)
-                
-                # 2. Get Quantiles
-                # We need embeddings in X_xgb. `run_standard_predict` creates it.
-                # But we need it OUTSIDE.
-                # Refactored `run_standard_predict` to return `X_xgb_std`.
-                
-                q_out = quantile_predictor.predict(X_xgb_std, bias)
-                
-                for target in ['pm2_5', 'pm10']:
-                    if target in q_out:
-                        # Overwrite PM with median? Or keep standard mean?
-                        # Quantile median is robust. Let's use it.
-                        res = q_out[target]
-                        # Bias already applied in predict() of QuantileRegressor
-                        
-                        day_result[target] = res['prediction']
-                        # QuantileRegressor returns 'confidence_90'
-                        day_result[f'{target}_uncertainty'] = res['uncertainty']
-
-                        day_result[f'{target}_uncertainty'] = res['uncertainty']
-
-            elif method == 'conformal' and conformal_predictor:
-                # Conformal Prediction Logic
-                # 1. Standard Prediction
-                day_result, _ = run_standard_predict(day_result)
-                
-                # 2. Apply Conformal Intervals
-                for target in ['pm2_5', 'pm10']:
-                    val = day_result.get(target)
-                    if val is not None:
-                        # Conformal Interval is [val - q, val + q]
-                        # Bias is already included in 'val' inside run_standard_predict
-                        res = conformal_predictor.predict(val, target)
-                        if res:
-                             day_result[f'{target}_uncertainty'] = res
-
-            else:
-                 # Default / Fallback Standard
-                 day_result, _ = run_standard_predict(day_result)
-
-            # Guardrails (PM2.5 vs PM10)
-            pm25_val = day_result.get('pm2_5', 0)
-            pm10_val = day_result.get('pm10', 0)
-            
-            if pm25_val > pm10_val:
-                pm25_val = pm10_val
-            if pm25_val < 0.25 * pm10_val:
-                pm25_val = 0.25 * pm10_val
-                
-            day_result['pm2_5'] = round(pm25_val, 2)
-            day_result['pm10'] = round(pm10_val, 2)
-            
-            # Rounding & Conversion for other values
-            for k, v in day_result.items():
+        # 5. Final Post-processing & Guardrails
+        for day in forecasts:
+            pm25 = day.get('pm2_5', 0)
+            pm10 = day.get('pm10', 0)
+            if pm25 > pm10: pm25 = pm10
+            if pm25 < 0.25 * pm10: pm25 = 0.25 * pm10
+            day['pm2_5'] = round(pm25, 2)
+            day['pm10'] = round(pm10, 2)
+            for k, v in day.items():
                 if isinstance(v, (float, np.float32, np.float64)) and not k.endswith('_uncertainty'):
-                    day_result[k] = round(float(v), 2)
-                if isinstance(v, (int, np.int32, np.int64)):
-                    day_result[k] = int(v)
-            
-            forecasts.append(day_result)
+                    day[k] = round(float(v), 2)
 
-        # Response construction
+        # 6. Response Construction
         main_pred = forecasts[0]
-        
-        # AQI Logic
         pm25 = main_pred['pm2_5']
         aqi_status = "Good"
         aqi_color = "#00e400"
-        if pm25 > 30: 
-            aqi_status = "Satisfactory"
-            aqi_color = "#ffff00"
-        if pm25 > 60:
-            aqi_status = "Moderate"
-            aqi_color = "#ff7e00"
-        if pm25 > 90:
-            aqi_status = "Poor"
-            aqi_color = "#ff0000"
-        if pm25 > 120:
-            aqi_status = "Very Poor"
-            aqi_color = "#99004c"
-            
-        aqi_recommendations = get_aqi_recommendations(pm25, aqi_status)
+        if pm25 > 30: aqi_status = "Satisfactory"; aqi_color = "#ffff00"
+        if pm25 > 60: aqi_status = "Moderate"; aqi_color = "#ff7e00"
+        if pm25 > 90: aqi_status = "Poor"; aqi_color = "#ff0000"
+        if pm25 > 120: aqi_status = "Very Poor"; aqi_color = "#99004c"
         
         response = {
-            'prediction_date': main_pred['date'],
+            'prediction_date': main_pred['date'].strftime('%Y-%m-%d'),
             'data': main_pred,
-            'aqi': {'status': aqi_status, 'color': aqi_color, 'recommendations': aqi_recommendations},
-            'forecast': forecasts
+            'aqi': {'status': aqi_status, 'color': aqi_color, 'recommendations': get_aqi_recommendations(pm25, aqi_status)},
+            'forecast': [{**d, 'date': d['date'].strftime('%Y-%m-%d')} for d in forecasts]
         }
         
-        # Update Cache
         with forecast_cache['lock']:
-            forecast_cache['data'] = response
-            forecast_cache['last_updated'] = time.time()
+            forecast_cache[cache_key] = response
+            forecast_cache[f'{cache_key}_time'] = time.time()
             
         return jsonify(response)
         
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error in predict: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/stats', methods=['GET'])

@@ -116,10 +116,10 @@ def send_otp_email(email, otp):
         return True  # Still return success so login works
 
 def login_required(f):
-    """Decorator to protect routes"""
+    """Decorator to protect routes - allows registered users or guest sessions"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_email' not in session:
+        if 'user_email' not in session and not session.get('guest_access'):
             return redirect(url_for('login_page'))
         return f(*args, **kwargs)
     return decorated_function
