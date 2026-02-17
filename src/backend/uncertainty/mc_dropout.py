@@ -48,95 +48,82 @@ class MCDropoutPredictor:
         self.n_iter = n_iter
         self.validator = UncertaintyValidator()
 
-    def predict_with_uncertainty(self, X_lstm: np.ndarray, base_feat_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def predict_with_uncertainty(self, X_lstm_batch: np.ndarray, base_feat_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Run MC Dropout inference.
+        Run MC Dropout inference for a BATCH of days.
         
         Args:
-            X_lstm: Input tensor for LSTM (1, Seq_Len, Features)
-            base_feat_dict: Dictionary of static features (Time, Weather) for XGBoost
+            X_lstm_batch: Input tensor for LSTM (Batch_Size, Seq_Len, Features)
+            base_feat_list: List of dictionaries of static features for each day in batch
             
         Returns:
-            Dict containing mean prediction and uncertainty metrics.
+            List of Dicts containing mean prediction and uncertainty metrics for each day.
         """
+        batch_size = X_lstm_batch.shape[0]
+        embedding_dim = 32 # Based on model architecture
         
-        # 1. MC Dropout Forward Pass (LSTM)
-        # We must repeat the input to batch it, or run a loop. Batching is faster.
-        # Create a batch of size n_iter
-        X_tiled = np.tile(X_lstm, (self.n_iter, 1, 1))
+        # 1. MC Dropout Forward Pass (LSTM) - Vectorized across Batch and Iterations
+        # Repeat each day n_iter times: [D1, D1, ..., D2, D2, ..., DN, DN]
+        X_tiled = np.repeat(X_lstm_batch, self.n_iter, axis=0) # Shape: (batch_size * n_iter, Seq_Len, Features)
         
         # Force training=True to enable Dropout
-        # shape: (n_iter, embedding_dim)
+        # mc_embeddings shape: (batch_size * n_iter, 32)
         mc_embeddings = self.feature_extractor(X_tiled, training=True).numpy()
         
-        # 2. Process each embedding through XGBoost
-        # This is the tricky part: XGBoost is not a tensor model, so we might need to loop 
-        # or construct a large DataFrame. DataFrame overhead is high, so let's try to optimize.
-        
-        # Construct XGBoost Feature Matrix for ALL iterations at once
-        # Base features are constant across iterations
-        
-        # Create DataFrame for all iterations
-        # Columns: [emb_0...emb_31] + [weather...] + [time...]
-        
-        # Feature Names
-        xgb_feature_names = [f'emb_{j}' for j in range(mc_embeddings.shape[1])] + \
+        # 2. Construct XGBoost Feature Matrix for ALL days and ALL iterations
+        # IMPORTANT: Order must match the models exactly: 32 embeddings + 10 weather + 7 time/derived
+        xgb_feature_names = [f'emb_{j}' for j in range(embedding_dim)] + \
                             self.preprocessor.lstm_features + \
                             ['month', 'day_of_week', 'day', 'is_weekend', 'wind_dir_sin', 'wind_dir_cos', 'pressure_delta']
                             
-        n_rows = self.n_iter
+        total_rows = batch_size * self.n_iter
+        X_xgb_np = np.zeros((total_rows, len(xgb_feature_names)), dtype=np.float32)
         
-        # Embeddings part
-        X_xgb_np = np.zeros((n_rows, len(xgb_feature_names)), dtype=np.float32)
-        X_xgb_np[:, :mc_embeddings.shape[1]] = mc_embeddings
+        # Fill Embeddings
+        X_xgb_np[:, :embedding_dim] = mc_embeddings
         
-        # Static features part (fill the rest)
-        # Map feature name to index
+        # Fill static features for each day in the batch
+        # Map each feature name to its column index for reliable assignment
         feat_map = {name: i for i, name in enumerate(xgb_feature_names)}
         
-        start_static = mc_embeddings.shape[1]
-        
-        # Fill static features efficiently
-        for col, val in base_feat_dict.items():
-            if col in feat_map:
-                col_idx = feat_map[col]
-                X_xgb_np[:, col_idx] = float(val)
+        for i, feat_dict in enumerate(base_feat_list):
+            start_row = i * self.n_iter
+            end_row = (i + 1) * self.n_iter
+            for col, val in feat_dict.items():
+                if col in feat_map:
+                    # Explicit conversion to float32 to match expectations
+                    X_xgb_np[start_row:end_row, feat_map[col]] = np.float32(val)
 
-        # Convert to DataFrame (XGBoost expects DMatrix or DataFrame with correct names)
-        # Using DataFrame with correct column names is safer for feature mapping
-        X_xgb_df = pd.DataFrame(X_xgb_np, columns=xgb_feature_names)
+        # Convert to DataFrame with explicit feature names and float32 dtype
+        # This is critical to avoid "data did not contain feature names" error
+        X_xgb_df = pd.DataFrame(X_xgb_np, columns=xgb_feature_names).astype('float32')
         
+        # 3. Predict for each target across entire batch
         predictions_map = {}
-        
-        # 3. Predict for each target
-        # Calculate uncertainty for PM2.5 and PM10 primarily
         for target in ['pm2_5', 'pm10']:
             if target in self.xgb_models:
                 model = self.xgb_models[target]
-                
-                # Predict
                 log_preds = model.predict(X_xgb_df)
-                
-                # Inverse Transform (Log -> Linear)
                 preds = np.expm1(log_preds)
-                preds = np.maximum(0, preds) 
-                
-                # Additional Bias Correction if needed (assumed handled outside or additive)
-                # If bias is additive constant, it doesn't affect variance/std, just shifts mean.
-                
-                predictions_map[target] = preds
+                preds = np.maximum(0, preds)
+                # Reshape to (batch_size, n_iter)
+                predictions_map[target] = preds.reshape(batch_size, self.n_iter)
 
-        return self._aggregate_uncertainty(predictions_map)
+        # 4. Aggregate results for each day
+        batch_results = []
+        for i in range(batch_size):
+            day_preds = {t: predictions_map[t][i] for t in predictions_map}
+            batch_results.append(self._aggregate_uncertainty(day_preds))
+            
+        return batch_results
 
     def _aggregate_uncertainty(self, predictions_map: Dict[str, np.ndarray]) -> Dict[str, Any]:
         results = {}
         
         for target, preds in predictions_map.items():
-            # Basic Stats
             mean_pred = float(np.mean(preds))
             std_dev = float(np.std(preds))
             
-            # Percentiles for CIs
             p05 = np.percentile(preds, 5)
             p95 = np.percentile(preds, 95)
             p025 = np.percentile(preds, 2.5)
@@ -152,11 +139,9 @@ class MCDropoutPredictor:
                 }
             }
             
-            # Validate
             validation_errors = self.validator.validate_prediction(mean_pred, uncertainty['uncertainty'])
             if validation_errors:
                 uncertainty['validation_errors'] = validation_errors
-                # We log but don't crash, or maybe flag it
                 print(f"Validation Warning for {target}: {validation_errors}")
                 
             results[target] = uncertainty
