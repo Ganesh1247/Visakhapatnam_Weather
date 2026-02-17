@@ -149,12 +149,12 @@ def fetch_weather_data():
     start_date = end_date - timedelta(days=SEQ_LENGTH + 5) # Pull extra just in case
     
     url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={LAT}&longitude={LON}&start_date={start_date}&end_date={end_date}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,rain_sum,wind_speed_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,surface_pressure_mean,relative_humidity_2m_mean,cloud_cover_mean&timezone=auto"
-    r_hist = requests.get(url_hist).json()
+    r_hist = requests.get(url_hist, timeout=15).json()
     
     # 2. Future Forecast (7 Days)
     # Forecast API starts from Today.
     url_fore = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,rain_sum,wind_speed_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,surface_pressure_mean,relative_humidity_2m_mean,cloud_cover_mean&forecast_days=8&timezone=auto"
-    r_fore = requests.get(url_fore).json()
+    r_fore = requests.get(url_fore, timeout=15).json()
     
     return r_hist, r_fore
 
