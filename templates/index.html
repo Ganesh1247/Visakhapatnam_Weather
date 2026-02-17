@@ -180,7 +180,8 @@
                 <!-- Sync Status Indicator -->
                 <div class="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-xl border border-white/10">
                     <div class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                    <span class="text-[9px] font-black text-white/40 uppercase tracking-[0.2em]">Engine:
+                    <span id="engine-status-text"
+                        class="text-[9px] font-black text-white/40 uppercase tracking-[0.2em]">Engine:
                         Operational</span>
                 </div>
 
@@ -832,6 +833,17 @@
 
                 const data = await res.json();
                 if (!data || !data.data) throw new Error('Fragmented Data Packet');
+
+                // Update Engine Status
+                const statusBadge = document.getElementById('aqi-status-badge');
+                const engineText = document.getElementById('engine-status-text');
+                if (data.forecast[0].engine === 'Standard (Lighter)') {
+                    if (engineText) engineText.textContent = 'Engine: Standard (Light)';
+                    statusBadge.innerHTML = 'Standard Mode <i class="ri-skip-forward-line ml-1"></i>';
+                    statusBadge.title = 'Neural engine skipped to save RAM. Certainty scores may be limited.';
+                } else {
+                    if (engineText) engineText.textContent = 'Engine: Neural Link (90%)';
+                }
 
                 // Update Hero Content
                 const tempVal = Math.round(data.data.temp_avg);

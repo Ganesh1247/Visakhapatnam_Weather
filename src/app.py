@@ -113,15 +113,22 @@ def load_models_lazy():
         # Final Verification
         if feature_extractor is None:
             print("[CRITICAL] feature_extractor failed to initialize!")
-        if not xgb_models:
-            print("[CRITICAL] No XGB models were loaded!")
-        
+            # Attempt Fallback to Standard XGB Models
+            print("Attempting to load Standard Engine (non-chain models)...")
+            for target in active_targets:
+                try:
+                    path = os.path.join(MODELS_DIR, f"xgb_{target}.pkl")
+                    if os.path.exists(path):
+                        with open(path, "rb") as f:
+                            xgb_models[f"std_{target}"] = pickle.load(f)
+                except: pass
+
         # Only set loaded if critical components are present
-        if feature_extractor and xgb_models:
+        if (feature_extractor and xgb_models) or (len([k for k in xgb_models if k.startswith('std_')]) > 0):
             models_loaded = True
-            print("Model initialization successful.")
+            print("Model initialization finished (with fallbacks if needed).")
         else:
-            print("Model initialization incomplete - will retry on next request.")
+            print("Model initialization failed completely.")
 
 # 1. Preprocessor fit (needs global data at startup for scalers)
 print("Initializing Preprocessor...")
@@ -437,8 +444,12 @@ def predict():
             return jsonify({'error': 'Failed to fetch historical data'}), 500
 
         # Verify Models are ready
-        if feature_extractor is None:
-            return jsonify({'error': 'AI Intelligence Core failed to initialize. This usually happens during server spin-up. Please try again in 30 seconds.'}), 503
+        if feature_extractor is None and not any(k.startswith('std_') for k in xgb_models):
+            return jsonify({
+                'error': 'AI Intelligence Core failed to initialize.',
+                'status': 'off',
+                'suggestion': 'Check Render logs for [CRITICAL] messages. Ensure models/ folder is complete.'
+            }), 503
 
         # Continuous timeline logic
         df_hist['date'] = pd.to_datetime(df_hist['date'])
@@ -578,6 +589,21 @@ def predict():
                         val = day_res.get(target)
                         if val is not None:
                             day_res[f'{target}_uncertainty'] = conformal_predictor.predict(val, target)
+                
+                # Standard Fallback logic for when Neural Core is missing
+                if feature_extractor is None:
+                    # Overwrite/fill using standard models if available
+                    for target in active_targets:
+                        std_key = f"std_{target}"
+                        if std_key in xgb_models:
+                            # Standard models don't need embeddings
+                            FEAT_COLS = preprocessor.lstm_features + ['month', 'day_of_week', 'day', 'is_weekend', 'wind_dir_sin', 'wind_dir_cos', 'pressure_delta']
+                            X_std = pd.DataFrame([base_feat_list[i]])[FEAT_COLS].astype('float32')
+                            val = xgb_models[std_key].predict(X_std)[0]
+                            if target in ['pm2_5', 'pm10']:
+                                val = np.expm1(val) + bias
+                            day_res[target] = round(float(max(0, val)), 2)
+                            day_res['engine'] = 'Standard (Lighter)'
                 
                 forecasts.append(day_res)
 
