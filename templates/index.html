@@ -116,61 +116,102 @@
     <!-- Premium Navigation -->
     <nav class="fixed top-0 w-full z-50 backdrop-blur-xl border-b border-white/5 transition-all duration-300"
         id="navbar">
-        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between relative z-50">
             <!-- Brand -->
-            <div class="flex items-center gap-4 group cursor-pointer">
+            <div class="flex items-center gap-4 group cursor-pointer" onclick="location.reload()">
                 <div class="relative">
                     <div
-                        class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-400 to-indigo-600 flex items-center justify-center shadow-lg shadow-brand-500/20 group-hover:rotate-12 transition-transform duration-500">
-                        <i class="ri-leaf-line text-2xl text-white"></i>
-                    </div>
-                    <div
-                        class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-[#030712] animate-pulse">
+                        class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-brand-400 to-indigo-600 flex items-center justify-center shadow-lg shadow-brand-500/20 group-hover:rotate-12 transition-transform duration-500">
+                        <i class="ri-leaf-line text-xl sm:text-2xl text-white"></i>
                     </div>
                 </div>
                 <div>
                     <h1
-                        class="font-heading font-bold text-2xl tracking-tighter text-white group-hover:text-brand-400 transition-colors">
+                        class="font-heading font-bold text-xl sm:text-2xl tracking-tighter text-white group-hover:text-brand-400 transition-colors">
                         EcoGlance</h1>
-                    <div class="flex items-center gap-2">
-                        <span class="text-[10px] font-bold text-brand-500 uppercase tracking-[0.2em]">NextGen AI</span>
-                        <div class="h-1 w-1 rounded-full bg-white/20"></div>
-                        <span
-                            class="text-[10px] font-medium text-white/40 uppercase tracking-[0.1em]">Visakhapatnam</span>
-                    </div>
                 </div>
             </div>
 
-            <!-- Controls -->
-            <div class="flex items-center gap-4">
-                <!-- Method Badge (Modern Select) -->
-                <div class="hidden lg:flex items-center bg-white/5 border border-white/10 rounded-2xl p-1 gap-1">
-                    <button onclick="setMethod('mc_dropout')" id="btn-mc"
-                        class="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:bg-white/10 text-white/60 active">MC
-                        Dropout</button>
-                    <button onclick="setMethod('quantile')" id="btn-quantile"
-                        class="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:bg-white/10 text-white/60">Quantile</button>
-                    <button onclick="setMethod('conformal')" id="btn-conformal"
-                        class="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:bg-white/10 text-white/60">Conformal</button>
-                </div>
+            <!-- Header Actions -->
+            <div class="flex items-center gap-2 sm:gap-4">
+                <!-- Desktop Controls -->
+                <div class="hidden lg:flex items-center gap-4">
+                    <div class="flex items-center bg-white/5 border border-white/10 rounded-2xl p-1 gap-1">
+                        <button onclick="setMethod('mc_dropout')" id="btn-mc"
+                            class="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:bg-white/10 text-white/60">MC
+                            Dropout</button>
+                        <button onclick="setMethod('quantile')" id="btn-quantile"
+                            class="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:bg-white/10 text-white/60">Quantile</button>
+                        <button onclick="setMethod('conformal')" id="btn-conformal"
+                            class="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:bg-white/10 text-white/60">Conformal</button>
+                    </div>
 
-                <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-2xl p-1">
                     <button onclick="fetchPrediction()"
-                        class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-white/60 hover:text-white transition-all">
+                        class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white transition-all">
                         <i class="ri-refresh-line text-lg"></i>
                     </button>
                     <button onclick="document.getElementById('stats-modal').classList.remove('hidden')"
-                        class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-white/60 hover:text-white transition-all">
+                        class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white transition-all">
                         <i class="ri-bar-chart-box-line text-lg"></i>
+                    </button>
+
+                    <div class="h-8 w-px bg-white/10 mx-2"></div>
+
+                    <a href="/logout"
+                        class="flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-sm font-bold text-white/80 hover:bg-white/10 hover:border-white/20 transition-all group">
+                        <span>Sign Out</span>
+                        <i
+                            class="ri-logout-box-r-line group-hover:translate-x-1 transition-transform text-brand-400"></i>
+                    </a>
+                </div>
+
+                <!-- Mobile Menu Toggle -->
+                <button onclick="toggleMobileMenu()"
+                    class="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white">
+                    <i class="ri-menu-4-line text-2xl" id="menu-icon"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu"
+            class="hidden lg:hidden border-t border-white/5 bg-[#030712]/95 backdrop-blur-2xl absolute top-full left-0 w-full opacity-0 translate-y-[-10px] transition-all duration-300 z-40">
+            <div class="p-6 space-y-6">
+                <!-- Sync Status Indicator -->
+                <div class="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-xl border border-white/10">
+                    <div class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                    <span class="text-[9px] font-black text-white/40 uppercase tracking-[0.2em]">Engine:
+                        Operational</span>
+                </div>
+
+                <div class="space-y-3">
+                    <p class="text-[10px] font-black text-white/20 uppercase tracking-widest ml-1">Prediction Core</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setMethod('mc_dropout'); toggleMobileMenu()" id="btn-mc-mob"
+                            class="py-3 rounded-xl bg-white/5 text-[10px] font-bold text-white/60 border border-white/5">MC
+                            Dropout</button>
+                        <button onclick="setMethod('quantile'); toggleMobileMenu()" id="btn-quantile-mob"
+                            class="py-3 rounded-xl bg-white/5 text-[10px] font-bold text-white/60 border border-white/5">Quantile</button>
+                        <button onclick="setMethod('conformal'); toggleMobileMenu()" id="btn-conformal-mob"
+                            class="py-3 rounded-xl bg-white/5 text-[10px] font-bold text-white/60 border border-white/5">Conformal</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="fetchPrediction(); toggleMobileMenu()"
+                        class="flex items-center justify-center gap-3 py-4 rounded-2xl bg-brand-500/10 border border-brand-500/20 text-brand-400 font-bold text-sm">
+                        <i class="ri-refresh-line"></i> Sync Data
+                    </button>
+                    <button
+                        onclick="document.getElementById('stats-modal').classList.remove('hidden'); toggleMobileMenu()"
+                        class="flex items-center justify-center gap-3 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-sm">
+                        <i class="ri-bar-chart-box-line"></i> Diagnostics
                     </button>
                 </div>
 
-                <div class="h-8 w-px bg-white/10 mx-2"></div>
-
                 <a href="/logout"
-                    class="flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-sm font-bold text-white/80 hover:bg-white/10 hover:border-white/20 transition-all group">
-                    <span>Sign Out</span>
-                    <i class="ri-logout-box-r-line group-hover:translate-x-1 transition-transform text-brand-400"></i>
+                    class="flex items-center justify-center gap-3 py-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 font-bold text-sm">
+                    <i class="ri-logout-box-r-line"></i> Sign Out
                 </a>
             </div>
         </div>
@@ -195,78 +236,86 @@
             <!-- Hero Card: Current Weather -->
             <div class="lg:col-span-8 group">
                 <div
-                    class="glass-panel rounded-[40px] p-10 h-full relative overflow-hidden transition-all duration-500 hover:border-white/20">
+                    class="glass-panel rounded-[40px] p-6 sm:p-10 h-full relative overflow-hidden transition-all duration-500 hover:border-white/20">
                     <div class="relative z-10 h-full flex flex-col justify-between">
-                        <div class="flex justify-between items-start">
+                        <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
                             <div>
-                                <div class="flex items-center gap-3 mb-6">
+                                <div class="flex items-center gap-3 mb-4 sm:mb-6">
                                     <span
                                         class="px-4 py-1.5 rounded-full bg-brand-500/20 text-brand-400 text-[10px] font-black uppercase tracking-widest border border-brand-500/30">Live
                                         Now</span>
                                     <span class="text-white/40 text-[11px] font-bold uppercase tracking-widest"
                                         id="current-date">--</span>
                                 </div>
-                                <div class="flex items-center gap-6">
-                                    <h2 class="text-[120px] font-heading font-bold text-white leading-none tracking-tighter text-glow"
+                                <div class="flex items-center gap-4 sm:gap-6">
+                                    <h2 class="text-7xl sm:text-[120px] font-heading font-bold text-white leading-none tracking-tighter text-glow"
                                         id="temp-main">--°</h2>
                                     <div class="space-y-1">
-                                        <p class="text-2xl font-bold text-white/90" id="weather-desc">--</p>
-                                        <p class="text-sm text-white/40 font-medium">Feels like <span id="feels-like"
-                                                class="text-white/60">--°</span></p>
+                                        <p class="text-xl sm:text-2xl font-bold text-white/90" id="weather-desc">--</p>
+                                        <p class="text-xs sm:text-sm text-white/40 font-medium">Feels like <span
+                                                id="feels-like" class="text-white/60">--°</span></p>
                                     </div>
                                 </div>
                             </div>
-                            <div class="text-[160px] filter drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] animate-pulse-slow transition-transform hover:scale-110 duration-700"
+                            <div class="text-9xl sm:text-[160px] filter drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] animate-pulse-slow transition-transform hover:scale-110 duration-700 mx-auto sm:mx-0"
                                 id="weather-icon-main">
                                 ☀️
                             </div>
                         </div>
 
                         <!-- Weather Detail Grid -->
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
-                            <div class="glass-card rounded-3xl p-5">
-                                <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-3">Humidity
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-8 sm:mt-12">
+                            <div class="glass-card rounded-3xl p-4 sm:p-5">
+                                <p
+                                    class="text-[9px] sm:text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-3">
+                                    Humidity
                                 </p>
-                                <div class="flex items-center gap-3">
+                                <div class="flex items-center gap-2 sm:gap-3">
                                     <div
-                                        class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">
+                                        class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">
                                         <i class="ri-drop-fill text-lg"></i>
                                     </div>
-                                    <span class="text-xl font-bold text-white/90" id="humidity-detail">--%</span>
+                                    <span class="text-lg sm:text-xl font-bold text-white/90"
+                                        id="humidity-detail">--%</span>
                                 </div>
                             </div>
-                            <div class="glass-card rounded-3xl p-5">
-                                <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-3">Wind
+                            <div class="glass-card rounded-3xl p-4 sm:p-5">
+                                <p
+                                    class="text-[9px] sm:text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-3">
+                                    Wind
                                     Speed</p>
-                                <div class="flex items-center gap-3">
+                                <div class="flex items-center gap-2 sm:gap-3">
                                     <div
-                                        class="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center text-cyan-400">
+                                        class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center text-cyan-400">
                                         <i class="ri-windy-line text-lg"></i>
                                     </div>
-                                    <span class="text-xl font-bold text-white/90" id="wind-detail">--</span>
+                                    <span class="text-lg sm:text-xl font-bold text-white/90" id="wind-detail">--</span>
                                 </div>
                             </div>
-                            <div class="glass-card rounded-3xl p-5">
-                                <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-3">Pressure
+                            <div class="glass-card rounded-3xl p-4 sm:p-5">
+                                <p
+                                    class="text-[9px] sm:text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-3">
+                                    Pressure
                                 </p>
-                                <div class="flex items-center gap-3">
+                                <div class="flex items-center gap-2 sm:gap-3">
                                     <div
-                                        class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400">
+                                        class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400">
                                         <i class="ri-speed-mini-line text-lg"></i>
                                     </div>
-                                    <span class="text-xl font-bold text-white/90">1012 <span
+                                    <span class="text-lg sm:text-xl font-bold text-white/90">1012 <span
                                             class="text-[10px] opacity-40">hPa</span></span>
                                 </div>
                             </div>
-                            <div class="glass-card rounded-3xl p-5">
-                                <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-3">Chance
-                                    of Rain</p>
-                                <div class="flex items-center gap-3">
+                            <div class="glass-card rounded-3xl p-4 sm:p-5">
+                                <p
+                                    class="text-[9px] sm:text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-3">
+                                    Rainfall</p>
+                                <div class="flex items-center gap-2 sm:gap-3">
                                     <div
-                                        class="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                        class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
                                         <i class="ri-umbrella-line text-lg"></i>
                                     </div>
-                                    <span class="text-xl font-bold text-white/90" id="rain-detail">--</span>
+                                    <span class="text-lg sm:text-xl font-bold text-white/90" id="rain-detail">--</span>
                                 </div>
                             </div>
                         </div>
@@ -326,7 +375,7 @@
             <!-- Forecast Visuals -->
             <div class="lg:col-span-8 space-y-8">
                 <!-- Trend Chart -->
-                <div class="glass-panel rounded-[40px] p-8">
+                <div class="glass-panel rounded-[40px] p-6 sm:p-8">
                     <div class="flex justify-between items-center mb-10">
                         <div class="flex items-center gap-4">
                             <div
@@ -340,7 +389,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="h-80 w-full">
+                    <div class="h-64 sm:h-80 w-full">
                         <canvas id="forecastChart"></canvas>
                     </div>
                 </div>
@@ -354,7 +403,7 @@
                         <h3 class="text-[11px] font-black text-white/40 uppercase tracking-[0.4em]">Extended Outlook
                         </h3>
                     </div>
-                    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4" id="forecast-list">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4" id="forecast-list">
                         <!-- Items injected via JS -->
                     </div>
                 </div>
@@ -381,8 +430,7 @@
                                     <h4 class="text-sm font-black text-white/90 uppercase mb-2 tracking-wide"
                                         id="rec-title">Status Check</h4>
                                     <p class="text-xs text-white/40 leading-relaxed font-medium" id="rec-summary">Our
-                                        models are currently analyzing the environmental data to provide you with
-                                        accurate safety recommendations.</p>
+                                        models are currently analyzing data...</p>
                                 </div>
                             </div>
                         </div>
@@ -394,8 +442,7 @@
                                 <ul class="space-y-3" id="rec-do">
                                     <li class="flex items-center gap-3">
                                         <div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                                        <span class="text-xs font-bold text-white/50">Computing safety
-                                            protocols...</span>
+                                        <span class="text-xs font-bold text-white/50">Computing...</span>
                                     </li>
                                 </ul>
                             </div>
@@ -411,123 +458,126 @@
                 </div>
             </div>
         </div>
-    </main>
 
-    <defs>
-        <linearGradient id="aqiGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#10b981" />
-            <stop offset="50%" stop-color="#eab308" />
-            <stop offset="100%" stop-color="#ef4444" />
-        </linearGradient>
-    </defs>
+        <defs>
+            <linearGradient id="aqiGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#10b981" />
+                <stop offset="50%" stop-color="#eab308" />
+                <stop offset="100%" stop-color="#ef4444" />
+            </linearGradient>
+        </defs>
 
-    <!-- How It Works Section -->
-    <div class="mt-12 mb-8">
-        <h3 class="text-2xl font-heading font-semibold text-center mb-8 dark:text-white text-slate-800">Model
-            Intelligence</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- MC Dropout -->
-            <div class="p-6 rounded-3xl dark:glass-panel light-panel bg-white border border-slate-200">
-                <div class="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 mb-4">
-                    <i class="ri-brain-line text-xl"></i>
+        <!-- How It Works Section -->
+        <div class="mt-20 mb-8">
+            <h3 class="text-2xl font-heading font-black text-center mb-12 text-white/90 uppercase tracking-widest">Model
+                Intelligence</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- MC Dropout -->
+                <div class="p-8 rounded-[32px] glass-panel border border-white/5">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 mb-6">
+                        <i class="ri-brain-line text-2xl"></i>
+                    </div>
+                    <h4 class="text-lg font-black mb-3 text-white">MC Dropout</h4>
+                    <p class="text-xs text-white/40 leading-relaxed font-medium">
+                        Stochastic inference that simulates multiple future scenarios by randomly sampling neural
+                        connections.
+                    </p>
+                    <div
+                        class="mt-6 text-[9px] font-black text-blue-500 uppercase tracking-widest bg-blue-500/5 py-1 px-3 rounded-full inline-block">
+                        Temporal Precision</div>
                 </div>
-                <h4 class="text-lg font-semibold mb-2 dark:text-white text-slate-800">MC Dropout</h4>
-                <p class="text-sm dark:text-gray-400 text-slate-500 leading-relaxed">
-                    Simulates multiple "possible futures" by randomly disabling neurons in the neural network to
-                    calculate uncertainty.
-                </p>
-                <div class="mt-4 text-xs font-bold text-blue-500 uppercase tracking-wide">Best For: General Weather
-                </div>
-            </div>
 
-            <!-- Quantile -->
-            <div class="p-6 rounded-3xl dark:glass-panel light-panel bg-white border border-slate-200">
-                <div
-                    class="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500 mb-4">
-                    <i class="ri-bar-chart-grouped-line text-xl"></i>
+                <!-- Quantile -->
+                <div class="p-8 rounded-[32px] glass-panel border border-white/5">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500 mb-6">
+                        <i class="ri-bar-chart-grouped-line text-2xl"></i>
+                    </div>
+                    <h4 class="text-lg font-black mb-3 text-white">Quantile Reg</h4>
+                    <p class="text-xs text-white/40 leading-relaxed font-medium">
+                        Predicts full probability distributions, highlighting the 10th-90th percentile bounds for risk.
+                    </p>
+                    <div
+                        class="mt-6 text-[9px] font-black text-purple-500 uppercase tracking-widest bg-purple-500/5 py-1 px-3 rounded-full inline-block">
+                        Distribution Analysis</div>
                 </div>
-                <h4 class="text-lg font-semibold mb-2 dark:text-white text-slate-800">Quantile Regression</h4>
-                <p class="text-sm dark:text-gray-400 text-slate-500 leading-relaxed">
-                    Predicts a median value and a confidence interval range (10th-90th percentile), making it
-                    resistant to data outliers.
-                </p>
-                <div class="mt-4 text-xs font-bold text-purple-500 uppercase tracking-wide">Best For: Robust Data
-                </div>
-            </div>
 
-            <!-- Conformal -->
-            <div class="p-6 rounded-3xl dark:glass-panel light-panel bg-white border border-slate-200">
-                <div
-                    class="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 mb-4">
-                    <i class="ri-shield-check-line text-xl"></i>
+                <!-- Conformal -->
+                <div class="p-8 rounded-[32px] glass-panel border border-white/5">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500 mb-6">
+                        <i class="ri-shield-check-line text-2xl"></i>
+                    </div>
+                    <h4 class="text-lg font-black mb-3 text-white">Conformal</h4>
+                    <p class="text-xs text-white/40 leading-relaxed font-medium">
+                        Mathematical guarantee framework ensuring the true value lies within the predicted interval.
+                    </p>
+                    <div
+                        class="mt-6 text-[9px] font-black text-orange-500 uppercase tracking-widest bg-orange-500/5 py-1 px-3 rounded-full inline-block">
+                        Statistical Safety</div>
                 </div>
-                <h4 class="text-lg font-semibold mb-2 dark:text-white text-slate-800">Conformal Prediction</h4>
-                <p class="text-sm dark:text-gray-400 text-slate-500 leading-relaxed">
-                    A rigorous statistical framework that guarantees with 90% confidence that the true value falls
-                    within the prediction.
-                </p>
-                <div class="mt-4 text-xs font-bold text-orange-500 uppercase tracking-wide">Best For: Safety
-                    Critical</div>
             </div>
         </div>
-    </div>
-
     </main>
 
     <!-- Updated Footer -->
-    <footer class="border-t dark:border-white/5 border-slate-200 dark:bg-dark-900 bg-slate-50 relative z-50">
-        <div class="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
-
-                <!-- About Section -->
-                <div>
-                    <div class="flex items-center gap-2 mb-4">
-                        <i class="ri-leaf-line text-brand-500 text-xl"></i>
-                        <span class="font-heading font-bold text-xl dark:text-white text-slate-800">EcoGlance</span>
+    <footer class="border-t border-white/5 bg-[#030712] relative z-20">
+        <div class="max-w-7xl mx-auto px-6 py-16">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 sm:gap-20">
+                <!-- About -->
+                <div class="space-y-6">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-500 to-indigo-600 flex items-center justify-center">
+                            <i class="ri-leaf-line text-white"></i>
+                        </div>
+                        <span class="font-heading font-bold text-2xl text-white">EcoGlance</span>
                     </div>
-                    <p class="text-sm dark:text-gray-400 text-slate-500 leading-relaxed">
-                        EcoGlance is a cutting-edge weather and air quality forecasting platform designed to provide
-                        accurate, hyper-local predictions. We combine advanced AI with real-time data to help you plan
-                        your day safely.
+                    <p class="text-xs text-white/30 leading-relaxed font-medium">
+                        A next-generation atmospheric intelligence platform. We utilize hybrid deep learning
+                        architectures to project environmental safety indices with scientific certainty.
                     </p>
                 </div>
 
-                <!-- Methodology Section -->
-                <div>
-                    <h4 class="font-heading font-semibold dark:text-white text-slate-800 mb-4">Methodology</h4>
-                    <p class="text-sm dark:text-gray-400 text-slate-500 leading-relaxed">
-                        Our engine utilizes a <strong>Hybrid AI Architecture</strong>. We use Long Short-Term Memory
-                        (<strong>LSTM</strong>) networks to capture temporal weather patterns, reinforced by
-                        <strong>XGBoost</strong> for residual error correction and precise feature mapping.
-                    </p>
+                <!-- Tech -->
+                <div class="space-y-6">
+                    <h4 class="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">Core Architecture</h4>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-4">
+                            <div class="w-1.5 h-1.5 rounded-full bg-brand-500"></div>
+                            <span class="text-xs font-bold text-white/60">LSTM Temporal Embeddings</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                            <span class="text-xs font-bold text-white/60">XGBoost Residual Mapping</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                            <span class="text-xs font-bold text-white/60">Bayesian Uncertainty Quant</span>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Contact Section -->
-                <div>
-                    <h4 class="font-heading font-semibold dark:text-white text-slate-800 mb-4">Contact Us</h4>
-                    <ul class="space-y-3">
-                        <li class="flex items-center gap-3 text-sm dark:text-gray-400 text-slate-500">
-                            <div
-                                class="w-8 h-8 rounded-full bg-brand-500/10 flex items-center justify-center text-brand-500">
-                                <i class="ri-phone-line"></i>
-                            </div>
-                            <span class="font-medium">+91 8790627210</span>
-                        </li>
-                        <li class="flex items-center gap-3 text-sm dark:text-gray-400 text-slate-500">
-                            <div
-                                class="w-8 h-8 rounded-full bg-brand-500/10 flex items-center justify-center text-brand-500">
-                                <i class="ri-mail-line"></i>
-                            </div>
-                            <span>support@ecoglance.ai</span>
-                        </li>
-                    </ul>
+                <!-- Contact -->
+                <div class="space-y-6">
+                    <h4 class="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">Communication</h4>
+                    <div class="space-y-3">
+                        <p class="text-sm font-bold text-white/80">+91 8790627210</p>
+                        <p class="text-sm font-bold text-brand-500">support@ecoglance.ai</p>
+                    </div>
+                    <div class="flex gap-4 pt-2">
+                        <i
+                            class="ri-github-line text-xl text-white/20 hover:text-white transition-colors cursor-pointer"></i>
+                        <i
+                            class="ri-twitter-x-line text-xl text-white/20 hover:text-white transition-colors cursor-pointer"></i>
+                    </div>
                 </div>
             </div>
 
-            <div
-                class="mt-12 pt-8 border-t dark:border-white/5 border-slate-200 text-center text-xs dark:text-gray-600 text-slate-400">
-                &copy; 2026 EcoGlance Inc. All rights reserved.
+            <div class="mt-20 pt-8 border-t border-white/5 text-center">
+                <p class="text-[9px] font-black text-white/10 uppercase tracking-[0.5em]">&copy; 2026 VSV ARCHIVE PORTAL
+                </p>
             </div>
         </div>
     </footer>
@@ -538,34 +588,35 @@
             onclick="document.getElementById('stats-modal').classList.add('hidden')"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
             <div
-                class="dark:bg-dark-800 bg-white border dark:border-white/10 border-gray-200 rounded-3xl w-full max-w-3xl transform transition-all shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-                <div
-                    class="p-6 border-b dark:border-white/10 border-gray-100 flex justify-between items-center dark:bg-dark-900/50 bg-gray-50">
-                    <h3 class="text-xl font-heading font-semibold dark:text-white text-gray-800">📊 Model Diagnostics
-                    </h3>
+                class="bg-dark-800 border border-white/10 rounded-[40px] w-full max-w-3xl transform transition-all shadow-2xl overflow-hidden flex flex-col max-h-[90vh] bg-[#0B1120]">
+                <div class="p-8 border-b border-white/10 flex justify-between items-center bg-white/5">
+                    <div>
+                        <h3 class="text-xl font-heading font-black text-white uppercase tracking-tight">Model
+                            Diagnostics</h3>
+                        <p class="text-[9px] font-black text-white/20 uppercase tracking-widest mt-1">Live Engine
+                            Performance</p>
+                    </div>
                     <button onclick="document.getElementById('stats-modal').classList.add('hidden')"
-                        class="dark:text-gray-400 text-gray-500 hover:text-red-500 transition">
-                        <i class="ri-close-circle-line text-2xl"></i>
+                        class="text-white/20 hover:text-red-500 transition">
+                        <i class="ri-close-circle-line text-3xl"></i>
                     </button>
                 </div>
-                <div class="p-6 overflow-y-auto">
-                    <p class="dark:text-gray-400 text-gray-600 text-sm mb-6">Historical performance metrics (RMSE, MAE,
-                        R²) on test set.</p>
-
-                    <div class="overflow-x-auto rounded-xl border dark:border-white/5 border-gray-200">
-                        <table class="w-full text-sm text-left dark:text-gray-400 text-gray-600">
-                            <thead
-                                class="text-xs uppercase dark:bg-white/5 bg-gray-100 dark:text-gray-200 text-gray-700">
+                <div class="p-8 overflow-y-auto">
+                    <div class="overflow-x-auto rounded-2xl border border-white/5 bg-black/20">
+                        <table class="w-full text-sm text-left text-white/60">
+                            <thead class="text-[10px] uppercase bg-white/5 text-white/40">
                                 <tr>
-                                    <th scope="col" class="px-6 py-3">Target Variable</th>
-                                    <th scope="col" class="px-6 py-3">RMSE</th>
-                                    <th scope="col" class="px-6 py-3">MAE</th>
-                                    <th scope="col" class="px-6 py-3">R² Score</th>
+                                    <th scope="col" class="px-6 py-4 font-black">Target Variable</th>
+                                    <th scope="col" class="px-6 py-4 font-black">RMSE</th>
+                                    <th scope="col" class="px-6 py-4 font-black">MAE</th>
+                                    <th scope="col" class="px-6 py-4 font-black">R² Score</th>
                                 </tr>
                             </thead>
-                            <tbody id="stats-body" class="divide-y dark:divide-white/5 divide-gray-100">
+                            <tbody id="stats-body" class="divide-y divide-white/5">
                                 <tr>
-                                    <td colspan="4" class="px-6 py-4 text-center">Loading metrics...</td>
+                                    <td colspan="4"
+                                        class="px-6 py-12 text-center text-[10px] font-black text-white/10 uppercase tracking-[0.3em]">
+                                        Querying Core Metrics...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -577,11 +628,18 @@
 
     <!-- Loading Overlay -->
     <div id="loading"
-        class="fixed inset-0 z-[200] dark:bg-dark-900/80 bg-white/80 backdrop-blur-md flex flex-col items-center justify-center transition-opacity"
+        class="fixed inset-0 z-[200] bg-[#030712]/90 backdrop-blur-xl flex flex-col items-center justify-center transition-opacity"
         style="display: none;">
-        <div class="w-16 h-16 border-4 border-brand-500/30 border-t-brand-500 rounded-full animate-spin mb-4"></div>
-        <div class="dark:text-white text-slate-800 font-heading font-medium text-lg animate-pulse">Running AI
-            Forecast...</div>
+        <div class="relative">
+            <div class="w-24 h-24 border-[6px] border-brand-500/10 border-t-brand-500 rounded-full animate-spin"></div>
+            <div class="absolute inset-0 flex items-center justify-center">
+                <i class="ri-rocket-2-line text-2xl text-brand-500 animate-pulse"></i>
+            </div>
+        </div>
+        <div class="text-white font-heading font-black text-xl mt-8 tracking-tighter animate-pulse">Running AI Forecast
+        </div>
+        <p class="text-white/20 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Connecting to Intelligence
+            Engine</p>
     </div>
 
 
@@ -592,20 +650,42 @@
         let forecastChart = null;
 
         // --- THEME & UI ---
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            const icon = document.getElementById('menu-icon');
+
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+                icon.className = 'ri-close-line text-2xl';
+                setTimeout(() => {
+                    menu.classList.add('opacity-100', 'translate-y-0');
+                    menu.classList.remove('opacity-0', 'translate-y-[-10px]');
+                }, 10);
+            } else {
+                menu.classList.add('opacity-0', 'translate-y-[-10px]');
+                menu.classList.remove('opacity-100', 'translate-y-0');
+                setTimeout(() => {
+                    menu.classList.add('hidden');
+                    icon.className = 'ri-menu-4-line text-2xl';
+                }, 300);
+            }
+        }
+
         function setMethod(method) {
             currentMethod = method;
 
-            // Update UI buttons
+            // Update UI buttons (Sync Desktop & Mobile)
             ['mc', 'quantile', 'conformal'].forEach(m => {
-                const btn = document.getElementById(`btn-${m}`);
-                if (!btn) return;
-                if (m === method.replace('_', '')) {
-                    btn.classList.add('bg-white/10', 'text-white', 'border', 'border-white/10');
-                    btn.classList.remove('text-white/60');
-                } else {
-                    btn.classList.remove('bg-white/10', 'text-white', 'border', 'border-white/10');
-                    btn.classList.add('text-white/60');
-                }
+                const btns = document.querySelectorAll(`[id^="btn-${m}"]`);
+                btns.forEach(btn => {
+                    if (m === method.replace('_', '')) {
+                        btn.classList.add('bg-white/10', 'text-white', 'border-white/20');
+                        btn.classList.remove('text-white/60');
+                    } else {
+                        btn.classList.remove('bg-white/10', 'text-white', 'border-white/20');
+                        btn.classList.add('text-white/60');
+                    }
+                });
             });
 
             fetchPrediction();
@@ -727,6 +807,7 @@
             if (pm25 > 30) { cls.bg = 'rgba(234, 179, 8, 0.1)'; cls.text = '#eab308'; }
             if (pm25 > 60) { cls.bg = 'rgba(249, 115, 22, 0.1)'; cls.text = '#f97316'; }
             if (pm25 > 90) { cls.bg = 'rgba(239, 68, 68, 0.1)'; cls.text = '#ef4444'; }
+            if (pm25 > 120) { cls.bg = 'rgba(153, 0, 76, 0.1)'; cls.text = '#99004c'; }
             return cls;
         }
 
@@ -736,12 +817,21 @@
             loading.style.display = 'flex';
 
             try {
-                const res = await fetch(`/predict?method=${currentMethod}`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout for Render stability
+
+                const res = await fetch(`/predict?method=${currentMethod}`, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
                 if (!res.ok) {
-                    const errData = await res.json();
-                    throw new Error(errData.error || 'Server Error');
+                    const text = await res.text();
+                    let errData;
+                    try { errData = JSON.parse(text); } catch (e) { errData = { error: 'Interface Synchronization Failure' }; }
+                    throw new Error(errData.error || 'Interface Sync Failure');
                 }
+
                 const data = await res.json();
+                if (!data || !data.data) throw new Error('Fragmented Data Packet');
 
                 // Update Hero Content
                 const tempVal = Math.round(data.data.temp_avg);
@@ -812,7 +902,11 @@
 
             } catch (err) {
                 console.error(err);
-                alert('Intelligence Engine Sync Error: ' + err.message);
+                if (err.name === 'AbortError') {
+                    alert('Neural Synthesis Timeout: The engine is under heavy load or spinning up. Please try again in 10 seconds.');
+                } else {
+                    alert('Intelligence Engine Sync Error: ' + err.message);
+                }
             } finally {
                 loading.style.display = 'none';
             }
@@ -820,6 +914,7 @@
 
         function renderForecastList(forecast) {
             const container = document.getElementById('forecast-list');
+            if (!container) return;
             container.innerHTML = forecast.map((d, i) => {
                 const date = new Date(d.date);
                 const day = date.toLocaleDateString('en-US', { weekday: 'short' });
@@ -827,14 +922,14 @@
                 const isToday = i === 0;
 
                 return `
-                    <div class="glass-card rounded-[32px] p-6 flex flex-col items-center gap-4 group cursor-pointer ${isToday ? 'border-brand-500/50 bg-white/5' : ''}">
-                        <span class="text-[10px] font-black uppercase tracking-widest ${isToday ? 'text-brand-400' : 'text-white/30'}">${day}</span>
-                        <span class="text-4xl group-hover:scale-125 transition-transform duration-500">${icon}</span>
-                        <div>
-                            <span class="text-lg font-bold text-white/90">${Math.round(d.temp_avg)}°</span>
+                    <div class="glass-card rounded-[32px] p-4 flex flex-col items-center gap-3 group cursor-pointer ${isToday ? 'border-brand-500/50 bg-white/5' : ''}">
+                        <span class="text-[9px] font-black uppercase tracking-widest ${isToday ? 'text-brand-400' : 'text-white/30'}">${day}</span>
+                        <span class="text-3xl group-hover:scale-125 transition-transform duration-500">${icon}</span>
+                        <div class="text-center">
+                            <span class="text-base font-black text-white/90">${Math.round(d.temp_avg)}°</span>
                             <div class="h-1 w-1 bg-white/10 rounded-full mx-auto mt-1"></div>
                         </div>
-                        <span class="text-[9px] font-black text-green-500/40 uppercase tracking-tighter">${Math.round(d.pm2_5)} PM</span>
+                        <span class="text-[8px] font-black text-green-500/40 uppercase tracking-tighter">${Math.round(d.pm2_5)} PM</span>
                     </div>
                 `;
             }).join('');
@@ -847,13 +942,13 @@
                 const body = document.getElementById('stats-body');
 
                 if (!data || data.length === 0) {
-                    body.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-white/30 font-bold uppercase tracking-widest">No diagnostics available yet</td></tr>';
+                    body.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-white/30 font-black uppercase tracking-widest">No diagnostics available</td></tr>';
                     return;
                 }
 
                 body.innerHTML = data.map(m => `
                     <tr class="hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
-                        <th class="px-6 py-4 font-bold text-white/90 uppercase tracking-wide text-xs">${(m.target || 'N/A').replace('xgb_chain_', '').replace('.pkl', '')}</th>
+                        <th class="px-6 py-4 font-black text-white/90 uppercase tracking-wide text-[10px]">${(m.target || 'N/A').replace('xgb_chain_', '').replace('.pkl', '')}</th>
                         <td class="px-6 py-4 font-mono text-brand-400 font-bold">${Number(m.rmse || 0).toFixed(3)}</td>
                         <td class="px-6 py-4 font-mono text-indigo-400 font-bold">${Number(m.mae || 0).toFixed(3)}</td>
                         <td class="px-6 py-4">
