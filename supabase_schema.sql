@@ -14,4 +14,4 @@ create table if not exists users (
 );
 
 -- Enable Row Level Security (RLS) is recommended but optional for this simple backend implementation
--- alter table users enable row level security;
+-- alter table users enable row level security;`

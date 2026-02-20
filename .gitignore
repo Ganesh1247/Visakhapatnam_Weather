@@ -58,3 +58,4 @@ temp/
 *.docx
 implementation_plan.md.resolved
 walkthrough.md.resolved
+.vercel
