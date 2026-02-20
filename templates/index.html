@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap"
         rel="stylesheet">
 
     <!-- Icons -->
@@ -25,8 +25,8 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        heading: ['Outfit', 'sans-serif'],
+                        sans: ['Manrope', 'sans-serif'],
+                        heading: ['Sora', 'sans-serif'],
                     },
                     colors: {
                         dark: {
@@ -40,9 +40,9 @@
                             200: '#E2E8F0',
                         },
                         brand: {
-                            400: '#38bdf8',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                            600: '#0891b2',
                         }
                     },
                     animation: {
@@ -272,6 +272,122 @@
             @apply bg-slate-400/20 rounded-full hover:bg-slate-400/40;
         }
     </style>
+    <style>
+        :root {
+            --eg-bg: #06121e;
+            --eg-bg-soft: #0b1d2e;
+            --eg-cyan: #06b6d4;
+            --eg-sky: #0ea5e9;
+            --eg-amber: #f59e0b;
+        }
+
+        body {
+            letter-spacing: 0.01em;
+        }
+
+        .bg-mesh {
+            background:
+                radial-gradient(85% 52% at 8% 0%, rgba(14, 165, 233, 0.25) 0%, transparent 52%),
+                radial-gradient(55% 50% at 94% 2%, rgba(245, 158, 11, 0.22) 0%, transparent 60%),
+                radial-gradient(45% 40% at 48% 100%, rgba(6, 182, 212, 0.18) 0%, transparent 58%),
+                linear-gradient(145deg, #05101a 0%, #071425 55%, #0a1322 100%);
+        }
+
+        .glass-panel {
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+
+        .glass-card {
+            border-color: rgba(103, 232, 249, 0.26);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(103, 232, 249, 0.45);
+        }
+
+        #navbar {
+            background: linear-gradient(to bottom, rgba(3, 10, 18, 0.9), rgba(3, 10, 18, 0.58));
+            border-bottom-color: rgba(103, 232, 249, 0.14);
+            transform: translateY(0);
+        }
+
+        #navbar.nav-scrolled {
+            background: rgba(4, 14, 24, 0.92);
+            border-bottom-color: rgba(103, 232, 249, 0.3);
+            box-shadow: 0 12px 28px rgba(2, 8, 18, 0.38);
+            backdrop-filter: blur(20px);
+        }
+
+        #nav-shell {
+            transition: height 0.3s ease, padding 0.3s ease, transform 0.3s ease;
+        }
+
+        #navbar.nav-scrolled #nav-shell {
+            height: 4rem;
+            padding-top: 0.25rem;
+            padding-bottom: 0.25rem;
+        }
+
+        #mobile-menu {
+            background: linear-gradient(to bottom, rgba(3, 10, 18, 0.96), rgba(3, 10, 18, 0.93)) !important;
+            border-top-color: rgba(103, 232, 249, 0.12) !important;
+        }
+
+        #btn-mc.bg-brand-500\/20,
+        #btn-quantile.bg-brand-500\/20,
+        #btn-conformal.bg-brand-500\/20 {
+            box-shadow: 0 0 0 1px rgba(103, 232, 249, 0.35), 0 10px 22px rgba(6, 182, 212, 0.18);
+        }
+
+        .text-glow {
+            text-shadow: 0 0 26px rgba(34, 211, 238, 0.36);
+        }
+
+        html:not(.dark) .bg-mesh {
+            background:
+                radial-gradient(72% 40% at 8% 0%, rgba(14, 165, 233, 0.18) 0%, transparent 54%),
+                radial-gradient(38% 38% at 92% 4%, rgba(245, 158, 11, 0.14) 0%, transparent 56%),
+                linear-gradient(155deg, #f5fbff 0%, #e9f2fb 55%, #f7fbff 100%);
+        }
+
+        html:not(.dark) #navbar {
+            background: rgba(255, 255, 255, 0.84);
+            border-bottom-color: rgba(148, 163, 184, 0.26);
+        }
+
+        html:not(.dark) #navbar.nav-scrolled {
+            background: rgba(255, 255, 255, 0.95);
+            border-bottom-color: rgba(14, 165, 233, 0.25);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+        }
+
+        .reveal-init {
+            opacity: 0;
+            transform: translateY(14px);
+            transition: opacity 0.55s ease, transform 0.55s ease;
+        }
+
+        .reveal-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            main {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .animate-blob,
+            .animate-pulse,
+            .animate-bounce {
+                animation: none !important;
+            }
+        }
+    </style>
 </head>
 
 <body
@@ -283,22 +399,22 @@
             class="absolute top-0 left-1/4 w-96 h-96 bg-brand-500/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob">
         </div>
         <div
-            class="absolute top-0 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob animation-delay-2000">
+            class="absolute top-0 right-1/4 w-96 h-96 bg-sky-500/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob animation-delay-2000">
         </div>
         <div
-            class="absolute -bottom-32 left-1/3 w-96 h-96 bg-pink-500/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob animation-delay-4000">
+            class="absolute -bottom-32 left-1/3 w-96 h-96 bg-amber-400/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob animation-delay-4000">
         </div>
     </div>
 
     <!-- Premium Navigation -->
     <nav class="fixed top-0 w-full z-50 backdrop-blur-xl border-b border-white/5 transition-all duration-300"
         id="navbar">
-        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between relative z-50">
+        <div id="nav-shell" class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between relative z-50">
             <!-- Brand -->
             <div class="flex items-center gap-4 group cursor-pointer" onclick="location.reload()">
                 <div class="relative">
                     <div
-                        class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-brand-400 to-indigo-600 flex items-center justify-center shadow-lg shadow-brand-500/20 group-hover:rotate-12 transition-transform duration-500">
+                        class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-brand-400 to-sky-600 flex items-center justify-center shadow-lg shadow-brand-500/20 group-hover:rotate-12 transition-transform duration-500">
                         <i class="ri-leaf-line text-xl sm:text-2xl text-white"></i>
                     </div>
                 </div>
@@ -408,7 +524,7 @@
             class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-500/10 rounded-full blur-[120px] animate-pulse">
         </div>
         <div
-            class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] animation-delay-2000 animate-pulse">
+            class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-amber-400/10 rounded-full blur-[120px] animation-delay-2000 animate-pulse">
         </div>
     </div>
 
@@ -484,7 +600,7 @@
                                 </p>
                                 <div class="flex items-center gap-2 sm:gap-3">
                                     <div
-                                        class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400">
+                                        class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center text-cyan-400">
                                         <i class="ri-speed-mini-line text-lg"></i>
                                     </div>
                                     <span class="text-lg sm:text-xl font-bold text-white/90">1012 <span
@@ -497,7 +613,7 @@
                                     Rainfall</p>
                                 <div class="flex items-center gap-2 sm:gap-3">
                                     <div
-                                        class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                        class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400">
                                         <i class="ri-umbrella-line text-lg"></i>
                                     </div>
                                     <span class="text-lg sm:text-xl font-bold text-white/90" id="rain-detail">--</span>
@@ -538,6 +654,27 @@
                     <div class="px-6 py-2 rounded-2xl bg-white/5 border border-white/10 text-xs font-black uppercase tracking-[0.2em] text-white/60 mb-8"
                         id="aqi-status-badge">
                         Calibrating...
+                    </div>
+
+                    <div class="w-full mb-8">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">Severity</span>
+                            <span id="aqi-severity-label"
+                                class="text-[10px] font-black uppercase tracking-[0.2em] text-brand-400">--</span>
+                        </div>
+                        <div class="relative h-2 rounded-full overflow-hidden bg-white/10 border border-white/10">
+                            <div class="absolute inset-0 bg-gradient-to-r from-green-500 via-yellow-400 via-orange-500 to-red-500">
+                            </div>
+                            <div id="aqi-severity-pointer"
+                                class="absolute top-1/2 -translate-y-1/2 -ml-1.5 w-3 h-3 rounded-full bg-white border-2 border-slate-900 shadow-[0_0_10px_rgba(255,255,255,0.8)] transition-all duration-500"
+                                style="left: 0%;"></div>
+                        </div>
+                        <div class="mt-2 flex justify-between text-[9px] font-bold uppercase tracking-wider text-white/30">
+                            <span>Good</span>
+                            <span>Moderate</span>
+                            <span>Unhealthy</span>
+                            <span>Hazardous</span>
+                        </div>
                     </div>
 
                     <div class="w-full grid grid-cols-2 gap-4">
@@ -602,7 +739,7 @@
                     <div class="flex justify-between items-center mb-10">
                         <div class="flex items-center gap-4">
                             <div
-                                class="w-10 h-10 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                class="w-10 h-10 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-400">
                                 <i class="ri-pulse-line text-xl"></i>
                             </div>
                             <div>
@@ -750,7 +887,7 @@
                                 </div>
                                 <div class="h-2 w-full bg-white/5 rounded-full overflow-hidden">
                                     <div id="ai-conf-bar"
-                                        class="h-full bg-gradient-to-r from-brand-500 to-indigo-500 w-[94%] shadow-[0_0_15px_rgba(56,189,248,0.5)] transition-all duration-1000 ease-out">
+                                        class="h-full bg-gradient-to-r from-brand-500 to-cyan-400 w-[94%] shadow-[0_0_15px_rgba(34,211,238,0.55)] transition-all duration-1000 ease-out">
                                     </div>
                                 </div>
                                 <p class="text-[9px] text-white/30 mt-2 font-medium leading-relaxed">
@@ -795,7 +932,7 @@
                 <!-- Quantile -->
                 <div class="p-8 rounded-[32px] glass-panel border border-white/5">
                     <div
-                        class="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500 mb-6">
+                        class="w-12 h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center text-cyan-500 mb-6">
                         <i class="ri-bar-chart-grouped-line text-2xl"></i>
                     </div>
                     <h4 class="text-lg font-black mb-3 text-white">Quantile Reg</h4>
@@ -803,7 +940,7 @@
                         Predicts full probability distributions, highlighting the 10th-90th percentile bounds for risk.
                     </p>
                     <div
-                        class="mt-6 text-[9px] font-black text-purple-500 uppercase tracking-widest bg-purple-500/5 py-1 px-3 rounded-full inline-block">
+                        class="mt-6 text-[9px] font-black text-cyan-500 uppercase tracking-widest bg-cyan-500/5 py-1 px-3 rounded-full inline-block">
                         Distribution Analysis</div>
                 </div>
 
@@ -833,7 +970,7 @@
                 <div class="space-y-6">
                     <div class="flex items-center gap-3">
                         <div
-                            class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-500 to-indigo-600 flex items-center justify-center">
+                            class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-500 to-sky-600 flex items-center justify-center">
                             <i class="ri-leaf-line text-white"></i>
                         </div>
                         <span class="font-heading font-bold text-2xl text-white">EcoGlance</span>
@@ -853,7 +990,7 @@
                             <span class="text-xs font-bold text-white/60">LSTM Temporal Embeddings</span>
                         </div>
                         <div class="flex items-center gap-4">
-                            <div class="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
                             <span class="text-xs font-bold text-white/60">XGBoost Residual Mapping</span>
                         </div>
                         <div class="flex items-center gap-4">
@@ -1253,6 +1390,7 @@
         }
 
         let hourlyChartInstance = null;
+        let selectedForecastDate = null;
         function renderHourlyChart(data) {
             const ctx = document.getElementById('hourlyChartCanvas').getContext('2d');
             if (hourlyChartInstance) hourlyChartInstance.destroy();
@@ -1356,6 +1494,28 @@
             return cls;
         }
 
+        function getAQISeverity(pm25) {
+            if (pm25 <= 30) return { label: 'Good', color: '#22c55e' };
+            if (pm25 <= 60) return { label: 'Moderate', color: '#eab308' };
+            if (pm25 <= 90) return { label: 'Unhealthy', color: '#f97316' };
+            if (pm25 <= 120) return { label: 'Very Unhealthy', color: '#ef4444' };
+            return { label: 'Hazardous', color: '#99004c' };
+        }
+
+        function updateAQISeverityUI(pm25) {
+            const severityLabel = document.getElementById('aqi-severity-label');
+            const severityPointer = document.getElementById('aqi-severity-pointer');
+            if (!severityLabel || !severityPointer) return;
+
+            const severity = getAQISeverity(pm25);
+            const clamped = Math.max(0, Math.min(pm25, 150));
+            const pointerLeft = (clamped / 150) * 100;
+
+            severityLabel.textContent = severity.label;
+            severityLabel.style.color = severity.color;
+            severityPointer.style.left = `${pointerLeft}%`;
+        }
+
         // --- FETCH LOGIC ---
         const LOADING_MSGS = [
             "Initializing Hybrid Engine...",
@@ -1451,6 +1611,7 @@
                 aqiStatus.style.backgroundColor = aqiColors.bg;
                 aqiStatus.style.color = aqiColors.text;
                 aqiStatus.style.borderColor = aqiColors.text + '20';
+                updateAQISeverityUI(pm25);
 
                 // --- Activity Suitability Logic ---
                 const setActivity = (id, safe) => {
@@ -1524,16 +1685,22 @@
                 renderForecastList(data.forecast);
 
                 if (data.forecast && data.forecast.length > 0) {
-                    // Auto-fetch hourly for today
-                    fetchHourly(data.forecast[0].date);
+                    const activeDate = selectedForecastDate && data.forecast.some((d) => d.date === selectedForecastDate)
+                        ? selectedForecastDate
+                        : data.forecast[0].date;
+                    selectForecastDate(activeDate, true);
 
-                    const firstCard = document.getElementById('forecast-list').firstElementChild;
-                    if (firstCard) {
-                        const cue = document.createElement('div');
-                        cue.className = "absolute -top-2 -right-2 bg-brand-500 text-white text-[9px] font-bold px-2 py-1 rounded-full animate-bounce shadow-lg z-10";
-                        cue.innerText = "Click for Hourly";
-                        firstCard.appendChild(cue);
-                        firstCard.classList.add('relative');
+                    const list = document.getElementById('forecast-list');
+                    if (list) {
+                        list.querySelectorAll('.forecast-cue').forEach((el) => el.remove());
+                        const firstCard = list.firstElementChild;
+                        if (firstCard) {
+                            const cue = document.createElement('div');
+                            cue.className = "forecast-cue absolute -top-2 -right-2 bg-brand-500 text-white text-[9px] font-bold px-2 py-1 rounded-full animate-bounce shadow-lg z-10";
+                            cue.innerText = "Click for Hourly";
+                            firstCard.appendChild(cue);
+                            firstCard.classList.add('relative');
+                        }
                     }
                 }
 
@@ -1559,6 +1726,16 @@
             }
         }
 
+        function selectForecastDate(dateStr, triggerFetch = true) {
+            selectedForecastDate = dateStr;
+            document.querySelectorAll('[data-forecast-date]').forEach((card) => {
+                const isActive = card.dataset.forecastDate === dateStr;
+                card.classList.toggle('border-brand-500/50', isActive);
+                card.classList.toggle('bg-white/5', isActive);
+            });
+            if (triggerFetch) fetchHourly(dateStr);
+        }
+
         function renderForecastList(forecast) {
             const container = document.getElementById('forecast-list');
             if (!container) return;
@@ -1566,13 +1743,13 @@
                 const date = new Date(d.date);
                 const day = date.toLocaleDateString('en-US', { weekday: 'short' });
                 const icon = getWeatherIcon(d.rainfall, d.temp_avg);
-                const isToday = i === 0;
+                const isActive = selectedForecastDate ? selectedForecastDate === d.date : i === 0;
 
                 return `
-                    <div onclick="fetchHourly('${d.date}')" class="glass-card rounded-[32px] p-4 flex flex-col items-center gap-3 group cursor-pointer ${isToday ? 'border-brand-500/50 bg-white/5' : ''} relative overflow-hidden">
+                    <div data-forecast-date="${d.date}" onclick="selectForecastDate('${d.date}', true)" class="glass-card rounded-[32px] p-4 flex flex-col items-center gap-3 group cursor-pointer ${isActive ? 'border-brand-500/50 bg-white/5' : ''} relative overflow-hidden">
                         <div class="absolute inset-0 bg-brand-500/0 group-hover:bg-brand-500/5 transition-colors duration-300"></div>
                         
-                        <span class="text-[9px] font-black uppercase tracking-widest ${isToday ? 'text-brand-400' : 'text-white/30'}">${day}</span>
+                        <span class="text-[9px] font-black uppercase tracking-widest ${isActive ? 'text-brand-400' : 'text-white/30'}">${day}</span>
                         <span class="text-3xl group-hover:scale-125 transition-transform duration-500 relative z-10">${icon}</span>
                         
                         <div class="text-center relative z-10">
@@ -1588,6 +1765,11 @@
                     </div>
                 `;
             }).join('');
+
+            if (!selectedForecastDate || !forecast.some((d) => d.date === selectedForecastDate)) {
+                selectedForecastDate = forecast[0]?.date || null;
+            }
+            if (selectedForecastDate) selectForecastDate(selectedForecastDate, false);
         }
 
         async function fetchStats() {
@@ -1618,15 +1800,75 @@
             }
         }
 
+        // --- INTERACTIVITY ---
+        function initScrollReveal() {
+            const nodes = document.querySelectorAll('.glass-panel, .glass-card');
+            if (!nodes.length) return;
+
+            nodes.forEach((el, index) => {
+                el.classList.add('reveal-init');
+                el.style.transitionDelay = `${Math.min(index * 35, 280)}ms`;
+            });
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+                    entry.target.classList.add('reveal-in');
+                    observer.unobserve(entry.target);
+                });
+            }, { threshold: 0.12 });
+
+            nodes.forEach((el) => observer.observe(el));
+        }
+
+        function initKeyboardShortcuts() {
+            document.addEventListener('keydown', (event) => {
+                const target = event.target;
+                const inEditable = target && (
+                    target.tagName === 'INPUT' ||
+                    target.tagName === 'TEXTAREA' ||
+                    target.isContentEditable
+                );
+                if (inEditable || event.ctrlKey || event.metaKey || event.altKey) return;
+
+                const key = event.key.toLowerCase();
+                if (key === 'r') {
+                    event.preventDefault();
+                    fetchPrediction();
+                }
+                if (key === 's') {
+                    event.preventDefault();
+                    document.getElementById('stats-modal')?.classList.remove('hidden');
+                }
+                if (key === 't') {
+                    event.preventDefault();
+                    toggleTheme();
+                }
+            });
+        }
+
         // --- INIT ---
-        window.addEventListener('scroll', () => {
+        function updateNavbarState() {
             const nav = document.getElementById('navbar');
-            if (window.scrollY > 20) nav.classList.add('bg-[#030712]/80', 'py-1');
-            else nav.classList.remove('bg-[#030712]/80', 'py-1');
-        });
+            if (!nav) return;
+            nav.classList.toggle('nav-scrolled', window.scrollY > 20);
+        }
+
+        let navTicking = false;
+        window.addEventListener('scroll', () => {
+            if (navTicking) return;
+            navTicking = true;
+            requestAnimationFrame(() => {
+                updateNavbarState();
+                navTicking = false;
+            });
+        }, { passive: true });
 
         // Load initially
         document.addEventListener('DOMContentLoaded', () => {
+            updateNavbarState();
+            initScrollReveal();
+            initKeyboardShortcuts();
             setMethod('mc_dropout');
             fetchStats();
         });
