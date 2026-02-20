@@ -13,7 +13,7 @@ from preprocessing import DataPreprocessor
 
 # Config
 SEQ_LENGTH = 14
-EPOCHS_LSTM = 20
+EPOCHS_LSTM = 50
 BATCH_SIZE = 32
 
 os.makedirs("models", exist_ok=True)
@@ -23,14 +23,11 @@ os.makedirs("plots", exist_ok=True)
 print("Initializing...")
 preprocessor = DataPreprocessor(sequence_length=SEQ_LENGTH)
 df_weather, df_combined = preprocessor.process_data(
-    "final_weather_dataset_2010-2025.csv",
-    "final_dataset.csv"
+    "data/final_weather_dataset_2010-2025.csv",
+    "data/final_dataset.csv"
 )
 
-# 2. Fit Scalers (on Log-transformed data logic handled inside create_sequences mostly, but scalers fit on "processed" data?)
-# Refactored fit_scalers in preprocessing to use apply_log_transform internally?
-# Actually my updated preprocessing.py fit_scalers uses raw data unless I modified it. 
-# Let's manually fit scalers on LOG-transformed data for consistency.
+# 2. Fit Scalers
 print("Fitting Scalers...")
 df_weather_log = preprocessor.apply_log_transform(df_weather)
 df_combined_log = preprocessor.apply_log_transform(df_combined)
@@ -222,7 +219,15 @@ for col in all_targets:
     results.append({'Target': col, 'RMSE': np.sqrt(mse), 'MAE': mae, 'R2': r2})
 
 # Save Metrics
-pd.DataFrame(results).to_csv("metrics_scientific.csv", index=False)
+metrics_df = pd.DataFrame(results)
+metrics_df.to_csv("data/metrics_scientific.csv", index=False)
+
+# Display Summary Table
+print("\n" + "="*40)
+print("       TRAINING SUMMARY METRICS")
+print("="*40)
+print(metrics_df.to_string(index=False))
+print("="*40)
 
 # ==========================================
 # STAGE 3b: Visual Diagnostics (Last 60 days)
@@ -277,10 +282,10 @@ if 'pm2_5' in y_pred_final:
     y_pred_class = pd.cut(y_pred_final['pm2_5'], bins=bins, labels=labels)
     
     acc = np.mean(y_true_class == y_pred_class)
-    print(f"\nPM2.5 AQI Class Accuracy: {acc*100:.2f}%")
+    print(f"\nPM2.5 AQI Class Accuracy (Percentage): {acc*100:.2f}%")
     
     # Save class report
-    with open("aqi_accuracy.txt", "w") as f:
+    with open("data/aqi_accuracy.txt", "w") as f:
         f.write(f"PM2.5 AQI Accuracy: {acc*100:.2f}%\n")
 
 print("Training & Evaluation Complete.")

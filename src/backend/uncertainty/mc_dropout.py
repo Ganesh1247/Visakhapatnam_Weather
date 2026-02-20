@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import xgboost as xgb
 import tensorflow as tf
 from typing import Dict, List, Tuple, Any
 from datetime import datetime
@@ -47,6 +48,14 @@ class MCDropoutPredictor:
         self.preprocessor = preprocessor
         self.n_iter = n_iter
         self.validator = UncertaintyValidator()
+
+    def _xgb_predict(self, model, X_df):
+        """Predict using DMatrix to ensure feature names are always preserved."""
+        dmat = xgb.DMatrix(X_df.values, feature_names=list(X_df.columns))
+        if isinstance(model, xgb.Booster):
+            return model.predict(dmat)
+        else:
+            return model.get_booster().predict(dmat)
 
     def predict_with_uncertainty(self, X_lstm_batch: np.ndarray, base_feat_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
@@ -103,7 +112,7 @@ class MCDropoutPredictor:
         for target in ['pm2_5', 'pm10']:
             if target in self.xgb_models:
                 model = self.xgb_models[target]
-                log_preds = model.predict(X_xgb_df)
+                log_preds = self._xgb_predict(model, X_xgb_df)
                 preds = np.expm1(log_preds)
                 preds = np.maximum(0, preds)
                 # Reshape to (batch_size, n_iter)

@@ -2,6 +2,11 @@
 # Fix path for imports if running from src
 import sys
 import os
+from dotenv import load_dotenv
+load_dotenv()
+
+# Suppress TF logs
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import numpy as np
@@ -9,13 +14,15 @@ import pandas as pd
 import requests
 import pickle
 import sqlite3
+import xgboost as xgb
 from flask import Flask, render_template, jsonify, request, redirect, url_for, session
 from tensorflow.keras.models import load_model, Model  # pyright: ignore[reportMissingImports]
 from preprocessing import DataPreprocessor
 from datetime import datetime, timedelta
 from auth import (
     init_db, generate_otp, send_otp_email, login_required,
-    user_has_credentials, set_user_credentials, verify_password, DB_PATH
+    user_has_credentials, set_user_credentials, verify_password,
+    save_otp, get_otp, DB_PATH
 )
 from backend.uncertainty.mc_dropout import MCDropoutPredictor
 from backend.uncertainty.quantile import QuantileRegressor
@@ -26,7 +33,22 @@ import threading
 # Initialize Flask with correct template and static folders
 # Since app.py is in src/, templates are in ../templates
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
-app.secret_key = 'your-secret-key-here-change-in-production'
+# Use environment variable for secret key in production
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret')
+
+# Custom JSON encoder for numpy types
+import json
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, (np.integer,)):
+            return int(obj)
+        if isinstance(obj, (np.floating,)):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super().default(obj)
+
+app.json_encoder = NumpyEncoder
 
 # Initialize Database
 # Database is in ../data/users.db relative to src/
@@ -144,34 +166,194 @@ preprocessor.fit_scalers(df_weather_log, df_combined_log)
 
 # Caching
 # Simple dictionary: { 'last_updated': timestamp, 'data': response_json }
-# Key could be just 'forecast' since we only have one location.
 forecast_cache = {
     'last_updated': 0.0,
     'data': None,
     'lock': threading.Lock()
 }
 CACHE_DURATION = 3600  # 1 Hour
+
+# Helper: Predict with XGBoost model (handles both Booster and XGBRegressor)
+def xgb_predict(model, X_df):
+    """Predict using DMatrix to ensure feature names are always preserved."""
+    dmat = xgb.DMatrix(X_df.values, feature_names=list(X_df.columns))
+    if isinstance(model, xgb.Booster):
+        return model.predict(dmat)
+    else:
+        # XGBRegressor: extract internal Booster and predict directly
+        return model.get_booster().predict(dmat)
+
+def fetch_nasa_history(start_date, end_date):
+    """
+    Fetches historical data from NASA POWER API.
+    Returns DataFrame or None if failed.
+    """
+    try:
+        # fmt = YYYYMMDD
+        s_str = start_date.strftime('%Y%m%d')
+        e_str = end_date.strftime('%Y%m%d')
+        
+        # Parameters mapping to our needs
+        # T2M -> temp_avg, T2M_MAX -> temp_max, T2M_MIN -> temp_min
+        # PRECTOTCORR -> rainfall (or PRECTOT)
+        # WS10M -> wind_speed, WD10M -> wind_direction
+        # PS -> pressure
+        # RH2M -> humidity
+        # ALLSKY_SFC_SW_DWN -> solar_radiation
+        # CLOUD_AMT -> cloud_cover
+        params = "T2M,T2M_MAX,T2M_MIN,PRECTOTCORR,WS10M,WD10M,PS,RH2M,ALLSKY_SFC_SW_DWN,CLOUD_AMT"
+        
+        url = (
+            "https://power.larc.nasa.gov/api/temporal/daily/point?"
+            f"latitude={LAT}&longitude={LON}"
+            f"&start={s_str}&end={e_str}"
+            f"&parameters={params}"
+            "&community=RE"
+            "&format=JSON"
+        )
+        print(f"Fetching NASA Data: {url}")
+        response = requests.get(url, timeout=20)
+        data = response.json()
+        
+        if 'properties' not in data:
+            print("NASA Data Error: 'properties' not found")
+            return None
+            
+        records = data['properties']['parameter']
+        
+        # Convert to DataFrame
+        dates = sorted(records['T2M'].keys())
+        df = pd.DataFrame({'date': dates})
+        df['date'] = pd.to_datetime(df['date'], format='%Y%m%d')
+        
+        # Map NASA columns to our columns
+        df['temp_avg'] = [records['T2M'][d] for d in dates]
+        df['temp_max'] = [records['T2M_MAX'][d] for d in dates]
+        df['temp_min'] = [records['T2M_MIN'][d] for d in dates]
+        df['rainfall'] = [records['PRECTOTCORR'][d] for d in dates]
+        df['wind_speed'] = [records['WS10M'][d] for d in dates] 
+        df['wind_direction'] = [records['WD10M'][d] for d in dates]
+        df['pressure'] = [records['PS'][d] for d in dates] # kPa usually
+        df['humidity'] = [records['RH2M'][d] for d in dates]
+        df['solar_radiation'] = [records['ALLSKY_SFC_SW_DWN'][d] for d in dates] # kW-hr/m^2/day usually
+        df['cloud_cover'] = [records['CLOUD_AMT'][d] for d in dates]
+        
+        # Unit Conversions
+        # Pressure: NASA is kPa, we usually use hPa. 1 kPa = 10 hPa
+        df['pressure'] = df['pressure'] * 10.0
+        
+        # Solar: NASA kW-hr/m^2/day -> W/m^2 (approx avg? or sum?)
+        # Open-Meteo gives MJ/m^2 or W/m^2. 
+        # 1 kW-hr = 3.6 MJ. 
+        # Let's keep it consistent with training. If training was Open-Meteo MJ, we convert.
+        # Assuming training scaled 0-1, relative magnitude matters.
+        # NASA radiation is often ~3-6. Open-Meteo raw SW radiation sum is often ~15-25 (MJ).
+        # 1 kWh = 3.6 MJ. So NASA * 3.6 = MJ.
+        df['solar_radiation'] = df['solar_radiation'] * 3.6
+
+        return df
+        
+    except Exception as e:
+        print(f"Failed to fetch NASA data: {e}")
+        return None
+
 def fetch_weather_data():
     """
     Fetches:
-    1. Past 14 days (Archive API)
+    1. Past 14 days (Hybrid: NASA preferred + OpenMeteo Recent Fill)
     2. Future 7 days (Forecast API)
     """
-    # 1. Past Data
-    # Archive API usually has a 2-day delay.
     today = datetime.now().date()
-    end_date = today - timedelta(days=2)
-    start_date = end_date - timedelta(days=SEQ_LENGTH + 5) # Pull extra just in case
     
+    # 1. Past Data Strategy
+    # We need SEQ_LENGTH (14) days ending yesterday.
+    end_date = today - timedelta(days=1)
+    start_date = end_date - timedelta(days=SEQ_LENGTH + 5) # Buffer
+    
+    # Try NASA first
+    df_nasa = fetch_nasa_history(start_date, end_date)
+    
+    # Fetch Open-Meteo Archive as Backup/Gap-Fill
     url_hist = f"https://archive-api.open-meteo.com/v1/archive?latitude={LAT}&longitude={LON}&start_date={start_date}&end_date={end_date}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,rain_sum,wind_speed_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,surface_pressure_mean,relative_humidity_2m_mean,cloud_cover_mean&timezone=auto"
-    r_hist = requests.get(url_hist, timeout=15).json()
-    
+    try:
+        r_hist = requests.get(url_hist, timeout=15).json()
+        df_om = parse_meteo(r_hist)
+    except:
+        df_om = None
+        
+    # Hybrid Merge
+    if df_nasa is not None and not df_nasa.empty:
+        # Check for -999 (NASA error value) and replace with NaN
+        df_nasa.replace(-999.0, np.nan, inplace=True)
+        
+        if df_om is not None:
+            # Align dates
+            df_nasa['date'] = pd.to_datetime(df_nasa['date'])
+            df_om['date'] = pd.to_datetime(df_om['date'])
+            
+            # Use Open-Meteo to fill NaNs in NASA (especially recent days)
+            # Merge on date
+            df_final_hist = pd.merge(df_nasa, df_om, on='date', how='outer', suffixes=('_nasa', '_om'))
+            
+            for col in ['temp_max', 'temp_min', 'temp_avg', 'rainfall', 'wind_speed', 'wind_direction', 'pressure', 'humidity', 'solar_radiation', 'cloud_cover']:
+                # Prefer NASA, fill with OM
+                if f'{col}_nasa' in df_final_hist and f'{col}_om' in df_final_hist:
+                    df_final_hist[col] = df_final_hist[f'{col}_nasa'].fillna(df_final_hist[f'{col}_om'])
+                elif f'{col}_nasa' in df_final_hist:
+                    df_final_hist[col] = df_final_hist[f'{col}_nasa']
+                elif f'{col}_om' in df_final_hist:
+                     df_final_hist[col] = df_final_hist[f'{col}_om']
+            
+            # Keep only clean columns
+            keep_cols = ['date', 'temp_max', 'temp_min', 'temp_avg', 'rainfall', 'wind_speed', 'wind_direction', 'pressure', 'humidity', 'solar_radiation', 'cloud_cover']
+            df_hist_final = df_final_hist[keep_cols].sort_values('date').tail(SEQ_LENGTH+2) # Ensure we have enough
+            
+            # If NASA had huge gaps, OM might have filled them.
+        else:
+            df_hist_final = df_nasa
+            
+        print("Using Hybrid NASA+OpenMeteo History.")
+    else:
+        # Fallback to pure Open-Meteo
+        print("NASA fetch failed, using Open-Meteo only.")
+        df_hist_final = df_om
+
     # 2. Future Forecast (7 Days)
-    # Forecast API starts from Today.
     url_fore = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,rain_sum,wind_speed_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,surface_pressure_mean,relative_humidity_2m_mean,cloud_cover_mean&forecast_days=8&timezone=auto"
     r_fore = requests.get(url_fore, timeout=15).json()
     
-    return r_hist, r_fore
+    # Return DataFrames not JSON to simplify downstream
+    return df_hist_final, r_fore
+
+@app.route('/hourly/<date_str>', methods=['GET'])
+def get_hourly(date_str):
+    try:
+        # Fetch hourly data for specific date from Open-Meteo
+        # Need start_date and end_date to be the same
+        url = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&start_date={date_str}&end_date={date_str}&hourly=temperature_2m,relative_humidity_2m,rain,surface_pressure,cloud_cover,wind_speed_10m&timezone=auto"
+        r = requests.get(url, timeout=10).json()
+        
+        hourly = r.get('hourly', {})
+        if not hourly:
+            return jsonify({'error': 'No hourly data'}), 404
+            
+        # Structure for Frontend
+        result = []
+        for i, time_str in enumerate(hourly['time']):
+            # time_str is ISO "2023-10-27T00:00"
+            dt = datetime.fromisoformat(time_str)
+            result.append({
+                'time': dt.strftime('%H:%M'), # "14:00"
+                'temp': hourly['temperature_2m'][i],
+                'humidity': hourly['relative_humidity_2m'][i],
+                'rain': hourly['rain'][i],
+                'wind': hourly['wind_speed_10m'][i],
+                'condition': 'Rainy' if hourly['rain'][i] > 0.5 else ('Cloudy' if hourly['cloud_cover'][i] > 50 else 'Sunny')
+            })
+            
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 def parse_meteo(data_json):
     daily = data_json.get('daily', {})
@@ -309,28 +491,15 @@ def signup():
     otp = generate_otp()
     otp_expiry = datetime.now() + timedelta(minutes=5)
     
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    try:
-        # Update OTP only; don't overwrite username/password
-        c.execute('SELECT id FROM users WHERE email = ?', (email,))
-        if c.fetchone():
-            c.execute('UPDATE users SET otp = ?, otp_expiry = ? WHERE email = ?',
-                      (otp, otp_expiry, email))
-        else:
-            c.execute('INSERT INTO users (email, otp, otp_expiry) VALUES (?, ?, ?)',
-                      (email, otp, otp_expiry))
-        conn.commit()
-        
+    # Use agnostic save_otp (Supabase or SQLite)
+    if save_otp(email, otp, otp_expiry):
         # Send OTP
         if send_otp_email(email, otp):
             return jsonify({'success': True, 'message': 'OTP sent to your email'})
         else:
             return jsonify({'error': 'Failed to send OTP'}), 500
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    finally:
-        conn.close()
+    else:
+        return jsonify({'error': 'Database Error'}), 500
 
 @app.route('/verify', methods=['POST'])
 def verify_otp():
@@ -340,17 +509,23 @@ def verify_otp():
     if not email or not otp:
         return jsonify({'error': 'Email and OTP required'}), 400
     
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('SELECT otp, otp_expiry FROM users WHERE email = ?', (email,))
-    result = c.fetchone()
-    conn.close()
+    stored_otp, expiry = get_otp(email)
     
-    if not result:
-        return jsonify({'error': 'User not found'}), 404
+    if not stored_otp:
+        return jsonify({'error': 'User not found or no OTP requested'}), 404
     
-    stored_otp, expiry = result
-    if datetime.now() > datetime.fromisoformat(expiry):
+    # Handle both string (SQLite/Supabase) and datetime objects (if adapter returns object)
+    if isinstance(expiry, str):
+        expiry_dt = datetime.fromisoformat(expiry.replace('Z', '+00:00'))
+    else:
+        expiry_dt = expiry
+        
+    # Naive vs Aware check
+    now = datetime.now()
+    if expiry_dt.tzinfo:
+        expiry_dt = expiry_dt.replace(tzinfo=None)
+
+    if now > expiry_dt:
         return jsonify({'error': 'OTP expired'}), 400
     
     if stored_otp != otp:
@@ -436,8 +611,11 @@ def predict():
                 return jsonify(forecast_cache[cache_key])
 
         # 2. Data Fetching & Preparation
-        hist_json, fore_json = fetch_weather_data()
-        df_hist = parse_meteo(hist_json)
+        # Now returns (DataFrame, JSON)
+        df_hist, fore_json = fetch_weather_data()
+        
+        # History is already a DataFrame now (from Hybrid logic)
+        # Forecast is still JSON
         df_fore = parse_meteo(fore_json)
         
         if df_hist is None or len(df_hist) == 0:
@@ -536,7 +714,7 @@ def predict():
                 # Non-PM Targets
                 for target in active_targets:
                     if target not in ['pm2_5', 'pm10'] and target in xgb_models:
-                        day_res[target] = xgb_models[target].predict(X_xgb)[0]
+                        day_res[target] = xgb_predict(xgb_models[target], X_xgb)[0]
                 
                 # PM Targets with MC Dropout Uncertainty
                 bias = get_bias_correction(target_dates[i])
@@ -572,7 +750,7 @@ def predict():
                 # Standard Forward
                 for target in active_targets:
                     if target in xgb_models:
-                        val = xgb_models[target].predict(X_xgb)[0]
+                        val = xgb_predict(xgb_models[target], X_xgb)[0]
                         if target in ['pm2_5', 'pm10']:
                             val = np.expm1(val) + bias
                         day_res[target] = max(0, val)
@@ -599,7 +777,7 @@ def predict():
                             # Standard models don't need embeddings
                             FEAT_COLS = preprocessor.lstm_features + ['month', 'day_of_week', 'day', 'is_weekend', 'wind_dir_sin', 'wind_dir_cos', 'pressure_delta']
                             X_std = pd.DataFrame([base_feat_list[i]])[FEAT_COLS].astype('float32')
-                            val = xgb_models[std_key].predict(X_std)[0]
+                            val = xgb_predict(xgb_models[std_key], X_std)[0]
                             if target in ['pm2_5', 'pm10']:
                                 val = np.expm1(val) + bias
                             day_res[target] = round(float(max(0, val)), 2)
@@ -648,10 +826,15 @@ def predict():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
+from generate_metrics import generate_metrics
+
 @app.route('/stats', methods=['GET'])
 def get_stats():
     # Return metrics
     try:
+        # Trigger live update of metrics
+        generate_metrics()
+        
         if os.path.exists("metrics_scientific.csv"):
             df = pd.read_csv("metrics_scientific.csv")
             return jsonify(df.to_dict(orient='records'))
@@ -663,4 +846,5 @@ if __name__ == '__main__':
     print("\n" + "="*50)
     print("  EcoGlance - Open in browser: http://127.0.0.1:5000")
     print("="*50 + "\n")
-    app.run(host='127.0.0.1', debug=True, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', debug=True, port=port)

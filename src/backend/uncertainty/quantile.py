@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pickle
 import os
+import xgboost as xgb
 from typing import Dict, Any, List
 
 class QuantileRegressor:
@@ -24,6 +25,14 @@ class QuantileRegressor:
                 else:
                     print(f"Warning: Quantile model {path} not found.")
 
+    def _xgb_predict(self, model, X_df):
+        """Predict using DMatrix to ensure feature names are always preserved."""
+        dmat = xgb.DMatrix(X_df.values, feature_names=list(X_df.columns))
+        if isinstance(model, xgb.Booster):
+            return model.predict(dmat)
+        else:
+            return model.get_booster().predict(dmat)
+
     def predict(self, X_xgb: pd.DataFrame, bias: float = 0.0) -> Dict[str, Any]:
         """
         Generate predictions with uncertainty intervals using Quantile Regression.
@@ -44,7 +53,7 @@ class QuantileRegressor:
             for alpha in self.alphas:
                 if alpha in self.models[target]:
                     # Predict (Output is Log(1+x))
-                    val = self.models[target][alpha].predict(X_xgb)[0]
+                    val = self._xgb_predict(self.models[target][alpha], X_xgb)[0]
                     preds_log[alpha] = val
             
             # Check if we have all necessary quantiles
