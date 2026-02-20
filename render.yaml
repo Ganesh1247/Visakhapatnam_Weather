@@ -1,12 +1,9 @@
 services:
   - type: web
-    name: weather-app
+    name: ecoglance-app
     env: python
-    buildCommand: |
-      pip install --upgrade pip &&
-      pip install -r requirements.txt &&
-      mkdir -p data
-    startCommand: cd src && gunicorn app:app --workers 1 --threads 4 --timeout 120 --bind 0.0.0.0:$PORT
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn src.app:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
