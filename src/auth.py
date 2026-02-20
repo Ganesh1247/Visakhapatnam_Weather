@@ -29,13 +29,21 @@ SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 def get_supabase_client():
     """Anon/publishable client for reads."""
     if SUPABASE_AVAILABLE and SUPABASE_URL and SUPABASE_KEY:
-        return create_client(SUPABASE_URL, SUPABASE_KEY)
+        try:
+            return create_client(SUPABASE_URL, SUPABASE_KEY)
+        except Exception as e:
+            print(f"[WARN] Invalid Supabase URL or key: {e}. Falling back to SQLite.")
+            return None
     return None
 
 def get_supabase_admin_client():
     """Service role client for privileged writes (bypasses RLS)."""
     if SUPABASE_AVAILABLE and SUPABASE_URL and SUPABASE_SERVICE_KEY:
-        return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        try:
+            return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        except Exception as e:
+            print(f"[WARN] Invalid Supabase URL or service key: {e}. Falling back to anon client.")
+            return get_supabase_client()  # Fallback to anon if no service key
     return get_supabase_client()  # Fallback to anon if no service key
 
 
