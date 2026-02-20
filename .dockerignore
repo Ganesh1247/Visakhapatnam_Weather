@@ -1,0 +1,39 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Local environment (secrets should be set in Cloud Run env vars)
+.env
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Test files
+tests/
+
+# Notebooks
+notebooks/
+
+# Temp / logs
+*.log
+error_log.txt
+
+# Local DB (Supabase used on cloud)
+data/users.db
+
+# OS
+.DS_Store
+Thumbs.db
