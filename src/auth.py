@@ -87,6 +87,7 @@ def send_otp_email(email, otp):
     """Send OTP via email. Tries Gmail SMTP first, then Supabase email, then console fallback."""
     SENDER_EMAIL = os.environ.get('SMTP_EMAIL', 'your.email@gmail.com')
     SENDER_PASSWORD = os.environ.get('SMTP_PASSWORD', 'your_app_password_here')
+    IS_HF_SPACE = bool(os.environ.get("SPACE_ID") or os.environ.get("HF_SPACE_ID"))
     
     smtp_configured = (
         SENDER_EMAIL != 'your.email@gmail.com' and
@@ -144,6 +145,11 @@ def send_otp_email(email, otp):
             print(f"[WARN] Supabase email also failed: {e}")
 
     # Last resort: console fallback
+    # On deployed Hugging Face Space, do NOT pretend success if email isn't configured.
+    if IS_HF_SPACE:
+        print("[ERROR] OTP email not sent: SMTP is not configured or failed on Hugging Face Space.")
+        return False
+
     print(f"[WARNING] No email configured! OTP for {email}: {otp}")
     print("[INFO] To enable email: Add SMTP_EMAIL and SMTP_PASSWORD in .env")
     print("[INFO] Get Gmail App Password: https://myaccount.google.com/apppasswords")
