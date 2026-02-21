@@ -92,63 +92,70 @@ def generate_otp():
 
 def send_otp_email(email, otp):
     """Send OTP via SMTP. Returns True only when an actual email was sent."""
-    SENDER_EMAIL = os.environ.get('SMTP_EMAIL', 'your.email@gmail.com')
-    SENDER_PASSWORD = os.environ.get('SMTP_PASSWORD', 'your_app_password_here')
-    IS_HF_SPACE = bool(os.environ.get("SPACE_ID") or os.environ.get("HF_SPACE_ID"))
-    
+    sender_email = os.environ.get("SMTP_EMAIL", "your.email@gmail.com")
+    sender_password = os.environ.get("SMTP_PASSWORD", "your_app_password_here")
+    is_hf_space = bool(os.environ.get("SPACE_ID") or os.environ.get("HF_SPACE_ID"))
+
     smtp_configured = (
-        SENDER_EMAIL != 'your.email@gmail.com' and
-        SENDER_PASSWORD != 'your_app_password_here' and
-        bool(SENDER_EMAIL) and bool(SENDER_PASSWORD)
+        sender_email != "your.email@gmail.com" and
+        sender_password != "your_app_password_here" and
+        bool(sender_email) and bool(sender_password)
     )
 
     if smtp_configured:
-        try:
-            msg = MIMEMultipart()
-            msg['From'] = SENDER_EMAIL
-            msg['To'] = email
-            msg['Subject'] = "Your OTP for EcoGlance Air Quality App"
-            
-            html_body = f"""
-            <html>
-                <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
-                    <div style="max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                        <h2 style="color: #667eea; margin-bottom: 20px;">🌤️ EcoGlance Verification</h2>
-                        <p style="font-size: 16px; color: #333;">Your One-Time Password (OTP) is:</p>
-                        <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
-                            <h1 style="color: #667eea; font-size: 36px; letter-spacing: 8px; margin: 0;">{otp}</h1>
-                        </div>
-                        <p style="font-size: 14px; color: #666;">This OTP will expire in <strong>5 minutes</strong>.</p>
-                        <p style="font-size: 14px; color: #666;">If you didn't request this, please ignore this email.</p>
-                        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-                        <p style="font-size: 12px; color: #999;">EcoGlance - Air Quality &amp; Weather Forecast System</p>
-                    </div>
-                </body>
-            </html>
-            """
-            msg.attach(MIMEText(html_body, 'html'))
-            
-            with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=10) as server:
-                server.login(SENDER_EMAIL, SENDER_PASSWORD)
-                server.send_message(msg)
-            
-            print(f"[OK] OTP sent successfully to {email} via SMTP")
-            return True
-            
-        except Exception as e:
-            print(f"[WARN] SMTP failed: {e}. Trying Supabase email...")
+        msg = MIMEMultipart()
+        msg["From"] = sender_email
+        msg["To"] = email
+        msg["Subject"] = "Your OTP for EcoGlance Air Quality App"
 
-    # No fake fallback in production: if SMTP fails, report failure.
-    if IS_HF_SPACE:
+        html_body = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <h2 style="color: #667eea; margin-bottom: 20px;">EcoGlance Verification</h2>
+                    <p style="font-size: 16px; color: #333;">Your One-Time Password (OTP) is:</p>
+                    <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+                        <h1 style="color: #667eea; font-size: 36px; letter-spacing: 8px; margin: 0;">{otp}</h1>
+                    </div>
+                    <p style="font-size: 14px; color: #666;">This OTP will expire in <strong>5 minutes</strong>.</p>
+                    <p style="font-size: 14px; color: #666;">If you didn't request this, please ignore this email.</p>
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                    <p style="font-size: 12px; color: #999;">EcoGlance - Air Quality &amp; Weather Forecast System</p>
+                </div>
+            </body>
+        </html>
+        """
+        msg.attach(MIMEText(html_body, "html"))
+
+        try:
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=20) as server:
+                server.login(sender_email, sender_password)
+                server.send_message(msg)
+            print(f"[OK] OTP sent successfully to {email} via SMTP_SSL:465")
+            return True
+        except Exception as err_ssl:
+            print(f"[WARN] SMTP_SSL:465 failed: {err_ssl}")
+
+        try:
+            with smtplib.SMTP("smtp.gmail.com", 587, timeout=20) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                server.login(sender_email, sender_password)
+                server.send_message(msg)
+            print(f"[OK] OTP sent successfully to {email} via SMTP STARTTLS:587")
+            return True
+        except Exception as err_tls:
+            print(f"[WARN] SMTP STARTTLS:587 failed: {err_tls}")
+
+    if is_hf_space:
         print("[ERROR] OTP email not sent: SMTP is not configured or failed on Hugging Face Space.")
         return False
 
-    # Local-dev fallback only
     print(f"[WARNING] No email configured! OTP for {email}: {otp}")
     print("[INFO] To enable email: Add SMTP_EMAIL and SMTP_PASSWORD in .env")
     print("[INFO] Get Gmail App Password: https://myaccount.google.com/apppasswords")
     return True
-
 def login_required(f):
     """Decorator to protect routes"""
     @wraps(f)
@@ -314,3 +321,4 @@ def verify_password(username_or_email, password):
         return True, row[1]  # return email
         
     return False, None
+
