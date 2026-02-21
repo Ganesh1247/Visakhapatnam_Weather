@@ -373,10 +373,38 @@
             transform: translateY(0);
         }
 
+        .hourly-view-tab {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            padding: 0.45rem 0.75rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+        }
+
+        .hourly-view-tab.active {
+            background: rgba(34, 211, 238, 0.18);
+            border-color: rgba(34, 211, 238, 0.5);
+            color: #67e8f9;
+            box-shadow: 0 8px 20px rgba(6, 182, 212, 0.2);
+        }
+
+        .hourly-inline-chart {
+            height: 220px;
+        }
+
         @media (max-width: 768px) {
             main {
                 padding-left: 1rem !important;
                 padding-right: 1rem !important;
+            }
+
+            .hourly-inline-chart {
+                height: 200px;
             }
         }
 
@@ -697,7 +725,7 @@
             <!-- Forecast Visuals -->
             <div class="lg:col-span-8 space-y-8">
                 <!-- HOURLY FORECAST (CAROUSEL) -->
-                <div class="glass-panel rounded-[40px] p-6 sm:p-8 relative group">
+                <div id="hourly-section" class="glass-panel rounded-[40px] p-5 sm:p-8 relative group">
                     <div class="flex justify-between items-center mb-6">
                         <div class="flex items-center gap-4">
                             <div
@@ -710,7 +738,14 @@
                                     id="hourly-subtitle">Select a day</p>
                             </div>
                         </div>
-                        <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div class="flex items-center gap-2">
+                            <div class="hidden sm:flex items-center gap-2 mr-1">
+                                <button id="hourly-view-cards" class="hourly-view-tab active"
+                                    onclick="setHourlyView('cards')">Cards</button>
+                                <button id="hourly-view-chart" class="hourly-view-tab"
+                                    onclick="setHourlyView('chart')">Graph</button>
+                            </div>
+                            <div class="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                                 onclick="document.getElementById('hourly-scroll').scrollBy({left: -200, behavior: 'smooth'})"
                                 class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition">
@@ -721,7 +756,15 @@
                                 class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition">
                                 <i class="ri-arrow-right-s-line"></i>
                             </button>
+                            </div>
                         </div>
+                    </div>
+
+                    <div class="sm:hidden mb-4 flex items-center gap-2">
+                        <button id="hourly-view-cards-mobile" class="hourly-view-tab active"
+                            onclick="setHourlyView('cards')">Cards</button>
+                        <button id="hourly-view-chart-mobile" class="hourly-view-tab"
+                            onclick="setHourlyView('chart')">Graph</button>
                     </div>
 
                     <div id="hourly-scroll" class="flex overflow-x-auto gap-3 pb-2 scrollbar-hide snap-x mask-linear">
@@ -730,6 +773,12 @@
                             <i class="ri-loader-4-line text-2xl animate-spin mb-2"></i>
                             <span class="text-[10px] font-black uppercase tracking-widest">Syncing Temporal
                                 Data...</span>
+                        </div>
+                    </div>
+
+                    <div id="hourly-inline-chart-wrap" class="hidden mt-3">
+                        <div class="hourly-inline-chart rounded-2xl bg-white/5 border border-white/10 p-3 sm:p-4">
+                            <canvas id="hourlyInlineChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -1345,7 +1394,7 @@
             container.innerHTML = data.map(row => {
                 const icon = getWeatherIcon(row.rain, row.temp);
                 return `
-                    <div class="min-w-[100px] h-[140px] flex flex-col items-center justify-center gap-2 glass-card rounded-[24px] bg-white/5 snap-center hover:bg-white/10 transition-colors cursor-default border border-white/5">
+                    <div class="min-w-[108px] h-[150px] flex flex-col items-center justify-center gap-2 glass-card rounded-[24px] bg-white/5 snap-center hover:bg-white/10 transition-colors cursor-default border border-white/5">
                         <span class="text-[10px] font-black text-white/40 uppercase tracking-widest">${row.time}</span>
                         <span class="text-3xl my-1 drop-shadow-lg">${icon}</span>
                         <span class="text-lg font-black text-white/90">${Math.round(row.temp)}°</span>
@@ -1356,6 +1405,26 @@
                     </div>
                 `;
             }).join('');
+        }
+
+        function setHourlyView(mode) {
+            const cards = document.getElementById('hourly-scroll');
+            const chart = document.getElementById('hourly-inline-chart-wrap');
+            if (!cards || !chart) return;
+            const showCards = mode === 'cards';
+            cards.classList.toggle('hidden', !showCards);
+            chart.classList.toggle('hidden', showCards);
+
+            const pairs = [
+                ['hourly-view-cards', 'hourly-view-chart'],
+                ['hourly-view-cards-mobile', 'hourly-view-chart-mobile']
+            ];
+            pairs.forEach(([cardsId, chartId]) => {
+                const cardsBtn = document.getElementById(cardsId);
+                const chartBtn = document.getElementById(chartId);
+                if (cardsBtn) cardsBtn.classList.toggle('active', showCards);
+                if (chartBtn) chartBtn.classList.toggle('active', !showCards);
+            });
         }
 
         async function fetchHourly(dateStr) {
@@ -1379,6 +1448,7 @@
                 if (!res.ok) throw new Error("Failed to fetch hourly");
                 const data = await res.json();
                 renderHourlyCarousel(data);
+                renderHourlyChart(data);
 
                 // Optional: Scroll to start
                 if (container) container.scrollTo({ left: 0, behavior: 'smooth' });
@@ -1392,7 +1462,9 @@
         let hourlyChartInstance = null;
         let selectedForecastDate = null;
         function renderHourlyChart(data) {
-            const ctx = document.getElementById('hourlyChartCanvas').getContext('2d');
+            const canvas = document.getElementById('hourlyInlineChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
             if (hourlyChartInstance) hourlyChartInstance.destroy();
 
             const isDark = document.documentElement.classList.contains('dark');
@@ -1733,7 +1805,11 @@
                 card.classList.toggle('border-brand-500/50', isActive);
                 card.classList.toggle('bg-white/5', isActive);
             });
-            if (triggerFetch) fetchHourly(dateStr);
+            if (triggerFetch) {
+                fetchHourly(dateStr);
+                const section = document.getElementById('hourly-section');
+                if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
 
         function renderForecastList(forecast) {
@@ -1869,6 +1945,7 @@
             updateNavbarState();
             initScrollReveal();
             initKeyboardShortcuts();
+            setHourlyView('cards');
             setMethod('mc_dropout');
             fetchStats();
         });
