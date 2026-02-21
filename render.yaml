@@ -12,7 +12,8 @@ services:
       - key: SUPABASE_KEY
         value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1oem1hcGJiZmF1a3dwcG5yYWhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NTU3MTgsImV4cCI6MjA4NzEzMTcxOH0.o6UFA4l5ec6eFYHQrctmqYzWkglYMGKb-51_meceEaw
       - key: SUPABASE_SERVICE_KEY
-        value: ${{ secrets.SUPABASE_KEY }}
+        sync: false
+      - key: SMTP_EMAIL
         value: ganeshkoilada1247@gmail.com
       - key: SMTP_PASSWORD
         value: ifsy uivk jzpt jjce
