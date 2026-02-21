@@ -508,7 +508,9 @@ def signup():
         if send_otp_email(email, otp):
             return jsonify({'success': True, 'message': 'OTP sent to your email'})
         else:
-            return jsonify({'error': 'Failed to send OTP'}), 500
+            return jsonify({
+                'error': 'Failed to send OTP email. Check SMTP_EMAIL/SMTP_PASSWORD (Gmail App Password) in Space secrets.'
+            }), 500
     else:
         return jsonify({'error': 'Database Error'}), 500
 

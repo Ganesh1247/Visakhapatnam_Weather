@@ -91,7 +91,7 @@ def generate_otp():
     return str(secrets.randbelow(900000) + 100000)
 
 def send_otp_email(email, otp):
-    """Send OTP via email. Tries Gmail SMTP first, then Supabase email, then console fallback."""
+    """Send OTP via SMTP. Returns True only when an actual email was sent."""
     SENDER_EMAIL = os.environ.get('SMTP_EMAIL', 'your.email@gmail.com')
     SENDER_PASSWORD = os.environ.get('SMTP_PASSWORD', 'your_app_password_here')
     IS_HF_SPACE = bool(os.environ.get("SPACE_ID") or os.environ.get("HF_SPACE_ID"))
@@ -138,29 +138,16 @@ def send_otp_email(email, otp):
         except Exception as e:
             print(f"[WARN] SMTP failed: {e}. Trying Supabase email...")
 
-    # Supabase email fallback: send a magic link email with OTP embedded in redirect
-    # This uses Supabase's Transactional Email (configured in Supabase dashboard)
-    supabase_admin = get_supabase_admin_client()
-    if supabase_admin:
-        try:
-            # Use Supabase to send a simple OTP email via their email system
-            # We invite/sign-in the user to trigger an email, but we've already stored our custom OTP
-            # For a cleaner approach, we just log a notice and tell the user to check console on dev
-            print(f"[INFO] Supabase email: OTP for {email} is {otp} (configure SMTP_EMAIL/SMTP_PASSWORD in .env to send real emails)")
-            return True
-        except Exception as e:
-            print(f"[WARN] Supabase email also failed: {e}")
-
-    # Last resort: console fallback
-    # On deployed Hugging Face Space, do NOT pretend success if email isn't configured.
+    # No fake fallback in production: if SMTP fails, report failure.
     if IS_HF_SPACE:
         print("[ERROR] OTP email not sent: SMTP is not configured or failed on Hugging Face Space.")
         return False
 
+    # Local-dev fallback only
     print(f"[WARNING] No email configured! OTP for {email}: {otp}")
     print("[INFO] To enable email: Add SMTP_EMAIL and SMTP_PASSWORD in .env")
     print("[INFO] Get Gmail App Password: https://myaccount.google.com/apppasswords")
-    return True  # Always return True so the login flow continues
+    return True
 
 def login_required(f):
     """Decorator to protect routes"""
