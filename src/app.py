@@ -57,7 +57,7 @@ class NumpyJSONProvider(DefaultJSONProvider):
             return float(obj)
         if isinstance(obj, np.ndarray):
             return obj.tolist()
-        return DefaultJSONProvider.default(self, obj)
+        return DefaultJSONProvider.default(obj)
 
 app.json = NumpyJSONProvider(app)
 
