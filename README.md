@@ -1,4 +1,13 @@
 
+---
+title: EcoGlance
+colorFrom: green
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # EcoGlance - Air Quality & Weather Forecasting System
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
