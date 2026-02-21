@@ -16,6 +16,7 @@ import pickle
 import sqlite3
 import xgboost as xgb
 from flask import Flask, render_template, jsonify, request, redirect, url_for, session
+from flask.json.provider import DefaultJSONProvider
 from tensorflow.keras.models import load_model, Model  # pyright: ignore[reportMissingImports]
 from preprocessing import DataPreprocessor
 from datetime import datetime, timedelta
@@ -47,9 +48,8 @@ if is_hf_space:
         SESSION_COOKIE_HTTPONLY=True,
     )
 
-# Custom JSON encoder for numpy types
-import json
-class NumpyEncoder(json.JSONEncoder):
+# Flask 3 uses JSON provider classes (app.json_encoder is ignored).
+class NumpyJSONProvider(DefaultJSONProvider):
     def default(self, obj):
         if isinstance(obj, (np.integer,)):
             return int(obj)
@@ -57,9 +57,9 @@ class NumpyEncoder(json.JSONEncoder):
             return float(obj)
         if isinstance(obj, np.ndarray):
             return obj.tolist()
-        return super().default(obj)
+        return DefaultJSONProvider.default(self, obj)
 
-app.json_encoder = NumpyEncoder
+app.json = NumpyJSONProvider(app)
 
 # Initialize Database
 # Database is in ../data/users.db relative to src/
