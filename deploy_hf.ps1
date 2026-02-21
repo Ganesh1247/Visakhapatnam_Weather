@@ -1,5 +1,3 @@
-$ErrorActionPreference = "Stop"
-
 param(
     [Parameter(Mandatory = $true)]
     [string]$SpaceId,
@@ -7,6 +5,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$HFToken
 )
+
+$ErrorActionPreference = "Stop"
 
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     throw "git is required but not found in PATH."
