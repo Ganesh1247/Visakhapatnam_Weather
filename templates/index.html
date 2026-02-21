@@ -295,6 +295,8 @@
 
         .glass-panel {
             box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+            position: relative;
+            overflow: hidden;
         }
 
         .glass-card {
@@ -304,6 +306,117 @@
         .glass-card:hover {
             transform: translateY(-2px);
             border-color: rgba(103, 232, 249, 0.45);
+        }
+
+        .glass-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            border: 1px solid rgba(103, 232, 249, 0.12);
+            background: linear-gradient(135deg, rgba(103, 232, 249, 0.06), transparent 35%, rgba(245, 158, 11, 0.05));
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            padding: 1px;
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+
+        .forecast-tile {
+            position: relative;
+            overflow: hidden;
+            border-radius: 1.4rem;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            background: linear-gradient(160deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
+            transition: transform 0.26s ease, border-color 0.26s ease, box-shadow 0.26s ease, background 0.26s ease;
+        }
+
+        .forecast-tile::before {
+            content: "";
+            position: absolute;
+            inset: -40% -10% auto -10%;
+            height: 55%;
+            background: radial-gradient(circle at 50% 50%, rgba(34, 211, 238, 0.18), transparent 65%);
+            pointer-events: none;
+            transform: translateY(-18px);
+            transition: opacity 0.24s ease, transform 0.24s ease;
+            opacity: 0.65;
+        }
+
+        .forecast-tile:hover {
+            transform: translateY(-5px);
+            border-color: rgba(34, 211, 238, 0.5);
+            box-shadow: 0 18px 32px rgba(8, 145, 178, 0.2);
+            background: linear-gradient(160deg, rgba(34, 211, 238, 0.15), rgba(255, 255, 255, 0.04));
+        }
+
+        .forecast-tile.forecast-active {
+            border-color: rgba(34, 211, 238, 0.7);
+            box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.45), 0 22px 38px rgba(8, 145, 178, 0.26);
+            background: linear-gradient(160deg, rgba(34, 211, 238, 0.2), rgba(255, 255, 255, 0.06));
+        }
+
+        .forecast-tile:hover::before,
+        .forecast-tile.forecast-active::before {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .forecast-tile .hourly-chip {
+            opacity: 0;
+            transform: translateY(4px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .forecast-tile:hover .hourly-chip,
+        .forecast-tile.forecast-active .hourly-chip {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .forecast-metric {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 0.35rem 0.5rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: rgba(255, 255, 255, 0.72);
+        }
+
+        .section-title-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: rgba(125, 211, 252, 0.92);
+            background: rgba(14, 165, 233, 0.1);
+            border: 1px solid rgba(14, 165, 233, 0.2);
+            border-radius: 999px;
+            padding: 0.35rem 0.7rem;
+        }
+
+        #forecast-list {
+            position: relative;
+            isolation: isolate;
+            padding: 0.75rem;
+            border-radius: 2rem;
+            background: linear-gradient(145deg, rgba(14, 165, 233, 0.06), rgba(245, 158, 11, 0.04));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        html:not(.dark) #forecast-list {
+            background: linear-gradient(145deg, rgba(14, 165, 233, 0.11), rgba(245, 158, 11, 0.07));
+            border-color: rgba(148, 163, 184, 0.2);
         }
 
         #navbar {
@@ -769,10 +882,10 @@
 
                     <div id="hourly-scroll" class="flex overflow-x-auto gap-3 pb-2 scrollbar-hide snap-x mask-linear">
                         <!-- Placeholder State -->
-                        <div class="min-w-full flex flex-col items-center justify-center py-8 text-white/20">
-                            <i class="ri-loader-4-line text-2xl animate-spin mb-2"></i>
-                            <span class="text-[10px] font-black uppercase tracking-widest">Syncing Temporal
-                                Data...</span>
+                        <div class="min-w-full flex flex-col items-center justify-center py-8 text-white/35">
+                            <i class="ri-cursor-line text-2xl mb-2"></i>
+                            <span class="text-[10px] font-black uppercase tracking-widest">Click a forecast date to
+                                load hourly</span>
                         </div>
                     </div>
 
@@ -809,8 +922,11 @@
                         <div class="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-white/40">
                             <i class="ri-calendar-line"></i>
                         </div>
-                        <h3 class="text-[11px] font-black text-white/40 uppercase tracking-[0.4em]">Extended Outlook
-                        </h3>
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <h3 class="text-[11px] font-black text-white/40 uppercase tracking-[0.4em]">Extended Outlook
+                            </h3>
+                            <span class="section-title-kicker"><i class="ri-sparkling-line"></i> Tap A Day For Hourly Drilldown</span>
+                        </div>
                     </div>
                     <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4" id="forecast-list">
                         <!-- Items injected via JS -->
@@ -1238,6 +1354,8 @@
 
         function setMethod(method) {
             currentMethod = method;
+            hourlyFetchUnlocked = false;
+            resetHourlyState();
 
             // Update UI buttons (Sync Desktop & Mobile)
             ['mc', 'quantile', 'conformal'].forEach(m => {
@@ -1427,7 +1545,30 @@
             });
         }
 
+        function resetHourlyState() {
+            const subtitle = document.getElementById('hourly-subtitle');
+            if (subtitle) subtitle.innerText = 'Select a forecast date to load timeline';
+
+            const container = document.getElementById('hourly-scroll');
+            if (container) {
+                container.innerHTML = `
+                    <div class="min-w-full flex flex-col items-center justify-center py-8 text-white/35">
+                        <i class="ri-cursor-line text-2xl mb-2"></i>
+                        <span class="text-[10px] font-black uppercase tracking-widest">Click a forecast date to load hourly</span>
+                    </div>
+                `;
+            }
+
+            if (hourlyChartInstance) {
+                hourlyChartInstance.destroy();
+                hourlyChartInstance = null;
+            }
+
+            setHourlyView('cards');
+        }
+
         async function fetchHourly(dateStr) {
+            if (!hourlyFetchUnlocked) return;
             // Update Subtitle
             const subtitle = document.getElementById('hourly-subtitle');
             if (subtitle) subtitle.innerText = `Timeline for ${new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`;
@@ -1461,6 +1602,7 @@
 
         let hourlyChartInstance = null;
         let selectedForecastDate = null;
+        let hourlyFetchUnlocked = false;
         function renderHourlyChart(data) {
             const canvas = document.getElementById('hourlyInlineChart');
             if (!canvas) return;
@@ -1599,6 +1741,8 @@
         ];
 
         async function fetchPrediction(retryCount = 0) {
+            hourlyFetchUnlocked = false;
+            resetHourlyState();
             const loading = document.getElementById('loading');
             const loadingText = loading.querySelector('p') || document.createElement('p');
             if (!loading.querySelector('p')) {
@@ -1760,7 +1904,9 @@
                     const activeDate = selectedForecastDate && data.forecast.some((d) => d.date === selectedForecastDate)
                         ? selectedForecastDate
                         : data.forecast[0].date;
-                    selectForecastDate(activeDate, true);
+                    hourlyFetchUnlocked = false;
+                    selectForecastDate(activeDate, false);
+                    resetHourlyState();
 
                     const list = document.getElementById('forecast-list');
                     if (list) {
@@ -1798,18 +1944,24 @@
             }
         }
 
-        function selectForecastDate(dateStr, triggerFetch = true) {
+        function selectForecastDate(dateStr, triggerFetch = false) {
             selectedForecastDate = dateStr;
             document.querySelectorAll('[data-forecast-date]').forEach((card) => {
                 const isActive = card.dataset.forecastDate === dateStr;
-                card.classList.toggle('border-brand-500/50', isActive);
-                card.classList.toggle('bg-white/5', isActive);
+                card.classList.toggle('forecast-active', isActive);
             });
-            if (triggerFetch) {
+            if (triggerFetch && hourlyFetchUnlocked) {
+                const list = document.getElementById('forecast-list');
+                if (list) list.querySelectorAll('.forecast-cue').forEach((el) => el.remove());
                 fetchHourly(dateStr);
                 const section = document.getElementById('hourly-section');
                 if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
+        }
+
+        function onForecastDateClick(dateStr) {
+            hourlyFetchUnlocked = true;
+            selectForecastDate(dateStr, true);
         }
 
         function renderForecastList(forecast) {
@@ -1818,14 +1970,20 @@
             container.innerHTML = forecast.map((d, i) => {
                 const date = new Date(d.date);
                 const day = date.toLocaleDateString('en-US', { weekday: 'short' });
+                const dayNum = date.toLocaleDateString('en-US', { day: '2-digit' });
+                const month = date.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
                 const icon = getWeatherIcon(d.rainfall, d.temp_avg);
                 const isActive = selectedForecastDate ? selectedForecastDate === d.date : i === 0;
 
                 return `
-                    <div data-forecast-date="${d.date}" onclick="selectForecastDate('${d.date}', true)" class="glass-card rounded-[32px] p-4 flex flex-col items-center gap-3 group cursor-pointer ${isActive ? 'border-brand-500/50 bg-white/5' : ''} relative overflow-hidden">
-                        <div class="absolute inset-0 bg-brand-500/0 group-hover:bg-brand-500/5 transition-colors duration-300"></div>
+                    <div data-forecast-date="${d.date}" onclick="onForecastDateClick('${d.date}')" class="forecast-tile p-4 flex flex-col items-center gap-3 group cursor-pointer ${isActive ? 'forecast-active' : ''}">
+                        <div class="absolute inset-0 bg-brand-500/0 group-hover:bg-brand-500/5 transition-colors duration-300 pointer-events-none"></div>
                         
-                        <span class="text-[9px] font-black uppercase tracking-widest ${isActive ? 'text-brand-400' : 'text-white/30'}">${day}</span>
+                        <div class="relative z-10 text-center">
+                            <span class="text-[9px] font-black uppercase tracking-widest ${isActive ? 'text-brand-400' : 'text-white/30'}">${day}</span>
+                            <div class="text-xl font-heading font-black text-white/90 leading-none">${dayNum}</div>
+                            <div class="text-[8px] font-black tracking-[0.2em] text-white/35">${month}</div>
+                        </div>
                         <span class="text-3xl group-hover:scale-125 transition-transform duration-500 relative z-10">${icon}</span>
                         
                         <div class="text-center relative z-10">
@@ -1833,9 +1991,9 @@
                             <div class="h-1 w-1 bg-white/10 rounded-full mx-auto mt-1"></div>
                         </div>
                         
-                        <span class="text-[8px] font-black text-green-500/40 uppercase tracking-tighter relative z-10">${Math.round(d.pm2_5)} PM</span>
+                        <span class="forecast-metric relative z-10"><i class="ri-leaf-line"></i>${Math.round(d.pm2_5)} PM2.5</span>
                         
-                        <div class="mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div class="hourly-chip mt-2">
                              <span class="text-[8px] font-bold text-brand-400 bg-brand-500/10 px-2 py-1 rounded-full">Hourly</span>
                         </div>
                     </div>
