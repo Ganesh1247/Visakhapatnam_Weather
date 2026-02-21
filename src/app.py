@@ -36,6 +36,17 @@ app = Flask(__name__, template_folder='../templates', static_folder='../static')
 # Use environment variable for secret key in production
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret')
 
+# Session cookie settings:
+# Hugging Face embeds apps in an iframe on huggingface.co; third-party cookie
+# restrictions can break login/session unless SameSite=None and Secure are set.
+is_hf_space = bool(os.environ.get("SPACE_ID") or os.environ.get("HF_SPACE_ID"))
+if is_hf_space:
+    app.config.update(
+        SESSION_COOKIE_SAMESITE="None",
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_HTTPONLY=True,
+    )
+
 # Custom JSON encoder for numpy types
 import json
 class NumpyEncoder(json.JSONEncoder):
