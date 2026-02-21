@@ -423,6 +423,25 @@
                 initApp();
             }
 
+            // If rendered inside huggingface.co iframe, sessions may fail due to
+            // third-party cookie blocking. Open direct hf.space origin instead.
+            (function ensureTopLevelSessionContext() {
+                try {
+                    if (window.top !== window.self && window.location.hostname.endsWith('.hf.space')) {
+                        const directUrl = window.location.href;
+                        const status = document.getElementById('status-msg');
+                        const text = document.getElementById('status-text');
+                        if (status && text) {
+                            status.className = 'mb-6 p-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.12em] text-center border relative group text-amber-300 border-amber-500/30';
+                            status.classList.remove('hidden');
+                            text.innerHTML = `Open app directly for sign-in. <a href="${directUrl}" target="_blank" rel="noopener" class="underline">Open Secure Session</a>`;
+                        }
+                    }
+                } catch (e) {
+                    // no-op
+                }
+            })();
+
             const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             const enableParallax = !reducedMotion && window.innerWidth > 768;
 
