@@ -1,1 +1,1 @@
-PM2.5 AQI Accuracy: 70.45%
+PM2.5 AQI Accuracy: 68.02%
