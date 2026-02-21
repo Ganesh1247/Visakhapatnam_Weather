@@ -168,10 +168,17 @@ def login_required(f):
 
 def get_user_by_email(email):
     """Get user record by email"""
+    email = (email or "").strip()
+    if not email:
+        return None
+
     supabase = get_db_client()
     if supabase:
         try:
+            # Exact match first, then case-insensitive fallback.
             response = supabase.table('users').select("*").eq('email', email).execute()
+            if (not response.data) and hasattr(supabase.table('users'), 'ilike'):
+                response = supabase.table('users').select("*").ilike('email', email).execute()
             if response.data and len(response.data) > 0:
                 user = response.data[0]
                 # Map Supabase dict to tuple format for compatibility: (id, email, username, password_hash)
@@ -184,17 +191,24 @@ def get_user_by_email(email):
     # Fallback to SQLite
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute('SELECT id, email, username, password_hash FROM users WHERE email = ?', (email,))
+    c.execute('SELECT id, email, username, password_hash FROM users WHERE lower(trim(email)) = lower(trim(?))', (email,))
     row = c.fetchone()
     conn.close()
     return row
 
 def get_user_by_username(username):
     """Get user record by username"""
+    username = (username or "").strip()
+    if not username:
+        return None
+
     supabase = get_db_client()
     if supabase:
         try:
+            # Exact match first, then case-insensitive fallback.
             response = supabase.table('users').select("*").eq('username', username).execute()
+            if (not response.data) and hasattr(supabase.table('users'), 'ilike'):
+                response = supabase.table('users').select("*").ilike('username', username).execute()
             if response.data and len(response.data) > 0:
                 user = response.data[0]
                 return (user.get('id'), user.get('email'), user.get('username'), user.get('password_hash'))
@@ -205,7 +219,7 @@ def get_user_by_username(username):
 
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute('SELECT id, email, username, password_hash FROM users WHERE username = ?', (username,))
+    c.execute('SELECT id, email, username, password_hash FROM users WHERE lower(trim(username)) = lower(trim(?))', (username,))
     row = c.fetchone()
     conn.close()
     return row
@@ -310,15 +324,22 @@ def get_otp(email):
 
 def verify_password(username_or_email, password):
     """Verify username/password. Returns (success, email) or (False, None)"""
+    username_or_email = (username_or_email or "").strip()
+    password = password or ""
     row = get_user_by_username(username_or_email)
     if not row:
         row = get_user_by_email(username_or_email)
     
     if not row or not row[3]:  # no password_hash
         return False, None
-        
-    if check_password_hash(row[3], password):
-        return True, row[1]  # return email
+
+    stored_hash = str(row[3]).strip()
+    try:
+        if check_password_hash(stored_hash, password):
+            return True, row[1]  # return email
+    except Exception:
+        # Unsupported hash format (legacy/corrupt)
+        return False, None
         
     return False, None
 
