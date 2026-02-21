@@ -27,7 +27,7 @@ SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 
 def get_supabase_client():
-    """Anon/publishable client for reads."""
+    """Anon/publishable client (fallback only)."""
     if SUPABASE_AVAILABLE and SUPABASE_URL and SUPABASE_KEY:
         try:
             return create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -46,10 +46,17 @@ def get_supabase_admin_client():
             return get_supabase_client()  # Fallback to anon if no service key
     return get_supabase_client()  # Fallback to anon if no service key
 
+def get_db_client():
+    """
+    Preferred DB client for backend operations.
+    Always prefer service-role key in server-side code to avoid RLS read/write mismatches.
+    """
+    return get_supabase_admin_client()
+
 
 # Database initialization
 def init_db():
-    supabase = get_supabase_client()
+    supabase = get_db_client()
     if supabase:
         print("[INFO] Using Supabase Backend.")
         # Supabase tables are created via SQL editor/dashboard, not here.
@@ -167,7 +174,7 @@ def login_required(f):
 
 def get_user_by_email(email):
     """Get user record by email"""
-    supabase = get_supabase_client()
+    supabase = get_db_client()
     if supabase:
         try:
             response = supabase.table('users').select("*").eq('email', email).execute()
@@ -190,7 +197,7 @@ def get_user_by_email(email):
 
 def get_user_by_username(username):
     """Get user record by username"""
-    supabase = get_supabase_client()
+    supabase = get_db_client()
     if supabase:
         try:
             response = supabase.table('users').select("*").eq('username', username).execute()
@@ -219,11 +226,11 @@ def set_user_credentials(email, username, password):
     """Set username and hashed password for user after OTP verification"""
     password_hash = generate_password_hash(password, method='pbkdf2:sha256')
     
-    supabase = get_supabase_admin_client()  # Admin for writes
+    supabase = get_db_client()  # Admin for reads/writes
     if supabase:
         try:
             # Check unique username first
-            existing = get_supabase_client().table('users').select("id").eq('username', username).execute()
+            existing = supabase.table('users').select("id").eq('username', username).execute()
             if existing.data and len(existing.data) > 0:
                 return False  # Username taken
             
@@ -253,24 +260,15 @@ def set_user_credentials(email, username, password):
 
 def save_otp(email, otp, expires_at):
     """Save or update OTP for a user"""
-    supabase = get_supabase_admin_client()  # Use admin for writes
+    supabase = get_db_client()  # Use admin for writes
     if supabase:
         try:
-            # Check existence first using anon client (read)
-            user = get_user_by_email(email)
-            if user:
-                # Update existing user
-                supabase.table('users').update({
-                    'otp': otp,
-                    'otp_expiry': expires_at.isoformat()
-                }).eq('email', email).execute()
-            else:
-                # Insert new user
-                supabase.table('users').insert({
-                    'email': email,
-                    'otp': otp,
-                    'otp_expiry': expires_at.isoformat()
-                }).execute()
+            # Single atomic write path: update existing row or insert new row by email.
+            supabase.table('users').upsert({
+                'email': email,
+                'otp': otp,
+                'otp_expiry': expires_at.isoformat()
+            }, on_conflict='email').execute()
             return True
         except Exception as e:
             print(f"Supabase OTP Error: {e}")
@@ -297,7 +295,7 @@ def save_otp(email, otp, expires_at):
 
 def get_otp(email):
     """Retrieve OTP and expiry for an email"""
-    supabase = get_supabase_client()
+    supabase = get_db_client()
     if supabase:
         try:
             response = supabase.table('users').select("otp, otp_expiry").eq('email', email).execute()
