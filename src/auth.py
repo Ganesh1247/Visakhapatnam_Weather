@@ -2,6 +2,7 @@ import sqlite3
 import secrets
 import smtplib
 import os
+import requests
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
@@ -90,8 +91,40 @@ def generate_otp():
     """Generate a 6-digit OTP"""
     return str(secrets.randbelow(900000) + 100000)
 
+def _send_otp_via_resend(email, otp, html_body):
+    """
+    Send OTP via Resend API (HTTPS/443).
+    This is useful on hosts where SMTP ports are blocked (e.g., some serverless platforms).
+    """
+    api_key = os.environ.get("RESEND_API_KEY", "").strip()
+    from_email = os.environ.get("OTP_FROM_EMAIL", "").strip() or os.environ.get("SMTP_EMAIL", "").strip()
+    if not api_key or not from_email:
+        return False
+
+    payload = {
+        "from": from_email,
+        "to": [email],
+        "subject": "Your OTP for EcoGlance Air Quality App",
+        "html": html_body
+    }
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        res = requests.post("https://api.resend.com/emails", json=payload, headers=headers, timeout=20)
+        if 200 <= res.status_code < 300:
+            print(f"[OK] OTP sent successfully to {email} via Resend API")
+            return True
+        print(f"[WARN] Resend API failed: status={res.status_code} body={res.text[:250]}")
+        return False
+    except Exception as err:
+        print(f"[WARN] Resend API request failed: {err}")
+        return False
+
 def send_otp_email(email, otp):
-    """Send OTP via SMTP. Returns True only when an actual email was sent."""
+    """Send OTP via SMTP first, then HTTPS API fallback. Returns True only when actually sent."""
     sender_email = os.environ.get("SMTP_EMAIL", "your.email@gmail.com")
     sender_password = os.environ.get("SMTP_PASSWORD", "your_app_password_here")
     is_hf_space = bool(os.environ.get("SPACE_ID") or os.environ.get("HF_SPACE_ID"))
@@ -102,29 +135,29 @@ def send_otp_email(email, otp):
         bool(sender_email) and bool(sender_password)
     )
 
+    html_body = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
+            <div style="max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <h2 style="color: #667eea; margin-bottom: 20px;">EcoGlance Verification</h2>
+                <p style="font-size: 16px; color: #333;">Your One-Time Password (OTP) is:</p>
+                <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+                    <h1 style="color: #667eea; font-size: 36px; letter-spacing: 8px; margin: 0;">{otp}</h1>
+                </div>
+                <p style="font-size: 14px; color: #666;">This OTP will expire in <strong>5 minutes</strong>.</p>
+                <p style="font-size: 14px; color: #666;">If you didn't request this, please ignore this email.</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                <p style="font-size: 12px; color: #999;">EcoGlance - Air Quality &amp; Weather Forecast System</p>
+            </div>
+        </body>
+    </html>
+    """
+
     if smtp_configured:
         msg = MIMEMultipart()
         msg["From"] = sender_email
         msg["To"] = email
         msg["Subject"] = "Your OTP for EcoGlance Air Quality App"
-
-        html_body = f"""
-        <html>
-            <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
-                <div style="max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                    <h2 style="color: #667eea; margin-bottom: 20px;">EcoGlance Verification</h2>
-                    <p style="font-size: 16px; color: #333;">Your One-Time Password (OTP) is:</p>
-                    <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
-                        <h1 style="color: #667eea; font-size: 36px; letter-spacing: 8px; margin: 0;">{otp}</h1>
-                    </div>
-                    <p style="font-size: 14px; color: #666;">This OTP will expire in <strong>5 minutes</strong>.</p>
-                    <p style="font-size: 14px; color: #666;">If you didn't request this, please ignore this email.</p>
-                    <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-                    <p style="font-size: 12px; color: #999;">EcoGlance - Air Quality &amp; Weather Forecast System</p>
-                </div>
-            </body>
-        </html>
-        """
         msg.attach(MIMEText(html_body, "html"))
 
         try:
@@ -148,12 +181,16 @@ def send_otp_email(email, otp):
         except Exception as err_tls:
             print(f"[WARN] SMTP STARTTLS:587 failed: {err_tls}")
 
+    # SMTP failed or was unavailable; try HTTPS fallback (works where SMTP ports are blocked)
+    if _send_otp_via_resend(email, otp, html_body):
+        return True
+
     if is_hf_space:
-        print("[ERROR] OTP email not sent: SMTP is not configured or failed on Hugging Face Space.")
+        print("[ERROR] OTP email not sent: SMTP failed and RESEND_API_KEY/OTP_FROM_EMAIL is missing or invalid on Hugging Face Space.")
         return False
 
-    print(f"[ERROR] OTP email not sent to {email}: SMTP is not configured or authentication failed.")
-    print("[INFO] Configure SMTP_EMAIL and SMTP_PASSWORD (Gmail App Password) in environment variables.")
+    print(f"[ERROR] OTP email not sent to {email}: SMTP and Resend API both failed or are not configured.")
+    print("[INFO] Configure SMTP_EMAIL/SMTP_PASSWORD or RESEND_API_KEY/OTP_FROM_EMAIL in environment variables.")
     print("[INFO] Get Gmail App Password: https://myaccount.google.com/apppasswords")
     return False
 def login_required(f):
