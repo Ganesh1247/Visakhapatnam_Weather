@@ -21,9 +21,7 @@ from tensorflow.keras.models import load_model, Model  # pyright: ignore[reportM
 from preprocessing import DataPreprocessor
 from datetime import datetime, timedelta
 from auth import (
-    init_db, generate_otp, send_otp_email, login_required,
-    user_has_credentials, set_user_credentials, verify_password,
-    save_otp, get_otp, DB_PATH
+    init_db, login_required, verify_password, create_user_credentials
 )
 from backend.uncertainty.mc_dropout import MCDropoutPredictor
 from backend.uncertainty.quantile import QuantileRegressor
@@ -47,6 +45,8 @@ if is_hf_space:
         SESSION_COOKIE_SECURE=True,
         SESSION_COOKIE_HTTPONLY=True,
     )
+
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 # Flask 3 uses JSON provider classes (app.json_encoder is ignored).
 class NumpyJSONProvider(DefaultJSONProvider):
@@ -495,70 +495,6 @@ def login_page():
 
 @app.route('/signup', methods=['POST'])
 def signup():
-    email = request.json.get('email')
-    if not email:
-        return jsonify({'error': 'Email required'}), 400
-    
-    otp = generate_otp()
-    otp_expiry = datetime.now() + timedelta(minutes=5)
-    
-    # Use agnostic save_otp (Supabase or SQLite)
-    if save_otp(email, otp, otp_expiry):
-        # Send OTP
-        if send_otp_email(email, otp):
-            return jsonify({'success': True, 'message': 'OTP sent to your email'})
-        else:
-            return jsonify({
-                'error': 'Failed to send OTP email. Configure SMTP_EMAIL/SMTP_PASSWORD or RESEND_API_KEY/OTP_FROM_EMAIL in server environment variables.'
-            }), 500
-    else:
-        return jsonify({'error': 'Database Error'}), 500
-
-@app.route('/verify', methods=['POST'])
-def verify_otp():
-    email = request.json.get('email')
-    otp = request.json.get('otp')
-    
-    if not email or not otp:
-        return jsonify({'error': 'Email and OTP required'}), 400
-    
-    stored_otp, expiry = get_otp(email)
-    
-    if not stored_otp:
-        return jsonify({'error': 'User not found or no OTP requested'}), 404
-    
-    # Handle both string (SQLite/Supabase) and datetime objects (if adapter returns object)
-    if isinstance(expiry, str):
-        expiry_dt = datetime.fromisoformat(expiry.replace('Z', '+00:00'))
-    else:
-        expiry_dt = expiry
-        
-    # Naive vs Aware check
-    now = datetime.now()
-    if expiry_dt.tzinfo:
-        expiry_dt = expiry_dt.replace(tzinfo=None)
-
-    if now > expiry_dt:
-        return jsonify({'error': 'OTP expired'}), 400
-    
-    if stored_otp != otp:
-        return jsonify({'error': 'Invalid OTP'}), 400
-    
-    # Returning user with credentials -> login directly
-    if user_has_credentials(email):
-        session['user_email'] = email
-        return jsonify({'success': True, 'message': 'Login successful', 'redirect': True})
-    
-    # New user -> must set username & password first
-    session['pending_email'] = email  # temporary; create session after credentials set
-    return jsonify({'success': True, 'needs_setup': True, 'message': 'Set your username and password'})
-
-@app.route('/set-credentials', methods=['POST'])
-def set_credentials():
-    email = session.get('pending_email')
-    if not email:
-        return jsonify({'error': 'Session expired. Please start over.'}), 400
-    
     username = request.json.get('username', '').strip()
     password = request.json.get('password', '')
     
@@ -566,18 +502,21 @@ def set_credentials():
         return jsonify({'error': 'Username must be at least 3 characters'}), 400
     if not password or len(password) < 6:
         return jsonify({'error': 'Password must be at least 6 characters'}), 400
-    
-    if not set_user_credentials(email, username, password):
-        return jsonify({'error': 'Username already taken'}), 400
-    
-    session.pop('pending_email', None)
+
+    created, result = create_user_credentials(username, password)
+    if not created:
+        return jsonify({'error': result}), 400
+
+    email = result
     session['user_email'] = email
+    session.permanent = True
     return jsonify({'success': True, 'message': 'Account created! Redirecting...', 'redirect': True})
 
 @app.route('/login-password', methods=['POST'])
 def login_password():
     username_or_email = request.json.get('username', '').strip()
     password = request.json.get('password', '')
+    remember = bool(request.json.get('remember'))
     
     if not username_or_email or not password:
         return jsonify({'error': 'Username/email and password required'}), 400
@@ -585,6 +524,7 @@ def login_password():
     success, email = verify_password(username_or_email, password)
     if success:
         session['user_email'] = email
+        session.permanent = remember
         return jsonify({'success': True, 'message': 'Login successful', 'redirect': True})
     return jsonify({'error': 'Invalid username or password'}), 401
 
