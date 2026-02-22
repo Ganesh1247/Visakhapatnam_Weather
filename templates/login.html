@@ -234,7 +234,8 @@
                     class="flex-1 py-3 text-xs font-black uppercase tracking-[0.15em] z-10 text-white transition-colors duration-300">Sign
                     In</button>
                 <button onclick="switchTab('signup', 1)" id="btn-tab-signup"
-                    class="flex-1 py-3 text-xs font-black uppercase tracking-[0.15em] z-10 text-white/40 hover:text-white/60 transition-colors duration-300">Sync</button>
+                    class="flex-1 py-3 text-xs font-black uppercase tracking-[0.15em] z-10 text-white/40 hover:text-white/60 transition-colors duration-300">Sign
+                    Up</button>
                 <button onclick="switchTab('guest', 2)" id="btn-tab-guest"
                     class="flex-1 py-3 text-xs font-black uppercase tracking-[0.15em] z-10 text-brand-400 transition-colors duration-300">Explore</button>
             </div>
@@ -326,8 +327,8 @@
                         </button>
                         <div class="text-center">
                             <button onclick="switchTab('signup', 1)"
-                                class="text-[10px] font-bold text-white/20 hover:text-white/40 uppercase tracking-widest transition-colors">Need
-                                an account? Create one</button>
+                                class="text-[10px] font-bold text-white/20 hover:text-white/40 uppercase tracking-widest transition-colors">Forgot
+                                credentials? Create another account</button>
                         </div>
                     </div>
 
@@ -335,55 +336,29 @@
 
                 <!-- SIGNUP FLOW -->
                 <div id="signup-view" class="form-content form-hidden space-y-8">
-                    <div id="reg-step-1" class="space-y-8 py-4">
+                    <div class="space-y-8 py-4">
                         <div class="input-group space-y-3 text-center">
                             <div
-                                class="w-14 h-14 mx-auto rounded-2xl bg-white/5 flex items-center justify-center text-indigo-400 mb-2">
-                                <i class="ri-mail-send-line text-2xl"></i>
+                                class="w-14 h-14 mx-auto rounded-2xl bg-white/5 flex items-center justify-center text-emerald-400 mb-2">
+                                <i class="ri-user-add-line text-2xl"></i>
                             </div>
-                            <h4 class="text-lg font-bold text-white">Email Verification</h4>
-                            <p class="text-white/30 text-[10px] leading-relaxed">Enter your email to receive a
-                                6-digit verification code.</p>
-                            <input type="email" id="signup-email" placeholder="scientist@future.io"
-                                class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white text-center focus:outline-none focus:border-cyan-500/50 mt-4">
+                            <h4 class="text-lg font-bold text-white">Create New Account</h4>
+                            <p class="text-white/30 text-[10px] leading-relaxed">Set your username and password.
+                                You can create a new account anytime if you forget old credentials.</p>
                         </div>
-                        <button onclick="perfSendOTP()" id="btn-otp-action"
-                            class="w-full btn-premium bg-gradient-to-r from-sky-600 to-cyan-500 text-white font-black py-5 rounded-3xl shadow-xl shadow-cyan-500/20">
-                            Send Verification Code
-                        </button>
-                    </div>
-
-                    <div id="reg-step-2" class="hidden space-y-8">
-                        <div class="input-group space-y-6 text-center">
-                            <div class="space-y-2">
-                                <h4 class="text-lg font-bold text-white">Enter OTP</h4>
-                                <p class="text-white/30 text-[10px]">Confirm your email to continue.</p>
-                            </div>
-                            <input type="text" id="signup-otp" maxlength="6" placeholder="000000"
-                                class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-5 text-white text-center text-3xl tracking-[0.5em] font-black focus:outline-none focus:border-brand-500/50">
-                        </div>
-                        <button onclick="perfVerifyOTP()" id="btn-verify-action"
-                            class="w-full btn-premium bg-gradient-to-r from-cyan-600 to-sky-600 text-white font-black py-5 rounded-3xl">
-                            Verify Code
-                        </button>
-                    </div>
-
-                    <div id="reg-step-3" class="hidden space-y-6">
                         <div class="input-group space-y-2">
                             <label
-                                class="block text-[10px] font-black text-white/30 uppercase tracking-widest ml-1">New
-                                Identity</label>
-                            <input type="text" id="new-user" placeholder="Unique Alias"
+                                class="block text-[10px] font-black text-white/30 uppercase tracking-widest ml-1">Username</label>
+                            <input type="text" id="new-user" placeholder="Unique Username"
                                 class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-green-500/50">
                         </div>
                         <div class="input-group space-y-2">
                             <label
-                                class="block text-[10px] font-black text-white/30 uppercase tracking-widest ml-1">New
-                                Access Key</label>
-                            <input type="password" id="new-pass" placeholder="Secure Sequence"
+                                class="block text-[10px] font-black text-white/30 uppercase tracking-widest ml-1">Password</label>
+                            <input type="password" id="new-pass" placeholder="Create Password"
                                 class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-green-500/50">
                         </div>
-                        <button onclick="perfFinalize()" id="btn-final-action"
+                        <button onclick="performSignup()" id="btn-signup-action"
                             class="w-full btn-premium bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-black py-5 rounded-3xl mt-4">Create
                             Account</button>
                     </div>
@@ -518,6 +493,7 @@
             async function performLogin() {
                 const user = document.getElementById('login-user').value.trim();
                 const pass = document.getElementById('login-pass').value;
+                const remember = document.getElementById('remember-me').checked;
                 if (!user || !pass) return setStatus('Credentials Missing', 'error');
 
                 const btn = document.getElementById('btn-login-action');
@@ -528,7 +504,7 @@
                     const res = await fetch('/login-password', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username: user, password: pass })
+                        body: JSON.stringify({ username: user, password: pass, remember: remember })
                     });
                     const data = await res.json();
                     if (res.ok && data.redirect) {
@@ -544,79 +520,34 @@
                 }
             }
 
-            let syncedMail = '';
-
-            async function perfSendOTP() {
-                const mail = document.getElementById('signup-email').value.trim();
-                if (!mail || !mail.includes('@')) return setStatus('Invalid Mail Sequence', 'error');
-
-                const btn = document.getElementById('btn-otp-action');
-                btn.disabled = true;
-                btn.innerHTML = '<i class="ri-loader-line animate-spin text-xl"></i>';
-
-                try {
-                    const res = await fetch('/signup', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: mail })
-                    });
-                    const data = await res.json();
-                    if (res.ok) {
-                        syncedMail = mail;
-                        setStatus('Verification code sent');
-                        document.getElementById('reg-step-1').classList.add('hidden');
-                        document.getElementById('reg-step-2').classList.remove('hidden');
-                    } else setStatus(data.error, 'error');
-                } catch (e) { setStatus('Emitter Fault', 'error'); }
-                finally {
-                    btn.disabled = false;
-                    btn.textContent = 'Send Verification Code';
-                }
-            }
-
-            async function perfVerifyOTP() {
-                const otp = document.getElementById('signup-otp').value.trim();
-                if (otp.length !== 6) return setStatus('Incomplete Sequence', 'error');
-
-                const btn = document.getElementById('btn-verify-action');
-                btn.disabled = true;
-
-                try {
-                    const res = await fetch('/verify', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: syncedMail, otp })
-                    });
-                    const data = await res.json();
-                    if (res.ok) {
-                        if (data.needs_setup) {
-                            setStatus('Email verified - create your account');
-                            document.getElementById('reg-step-2').classList.add('hidden');
-                            document.getElementById('reg-step-3').classList.remove('hidden');
-                        } else window.location.href = '/';
-                    } else setStatus(data.error, 'error');
-                } catch (e) { setStatus('Relay Error', 'error'); }
-                finally { btn.disabled = false; }
-            }
-
-            async function perfFinalize() {
+            async function performSignup() {
                 const u = document.getElementById('new-user').value.trim();
                 const p = document.getElementById('new-pass').value;
                 if (u.length < 3) return setStatus('Identity too short', 'error');
                 if (p.length < 6) return setStatus('Key too simple', 'error');
 
+                const btn = document.getElementById('btn-signup-action');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="ri-loader-4-line animate-spin text-xl"></i>';
+
                 try {
-                    const res = await fetch('/set-credentials', {
+                    const res = await fetch('/signup', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ username: u, password: p })
                     });
-                    if (res.ok) window.location.href = '/';
-                    else {
-                        const d = await res.json();
-                        setStatus(d.error, 'error');
+                    const data = await res.json();
+                    if (res.ok && data.redirect) {
+                        setStatus('Account created - Launching Core');
+                        setTimeout(() => window.location.href = '/', 800);
+                    } else {
+                        setStatus(data.error || 'Registration Failed', 'error');
                     }
-                } catch (e) { setStatus('Finalization Failed', 'error'); }
+                } catch (e) { setStatus('Registration Failed', 'error'); }
+                finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Create Account';
+                }
             }
         </script>
 </body>

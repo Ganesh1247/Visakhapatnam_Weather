@@ -303,6 +303,51 @@ def set_user_credentials(email, username, password):
     finally:
         conn.close()
 
+def create_user_credentials(username, password):
+    """Create a brand-new user with username/password and synthetic email key."""
+    username = (username or "").strip()
+    password = password or ""
+    if len(username) < 3 or len(password) < 6:
+        return False, "Username must be at least 3 characters and password at least 6 characters"
+
+    # Keep legacy schema compatibility where email is required.
+    synthetic_email = f"{username.lower()}@local.ecoglance"
+    password_hash = generate_password_hash(password, method='pbkdf2:sha256')
+
+    supabase = get_db_client()
+    if supabase:
+        try:
+            existing = supabase.table('users').select("id").eq('username', username).execute()
+            if existing.data and len(existing.data) > 0:
+                return False, "Username already taken"
+
+            supabase.table('users').insert({
+                'email': synthetic_email,
+                'username': username,
+                'password_hash': password_hash
+            }).execute()
+            return True, synthetic_email
+        except Exception as e:
+            print(f"Supabase Create User Error: {e}")
+            return False, "Failed to create account"
+
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    try:
+        c.execute(
+            'INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)',
+            (synthetic_email, username, password_hash)
+        )
+        conn.commit()
+        return True, synthetic_email
+    except sqlite3.IntegrityError:
+        return False, "Username already taken"
+    except Exception as e:
+        print(f"SQLite Create User Error: {e}")
+        return False, "Failed to create account"
+    finally:
+        conn.close()
+
 def save_otp(email, otp, expires_at):
     """Save or update OTP for a user"""
     supabase = get_db_client()  # Use admin for writes
