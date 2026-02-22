@@ -300,11 +300,16 @@
                                 <div class="relative group">
                                     <i
                                         class="ri-lock-2-line absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-brand-400 transition-colors"></i>
-                                    <input type="password" id="login-pass" placeholder="••••••••"
-                                        class="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-white placeholder:text-white/10 focus:outline-none focus:border-brand-500/50 focus:bg-white/10 focus:shadow-[0_0_20px_rgba(14,165,233,0.1)] transition-all duration-300">
+                                    <input type="password" id="login-pass" placeholder="********"
+                                        class="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-12 py-4 text-white placeholder:text-white/10 focus:outline-none focus:border-brand-500/50 focus:bg-white/10 focus:shadow-[0_0_20px_rgba(14,165,233,0.1)] transition-all duration-300">
+                                    <button type="button" onclick="togglePasswordVisibility('login-pass','login-pass-eye')"
+                                        class="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/80 transition-colors"
+                                        aria-label="Show or hide password">
+                                        <i id="login-pass-eye" class="ri-eye-off-line text-lg"></i>
+                                    </button>
                                 </div>
                             </div>
-                            <div class="flex items-center justify-between">
+                            <div class="flex items-center justify-between gap-3">
                                 <label class="flex items-center gap-3 cursor-pointer group">
                                     <input type="checkbox" id="remember-me" class="peer hidden">
                                     <div
@@ -316,6 +321,7 @@
                                         class="text-[10px] font-bold text-white/40 uppercase tracking-widest group-hover:text-white/60 transition-colors">Remember
                                         Me</span>
                                 </label>
+                                <span class="text-[9px] font-bold text-white/30 uppercase tracking-wider">Keep me signed in</span>
                             </div>
                         </div>
                         <button onclick="performLogin()" id="btn-login-action"
@@ -355,8 +361,15 @@
                         <div class="input-group space-y-2">
                             <label
                                 class="block text-[10px] font-black text-white/30 uppercase tracking-widest ml-1">Password</label>
-                            <input type="password" id="new-pass" placeholder="Create Password"
-                                class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-green-500/50">
+                            <div class="relative">
+                                <input type="password" id="new-pass" placeholder="Create Password"
+                                    class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 pr-12 py-4 text-white focus:outline-none focus:border-green-500/50">
+                                <button type="button" onclick="togglePasswordVisibility('new-pass', 'new-pass-eye')"
+                                    class="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/80 transition-colors"
+                                    aria-label="Show or hide password">
+                                    <i id="new-pass-eye" class="ri-eye-off-line text-lg"></i>
+                                </button>
+                            </div>
                         </div>
                         <button onclick="performSignup()" id="btn-signup-action"
                             class="w-full btn-premium bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-black py-5 rounded-3xl mt-4">Create
@@ -489,6 +502,16 @@
                 });
             }
 
+            function togglePasswordVisibility(inputId, iconId) {
+                const input = document.getElementById(inputId);
+                const icon = document.getElementById(iconId);
+                if (!input || !icon) return;
+
+                const isHidden = input.type === 'password';
+                input.type = isHidden ? 'text' : 'password';
+                icon.classList.toggle('ri-eye-line', isHidden);
+                icon.classList.toggle('ri-eye-off-line', !isHidden);
+            }
             // --- OPERATIONS ---
             async function performLogin() {
                 const user = document.getElementById('login-user').value.trim();
@@ -553,3 +576,4 @@
 </body>
 
 </html>
+
