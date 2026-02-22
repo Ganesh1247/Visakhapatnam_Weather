@@ -152,10 +152,10 @@ def send_otp_email(email, otp):
         print("[ERROR] OTP email not sent: SMTP is not configured or failed on Hugging Face Space.")
         return False
 
-    print(f"[WARNING] No email configured! OTP for {email}: {otp}")
-    print("[INFO] To enable email: Add SMTP_EMAIL and SMTP_PASSWORD in .env")
+    print(f"[ERROR] OTP email not sent to {email}: SMTP is not configured or authentication failed.")
+    print("[INFO] Configure SMTP_EMAIL and SMTP_PASSWORD (Gmail App Password) in environment variables.")
     print("[INFO] Get Gmail App Password: https://myaccount.google.com/apppasswords")
-    return True
+    return False
 def login_required(f):
     """Decorator to protect routes"""
     @wraps(f)
