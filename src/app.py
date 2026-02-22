@@ -509,7 +509,7 @@ def signup():
             return jsonify({'success': True, 'message': 'OTP sent to your email'})
         else:
             return jsonify({
-                'error': 'Failed to send OTP email. Check SMTP_EMAIL/SMTP_PASSWORD (Gmail App Password) in server environment variables.'
+                'error': 'Failed to send OTP email. Configure SMTP_EMAIL/SMTP_PASSWORD or RESEND_API_KEY/OTP_FROM_EMAIL in server environment variables.'
             }), 500
     else:
         return jsonify({'error': 'Database Error'}), 500
