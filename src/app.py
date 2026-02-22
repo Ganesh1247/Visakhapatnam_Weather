@@ -330,7 +330,7 @@ def fetch_weather_data():
         df_hist_final = df_om
 
     # 2. Future Forecast (7 Days)
-    url_fore = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,rain_sum,wind_speed_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,surface_pressure_mean,relative_humidity_2m_mean,cloud_cover_mean&forecast_days=8&timezone=auto"
+    url_fore = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,rain_sum,wind_speed_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,surface_pressure_mean,relative_humidity_2m_mean,cloud_cover_mean&hourly=temperature_2m,relative_humidity_2m,rain,wind_speed_10m&forecast_days=8&timezone=auto"
     r_fore = requests.get(url_fore, timeout=15).json()
     
     # Return DataFrames not JSON to simplify downstream
@@ -509,7 +509,7 @@ def signup():
             return jsonify({'success': True, 'message': 'OTP sent to your email'})
         else:
             return jsonify({
-                'error': 'Failed to send OTP email. Check SMTP_EMAIL/SMTP_PASSWORD (Gmail App Password) in Space secrets.'
+                'error': 'Failed to send OTP email. Check SMTP_EMAIL/SMTP_PASSWORD (Gmail App Password) in server environment variables.'
             }), 500
     else:
         return jsonify({'error': 'Database Error'}), 500
@@ -812,6 +812,28 @@ def predict():
 
         # 6. Response Construction
         main_pred = forecasts[0]
+        
+        # Override with current hour data for "Live Now" Hero section
+        try:
+            hourly = fore_json.get('hourly', {})
+            if hourly:
+                # Get current hour in local time (matching Open-Meteo's timezone=auto)
+                now_local = datetime.now()
+                # Find matching hour in hourly data
+                # Open-Meteo hourly time is ISO strings like "2023-10-27T07:00"
+                current_hour_str = now_local.strftime('%Y-%m-%dT%H:00')
+                if current_hour_str in hourly.get('time', []):
+                    idx = hourly['time'].index(current_hour_str)
+                    main_pred['temp_avg'] = hourly['temperature_2m'][idx]
+                    main_pred['humidity'] = hourly['relative_humidity_2m'][idx]
+                    main_pred['wind_speed'] = hourly['wind_speed_10m'][idx] / 3.6 # km/h to m/s if needed (Hero uses m/s label)
+                    # Check what units Hero expected. Line 802: wind_speed.toFixed(1) <span class="text-[10px] opacity-40">m/s</span>
+                    # Open-Meteo wind_speed_10m is usually km/h by default.
+                    main_pred['rainfall'] = hourly['rain'][idx]
+                    print(f"Updated Hero section with current hour ({current_hour_str}) data.")
+        except Exception as hourly_err:
+            print(f"Failed to extract current hour data: {hourly_err}")
+
         pm25 = main_pred['pm2_5']
         aqi_status = "Good"
         aqi_color = "#00e400"
