@@ -107,11 +107,11 @@ class DataPreprocessor:
             
         # 2. Scale Features (Weather)
         # Use LSTM features (10 without season) for consistency throughout pipeline
-        X_data = df_proc[self.lstm_features].values
+        X_data = df_proc[self.lstm_features]
         X_scaled = self.scaler_lstm.transform(X_data)
         
         # 3. Scale Targets (for LSTM stability)
-        y_data = df_proc[self.target_columns].values
+        y_data = df_proc[self.target_columns]
         y_scaled = self.scaler_targets.transform(y_data)
         
         X_seq, y_seq = [], []
