@@ -197,7 +197,7 @@ def login_required(f):
     """Decorator to protect routes"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_email' not in session and not session.get('guest_access'):
+        if 'user_email' not in session:
             return redirect(url_for('login_page'))
         return f(*args, **kwargs)
     return decorated_function

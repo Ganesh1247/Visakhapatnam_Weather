@@ -1,0 +1,33 @@
+name: Deploy to Hugging Face Space
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository (with LFS)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Validate required secrets
+        run: |
+          test -n "${{ secrets.HF_SPACE_ID }}" || (echo "Missing secret: HF_SPACE_ID" && exit 1)
+          test -n "${{ secrets.HF_TOKEN }}" || (echo "Missing secret: HF_TOKEN" && exit 1)
+
+      - name: Push to Hugging Face Space
+        env:
+          HF_SPACE_ID: ${{ secrets.HF_SPACE_ID }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git lfs install
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add huggingface "https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE_ID}"
+          git push --force huggingface HEAD:main
