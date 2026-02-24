@@ -607,7 +607,7 @@ def predict():
             
             # LSTM Window
             window = df_full.iloc[i : i + SEQ_LENGTH]
-            X_data = window[preprocessor.lstm_features].values
+            X_data = window[preprocessor.lstm_features]
             X_scaled = preprocessor.scaler_lstm.transform(X_data)
             X_lstm_batch.append(X_scaled)
             

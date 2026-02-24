@@ -222,8 +222,7 @@ def get_user_by_email(email):
                 return (user.get('id'), user.get('email'), user.get('username'), user.get('password_hash'))
             return None
         except Exception as e:
-            print(f"Supabase Error: {e}")
-            return None
+            print(f"Supabase Error (email lookup). Falling back to SQLite: {e}")
 
     # Fallback to SQLite
     conn = sqlite3.connect(DB_PATH)
@@ -251,8 +250,7 @@ def get_user_by_username(username):
                 return (user.get('id'), user.get('email'), user.get('username'), user.get('password_hash'))
             return None
         except Exception as e:
-            print(f"Supabase Error: {e}")
-            return None
+            print(f"Supabase Error (username lookup). Falling back to SQLite: {e}")
 
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -328,8 +326,7 @@ def create_user_credentials(username, password):
             }).execute()
             return True, synthetic_email
         except Exception as e:
-            print(f"Supabase Create User Error: {e}")
-            return False, "Failed to create account"
+            print(f"Supabase Create User Error. Falling back to SQLite: {e}")
 
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
