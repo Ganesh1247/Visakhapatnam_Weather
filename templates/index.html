@@ -592,7 +592,7 @@
                             class="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:bg-white/10 text-white/60">Conformal</button>
                     </div>
 
-                    <button onclick="fetchPrediction()"
+                    <button onclick="forceFullReload()"
                         class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white transition-all">
                         <i class="ri-refresh-line text-lg"></i>
                     </button>
@@ -662,7 +662,7 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
-                    <button onclick="fetchPrediction(); toggleMobileMenu()"
+                    <button onclick="forceFullReload()"
                         class="flex items-center justify-center gap-3 py-4 rounded-2xl bg-brand-500/10 border border-brand-500/20 text-brand-400 font-bold text-sm">
                         <i class="ri-refresh-line"></i> Sync Data
                     </button>
@@ -1358,6 +1358,18 @@
             }
         }
 
+        function forceFullReload() {
+            const url = new URL(window.location.href);
+            url.searchParams.set('_r', Date.now().toString());
+            window.location.replace(url.toString());
+        }
+
+        function formatDateStable(dateStr, options) {
+            // Normalize YYYY-MM-DD rendering across all client timezones.
+            const normalized = new Date(`${dateStr}T00:00:00Z`);
+            return normalized.toLocaleDateString('en-US', { ...options, timeZone: 'UTC' });
+        }
+
         function setMethod(method) {
             currentMethod = method;
             hourlyFetchUnlocked = false;
@@ -1397,8 +1409,7 @@
             const tooltipText = isDark ? '#fff' : '#0f172a';
 
             const labels = forecastData.map(d => {
-                const date = new Date(d.date);
-                return date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+                return formatDateStable(d.date, { weekday: 'short', day: 'numeric' });
             });
 
             const tempData = forecastData.map(d => parseFloat(d.temp_avg) || 0);
@@ -1577,7 +1588,7 @@
             if (!hourlyFetchUnlocked) return;
             // Update Subtitle
             const subtitle = document.getElementById('hourly-subtitle');
-            if (subtitle) subtitle.innerText = `Timeline for ${new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`;
+            if (subtitle) subtitle.innerText = `Timeline for ${formatDateStable(dateStr, { weekday: 'long', month: 'short', day: 'numeric' })}`;
 
             // Show Loading in Carousel
             const container = document.getElementById('hourly-scroll');
@@ -1819,8 +1830,10 @@
                 document.getElementById('weather-desc').textContent = condition;
 
                 // Current Date
-                const dateObj = new Date(data.prediction_date);
-                document.getElementById('current-date').textContent = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+                document.getElementById('current-date').textContent = formatDateStable(
+                    data.prediction_date,
+                    { weekday: 'long', month: 'short', day: 'numeric' }
+                );
 
                 // AQI Logic
                 const pm25 = parseFloat(data.data.pm2_5) || 0;
@@ -1960,10 +1973,9 @@
             const container = document.getElementById('forecast-list');
             if (!container) return;
             container.innerHTML = forecast.map((d, i) => {
-                const date = new Date(d.date);
-                const day = date.toLocaleDateString('en-US', { weekday: 'short' });
-                const dayNum = date.toLocaleDateString('en-US', { day: '2-digit' });
-                const month = date.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+                const day = formatDateStable(d.date, { weekday: 'short' });
+                const dayNum = formatDateStable(d.date, { day: '2-digit' });
+                const month = formatDateStable(d.date, { month: 'short' }).toUpperCase();
                 const icon = getWeatherIcon(d.rainfall, d.temp_avg);
                 const isActive = selectedForecastDate ? selectedForecastDate === d.date : i === 0;
 
