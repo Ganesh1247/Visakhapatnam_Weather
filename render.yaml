@@ -16,6 +16,6 @@ services:
       - key: SMTP_EMAIL
         value: ganeshkoilada1247@gmail.com
       - key: SMTP_PASSWORD
-        value: ifsy uivk jzpt jjce
+        value: tppszojleacqapc
       - key: SECRET_KEY
         generateValue: true

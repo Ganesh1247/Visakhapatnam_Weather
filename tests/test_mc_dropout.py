@@ -66,7 +66,7 @@ class TestMCDropout(unittest.TestCase):
             
         # The predictor calls feature_extractor(training=True)
         # Our mock adds noise when training=True
-        results = self.predictor.predict_with_uncertainty(X_input, base_feat)
+        results = self.predictor.predict_with_uncertainty(X_input, [base_feat])[0]
         
         uncertainty = results['pm2_5']['uncertainty']
         self.assertGreater(uncertainty['std'], 0.0, "Standard deviation should be positive with dropout")
@@ -85,7 +85,7 @@ class TestMCDropout(unittest.TestCase):
         base_feat.update({'month': 1, 'day_of_week': 0, 'day': 1, 'is_weekend': 0, 
                      'wind_dir_sin': 0, 'wind_dir_cos': 0, 'pressure_delta': 0})
 
-        results = self.predictor.predict_with_uncertainty(X_input, base_feat)
+        results = self.predictor.predict_with_uncertainty(X_input, [base_feat])[0]
         pm25 = results['pm2_5']
         
         mean = pm25['prediction']
@@ -128,7 +128,7 @@ class TestMCDropout(unittest.TestCase):
                      'wind_dir_sin': 0, 'wind_dir_cos': 0, 'pressure_delta': 0})
         
         start = time.time()
-        self.predictor.predict_with_uncertainty(X_input, base_feat)
+        self.predictor.predict_with_uncertainty(X_input, [base_feat])
         duration = time.time() - start
         
         # Should be fast with mocks, but let's set a generous threshold for "local unit test"
@@ -144,7 +144,7 @@ class TestMCDropout(unittest.TestCase):
         base_feat.update({'month': 1, 'day_of_week': 0, 'day': 1, 'is_weekend': 0, 
                      'wind_dir_sin': 0, 'wind_dir_cos': 0, 'pressure_delta': 0})
         
-        result = self.predictor.predict_with_uncertainty(X_input, base_feat)
+        result = self.predictor.predict_with_uncertainty(X_input, [base_feat])[0]
         
         self.assertIn('pm2_5', result)
         self.assertIn('prediction', result['pm2_5'])
