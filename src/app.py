@@ -528,16 +528,9 @@ def login_password():
         return jsonify({'success': True, 'message': 'Login successful', 'redirect': True})
     return jsonify({'error': 'Invalid username or password'}), 401
 
-@app.route('/continue-guest', methods=['GET'])
-def continue_guest():
-    session['guest_access'] = True
-    session.pop('user_email', None)
-    return redirect(url_for('index'))
-
 @app.route('/logout', methods=['GET'])
 def logout():
     session.pop('user_email', None)
-    session.pop('guest_access', None)
     return redirect(url_for('login_page'))
 
 @app.route('/')

@@ -283,6 +283,7 @@
 
         body {
             letter-spacing: 0.01em;
+            scroll-behavior: smooth;
         }
 
         .bg-mesh {
@@ -570,6 +571,17 @@
             <div class="flex items-center gap-2 sm:gap-4">
                 <!-- Desktop Controls -->
                 <div class="hidden lg:flex items-center gap-4">
+                    <div class="hidden xl:flex items-center gap-2 mr-2">
+                        <a href="#week-data-section"
+                            class="px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.18em] text-white/50 border border-white/10 hover:text-brand-400 hover:border-brand-500/40 hover:bg-brand-500/10 transition-all">Week
+                            Data</a>
+                        <a href="#graph-analysis-section"
+                            class="px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.18em] text-white/50 border border-white/10 hover:text-brand-400 hover:border-brand-500/40 hover:bg-brand-500/10 transition-all">Graph
+                            Analysis</a>
+                        <a href="#air-quality-section"
+                            class="px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.18em] text-white/50 border border-white/10 hover:text-brand-400 hover:border-brand-500/40 hover:bg-brand-500/10 transition-all">Air
+                            Quality</a>
+                    </div>
                     <div class="flex items-center bg-white/5 border border-white/10 rounded-2xl p-1 gap-1">
                         <button onclick="setMethod('mc_dropout')" id="btn-mc"
                             class="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:bg-white/10 text-white/60">MC
@@ -627,6 +639,16 @@
                 </div>
 
                 <div class="space-y-3">
+                    <div class="grid grid-cols-3 gap-2">
+                        <a href="#week-data-section" onclick="toggleMobileMenu()"
+                            class="text-center py-2 rounded-xl bg-white/5 text-[9px] font-black text-white/60 uppercase tracking-wider border border-white/10">Week
+                            Data</a>
+                        <a href="#graph-analysis-section" onclick="toggleMobileMenu()"
+                            class="text-center py-2 rounded-xl bg-white/5 text-[9px] font-black text-white/60 uppercase tracking-wider border border-white/10">Graph</a>
+                        <a href="#air-quality-section" onclick="toggleMobileMenu()"
+                            class="text-center py-2 rounded-xl bg-white/5 text-[9px] font-black text-white/60 uppercase tracking-wider border border-white/10">Air
+                            Quality</a>
+                    </div>
                     <p class="text-[10px] font-black text-white/20 uppercase tracking-widest ml-1">Prediction Core</p>
                     <div class="grid grid-cols-3 gap-2">
                         <button onclick="setMethod('mc_dropout'); toggleMobileMenu()" id="btn-mc-mob"
@@ -897,7 +919,7 @@
                 </div>
 
                 <!-- Trend Chart -->
-                <div class="glass-panel rounded-[40px] p-6 sm:p-8">
+                <div id="graph-analysis-section" class="glass-panel rounded-[40px] p-6 sm:p-8">
                     <div class="flex justify-between items-center mb-10">
                         <div class="flex items-center gap-4">
                             <div
@@ -917,7 +939,7 @@
                 </div>
 
                 <!-- 7-Day Forecast Grid -->
-                <div class="space-y-6">
+                <div id="week-data-section" class="space-y-6">
                     <div class="flex items-center gap-4">
                         <div class="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-white/40">
                             <i class="ri-calendar-line"></i>
@@ -935,7 +957,7 @@
             </div>
 
             <!-- Right Column: Advisory -->
-            <div class="lg:col-span-4">
+            <div id="air-quality-section" class="lg:col-span-4">
                 <div class="glass-panel rounded-[40px] p-8 h-full sticky top-32">
                     <div class="flex items-center gap-4 mb-10">
                         <div class="w-10 h-10 rounded-2xl bg-red-500/20 flex items-center justify-center text-red-400">
@@ -1043,22 +1065,6 @@
                                 </div>
                             </div>
 
-                            <!-- AI Confidence Meter -->
-                            <div class="pt-6 border-t border-white/5">
-                                <div class="flex justify-between items-end mb-2">
-                                    <p class="text-[10px] font-black text-brand-500 uppercase tracking-[0.3em]">AI
-                                        Confidence</p>
-                                    <span class="text-xs font-black text-white/90" id="ai-conf-score">94%</span>
-                                </div>
-                                <div class="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                                    <div id="ai-conf-bar"
-                                        class="h-full bg-gradient-to-r from-brand-500 to-cyan-400 w-[94%] shadow-[0_0_15px_rgba(34,211,238,0.55)] transition-all duration-1000 ease-out">
-                                    </div>
-                                </div>
-                                <p class="text-[9px] text-white/30 mt-2 font-medium leading-relaxed">
-                                    Based on ensemble variance across LSTM, XGBoost, and Conformal Prediction models.
-                                </p>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1852,20 +1858,6 @@
 
                 // Ventilation: Unsafe if PM2.5 > 30 (Outdoor air is worse)
                 setActivity('act-vent', pm25 <= 35);
-
-                // --- AI Confidence Simulation ---
-                // Base confidence 98%, reduce by weather volatility
-                let confidence = 98 - (wind / 5) - (rain / 2);
-                if (pm25 > 100) confidence -= 5; // Harder to predict extreme pollution
-                confidence = Math.max(82, Math.min(99, confidence)); // Clamp between 82% and 99%
-
-                // Add some random jitter for "live" feel
-                confidence += (Math.random() * 2 - 1);
-
-                const confVal = Math.round(confidence);
-                document.getElementById('ai-conf-score').innerText = confVal + '%';
-                document.getElementById('ai-conf-bar').style.width = confVal + '%';
-
 
                 // Gauge Update
                 const ring = document.getElementById('aqi-ring');

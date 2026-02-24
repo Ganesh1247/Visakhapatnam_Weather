@@ -228,7 +228,7 @@
             <!-- Contextual Tabs -->
             <div class="flex p-1.5 bg-black/25 rounded-3xl mb-8 w-full relative border border-white/10">
                 <div id="tab-slider"
-                    class="absolute top-1.5 bottom-1.5 left-1.5 w-[calc(33.33%-3px)] bg-gradient-to-r from-cyan-500/25 to-sky-500/20 rounded-2xl transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-xl border border-cyan-400/25">
+                    class="absolute top-1.5 bottom-1.5 left-1.5 w-[calc(50%-3px)] bg-gradient-to-r from-cyan-500/25 to-sky-500/20 rounded-2xl transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-xl border border-cyan-400/25">
                 </div>
                 <button onclick="switchTab('login', 0)" id="btn-tab-login"
                     class="flex-1 py-3 text-xs font-black uppercase tracking-[0.15em] z-10 text-white transition-colors duration-300">Sign
@@ -236,8 +236,6 @@
                 <button onclick="switchTab('signup', 1)" id="btn-tab-signup"
                     class="flex-1 py-3 text-xs font-black uppercase tracking-[0.15em] z-10 text-white/40 hover:text-white/60 transition-colors duration-300">Sign
                     Up</button>
-                <button onclick="switchTab('guest', 2)" id="btn-tab-guest"
-                    class="flex-1 py-3 text-xs font-black uppercase tracking-[0.15em] z-10 text-brand-400 transition-colors duration-300">Explore</button>
             </div>
 
             <div id="status-msg"
@@ -249,37 +247,8 @@
             <!-- Content Container -->
             <div class="relative min-h-[320px]">
 
-                <!-- GUEST FLOW -->
-                <div id="guest-view" class="form-content space-y-8 py-2 text-center">
-                    <div class="space-y-6">
-                        <div
-                            class="w-24 h-24 mx-auto rounded-full bg-gradient-to-b from-brand-500/20 to-transparent flex items-center justify-center p-1 border border-brand-500/10">
-                            <div
-                                class="w-full h-full rounded-full bg-black/40 flex items-center justify-center border border-white/5 relative group cursor-help">
-                                <i
-                                    class="ri-user-follow-line text-4xl text-brand-400 group-hover:scale-110 transition-transform"></i>
-                                <div
-                                    class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-4 border-[#030712] animate-pulse">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="space-y-1">
-                            <h3 class="text-xl font-heading font-black text-white">Instant Access</h3>
-                            <p class="text-white/30 text-[11px] font-medium max-w-[280px] mx-auto leading-relaxed">
-                                View weather trends, AQI insights, and 7-day forecasts without creating an account.</p>
-                        </div>
-                    </div>
-                    <a href="/continue-guest" class="block">
-                        <button
-                            class="w-full btn-premium bg-gradient-to-r from-cyan-500 to-sky-600 text-white font-black py-5 rounded-3xl transition-all shadow-2xl shadow-cyan-500/25 flex items-center justify-center gap-4 group">
-                            <span>Open Dashboard</span>
-                            <i class="ri-terminal-box-line text-xl group-hover:translate-x-1 transition-transform"></i>
-                        </button>
-                    </a>
-                </div>
-
                 <!-- LOGIN FLOW -->
-                <div id="login-view" class="form-content form-hidden space-y-8">
+                <div id="login-view" class="form-content space-y-8">
                     <div class="space-y-6">
                         <div class="space-y-6">
                             <div class="input-group space-y-3">
@@ -402,7 +371,7 @@
                 });
 
                 // Set initial state
-                setTimeout(() => switchTab('guest', 2), 200);
+                setTimeout(() => switchTab('login', 0), 200);
             }
 
             if (document.readyState === 'loading') {
@@ -481,9 +450,9 @@
 
             function switchTab(tab, index) {
                 const slider = document.getElementById('tab-slider');
-                if (slider) slider.style.left = `calc(${index * 33.33}% + 6px)`;
+                if (slider) slider.style.left = `calc(${index * 50}% + 6px)`;
 
-                const views = ['login', 'signup', 'guest'];
+                const views = ['login', 'signup'];
                 views.forEach(v => {
                     const view = document.getElementById(`${v}-view`);
                     const btn = document.getElementById(`btn-tab-${v}`);

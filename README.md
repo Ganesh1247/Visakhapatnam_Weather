@@ -101,6 +101,16 @@ For detailed deployment instructions and limitations, see [`RENDER_DEPLOYMENT.md
 
 **Upgrade to paid plan (~$7/month)** to enable persistent storage and keep user data across deployments.
 
+### Auto-Deploy to Hugging Face Space from GitHub
+
+This repo includes GitHub Actions workflow at `.github/workflows/hf-auto-deploy.yml`.
+
+1. Add GitHub repository secrets:
+   - `HF_SPACE_ID` (example: `username/space-name`)
+   - `HF_TOKEN` (Hugging Face token with write access to the Space)
+2. Push to `main`.
+3. GitHub Actions will automatically push the latest commit to your Hugging Face Space `main` branch.
+
 ## 📊 Model Performance
 
 Our hybrid model achieves state-of-the-art performance for local forecasting:
