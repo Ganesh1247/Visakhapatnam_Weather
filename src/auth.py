@@ -27,6 +27,26 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 
+def _is_missing_column_error(err, column_name):
+    """Detect Supabase/PostgREST missing-column errors."""
+    msg = str(err).lower()
+    return "pgrst204" in msg and f"'{column_name.lower()}'" in msg
+
+def _make_identity_email(username, email=None):
+    """Return stable identity value for session compatibility."""
+    if email and str(email).strip():
+        return str(email).strip()
+    uname = (username or "").strip()
+    if uname:
+        return f"{uname.lower()}@local.ecoglance"
+    return ""
+
+def _supabase_user_to_tuple(user):
+    """Map Supabase dict to compatibility tuple: (id, email, username, password_hash)."""
+    username = user.get('username')
+    identity_email = _make_identity_email(username, user.get('email'))
+    return (user.get('id'), identity_email, username, user.get('password_hash'))
+
 def get_supabase_client():
     """Anon/publishable client (fallback only)."""
     if SUPABASE_AVAILABLE and SUPABASE_URL and SUPABASE_KEY:
@@ -217,11 +237,18 @@ def get_user_by_email(email):
             if (not response.data) and hasattr(supabase.table('users'), 'ilike'):
                 response = supabase.table('users').select("*").ilike('email', email).execute()
             if response.data and len(response.data) > 0:
-                user = response.data[0]
-                # Map Supabase dict to tuple format for compatibility: (id, email, username, password_hash)
-                return (user.get('id'), user.get('email'), user.get('username'), user.get('password_hash'))
+                return _supabase_user_to_tuple(response.data[0])
             return None
         except Exception as e:
+            # Schema compatibility: if users table has no email column, infer username from synthetic email.
+            if _is_missing_column_error(e, "email") and email.lower().endswith("@local.ecoglance"):
+                try:
+                    username_guess = email.split("@", 1)[0]
+                    alt = supabase.table('users').select("*").eq('username', username_guess).execute()
+                    if alt.data and len(alt.data) > 0:
+                        return _supabase_user_to_tuple(alt.data[0])
+                except Exception as e2:
+                    print(f"Supabase Error (fallback username lookup): {e2}")
             print(f"Supabase Error (email lookup). Falling back to SQLite: {e}")
 
     # Fallback to SQLite
@@ -246,8 +273,7 @@ def get_user_by_username(username):
             if (not response.data) and hasattr(supabase.table('users'), 'ilike'):
                 response = supabase.table('users').select("*").ilike('username', username).execute()
             if response.data and len(response.data) > 0:
-                user = response.data[0]
-                return (user.get('id'), user.get('email'), user.get('username'), user.get('password_hash'))
+                return _supabase_user_to_tuple(response.data[0])
             return None
         except Exception as e:
             print(f"Supabase Error (username lookup). Falling back to SQLite: {e}")
@@ -278,10 +304,18 @@ def set_user_credentials(email, username, password):
                 return False  # Username taken
             
             # Update user with admin client
-            supabase.table('users').update({
+            payload = {
                 'username': username,
                 'password_hash': password_hash
-            }).eq('email', email).execute()
+            }
+            try:
+                supabase.table('users').update(payload).eq('email', email).execute()
+            except Exception as e:
+                if _is_missing_column_error(e, "email"):
+                    synthetic_username = (email or "").split("@", 1)[0]
+                    supabase.table('users').update(payload).eq('username', synthetic_username).execute()
+                else:
+                    raise
             
             return True
         except Exception as e:
@@ -319,11 +353,21 @@ def create_user_credentials(username, password):
             if existing.data and len(existing.data) > 0:
                 return False, "Username already taken"
 
-            supabase.table('users').insert({
-                'email': synthetic_email,
-                'username': username,
-                'password_hash': password_hash
-            }).execute()
+            try:
+                supabase.table('users').insert({
+                    'email': synthetic_email,
+                    'username': username,
+                    'password_hash': password_hash
+                }).execute()
+            except Exception as e:
+                if _is_missing_column_error(e, "email"):
+                    # Supabase schema variant without email column.
+                    supabase.table('users').insert({
+                        'username': username,
+                        'password_hash': password_hash
+                    }).execute()
+                else:
+                    raise
             return True, synthetic_email
         except Exception as e:
             print(f"Supabase Create User Error. Falling back to SQLite: {e}")

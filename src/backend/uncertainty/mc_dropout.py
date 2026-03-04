@@ -80,10 +80,11 @@ class MCDropoutPredictor:
         mc_embeddings = self.feature_extractor(X_tiled, training=True).numpy()
         
         # 2. Construct XGBoost Feature Matrix for ALL days and ALL iterations
-        # IMPORTANT: Order must match the models exactly: 32 embeddings + 10 weather + 7 time/derived
+        # IMPORTANT: Order must match the models exactly: 32 embeddings + 10 weather + 7 time/derived + 4 gas
         xgb_feature_names = [f'emb_{j}' for j in range(embedding_dim)] + \
                             self.preprocessor.lstm_features + \
-                            ['month', 'day_of_week', 'day', 'is_weekend', 'wind_dir_sin', 'wind_dir_cos', 'pressure_delta']
+                            ['month', 'day_of_week', 'day', 'is_weekend', 'wind_dir_sin', 'wind_dir_cos', 'pressure_delta'] + \
+                            ['carbon_monoxide', 'nitrogen_dioxide', 'sulphur_dioxide', 'ammonia']
                             
         total_rows = batch_size * self.n_iter
         X_xgb_np = np.zeros((total_rows, len(xgb_feature_names)), dtype=np.float32)

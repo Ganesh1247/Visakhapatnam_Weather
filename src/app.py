@@ -24,8 +24,6 @@ from auth import (
     init_db, login_required, verify_password, create_user_credentials
 )
 from backend.uncertainty.mc_dropout import MCDropoutPredictor
-from backend.uncertainty.quantile import QuantileRegressor
-from backend.uncertainty.conformal import ConformalPredictor
 import time
 import threading
 
@@ -75,14 +73,17 @@ lstm_full = None
 feature_extractor = None
 xgb_models = {}
 mc_predictor = None
-quantile_predictor = None
-conformal_predictor = None
 active_targets = []
 models_loaded = False
 models_lock = threading.Lock()
+bias_corrector = None
+
+# Store the latest daily forecast, so the /hourly route can generate diurnal curves from it
+latest_daily_forecast = {}
+forecast_lock = threading.Lock()
 
 def load_models_lazy():
-    global lstm_full, feature_extractor, xgb_models, mc_predictor, quantile_predictor, conformal_predictor, active_targets, models_loaded
+    global lstm_full, feature_extractor, xgb_models, mc_predictor, active_targets, models_loaded
     with models_lock:
         if models_loaded:
             return
@@ -130,18 +131,17 @@ def load_models_lazy():
                 print("MC Dropout Predictor Initialized.")
         except Exception as e:
             print(f"Error initializing MC Predictor: {e}")
-        
+
+        # Load residual bias corrector
+        global bias_corrector
         try:
-            quantile_predictor = QuantileRegressor()
-            print("Quantile Predictor Initialized.")
+            bias_path = os.path.join(MODELS_DIR, "bias_corrector.pkl")
+            if os.path.exists(bias_path):
+                with open(bias_path, "rb") as f:
+                    bias_corrector = pickle.load(f)
+                print("Residual Bias Corrector loaded.")
         except Exception as e:
-            print(f"Error initializing Quantile Predictor: {e}")
-        
-        try:
-            conformal_predictor = ConformalPredictor()
-            print("Conformal Predictor Initialized.")
-        except Exception as e:
-            print(f"Error initializing Conformal Predictor: {e}")
+            print(f"Warning: Failed to load bias corrector: {e}")
             
         # Final Verification
         if feature_extractor is None:
@@ -168,8 +168,21 @@ print("Initializing Preprocessor...")
 preprocessor = DataPreprocessor(sequence_length=SEQ_LENGTH)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
-df_weather = pd.read_csv(os.path.join(DATA_DIR, "final_weather_dataset_2010-2025.csv"))
-df_combined = pd.read_csv(os.path.join(DATA_DIR, "final_dataset.csv"))
+
+aqi_hourly_path = os.path.join(DATA_DIR, "vizag_aqi_hourly.csv")
+weather_hourly_path = os.path.join(DATA_DIR, "visakhapatnam_weather_hourly_2015_2025.csv")
+
+if os.path.exists(aqi_hourly_path) and os.path.exists(weather_hourly_path):
+    print("Preprocessor source: new hourly datasets (separate AQI + weather).")
+    df_weather, df_combined = preprocessor.process_hourly_data(
+        aqi_hourly_path,
+        weather_hourly_path
+    )
+else:
+    print("Preprocessor source: legacy daily datasets.")
+    df_weather = pd.read_csv(os.path.join(DATA_DIR, "final_weather_dataset_2010-2025.csv"))
+    df_combined = pd.read_csv(os.path.join(DATA_DIR, "final_dataset.csv"))
+
 df_weather_log = preprocessor.apply_log_transform(df_weather)
 df_combined_log = preprocessor.apply_log_transform(df_combined)
 preprocessor.fit_scalers(df_weather_log, df_combined_log)
@@ -183,6 +196,10 @@ forecast_cache = {
     'lock': threading.Lock()
 }
 CACHE_DURATION = 3600  # 1 Hour
+LOCAL_DATA_ONLY = True
+
+# Local hourly weather cache (for no-API mode)
+local_weather_hourly = None
 
 # Helper: Predict with XGBoost model (handles both Booster and XGBRegressor)
 def xgb_predict(model, X_df):
@@ -193,6 +210,69 @@ def xgb_predict(model, X_df):
     else:
         # XGBRegressor: extract internal Booster and predict directly
         return model.get_booster().predict(dmat)
+
+def load_local_hourly_weather():
+    """Load local hourly weather dataset once (no external APIs)."""
+    global local_weather_hourly
+    if local_weather_hourly is not None:
+        return local_weather_hourly
+
+    path = os.path.join(DATA_DIR, "visakhapatnam_weather_hourly_2015_2025.csv")
+    if not os.path.exists(path):
+        local_weather_hourly = pd.DataFrame()
+        return local_weather_hourly
+
+    df = pd.read_csv(path)
+    if 'datetime' in df.columns:
+        df['datetime'] = pd.to_datetime(df['datetime'], errors='coerce')
+    df = df.dropna(subset=['datetime']).sort_values('datetime').reset_index(drop=True)
+    local_weather_hourly = df
+    return local_weather_hourly
+
+def build_local_daily_forecast(df_weather_daily: pd.DataFrame, days: int = 8, start_date: pd.Timestamp | None = None) -> pd.DataFrame:
+    """
+    Generate local daily weather continuation without external APIs.
+    Uses month-wise climatology fallback to recent rolling mean.
+    """
+    df = df_weather_daily.copy().sort_values('date').reset_index(drop=True)
+    if df.empty:
+        return pd.DataFrame(columns=['date'] + preprocessor.lstm_features)
+
+    last_date = pd.to_datetime(df['date']).max()
+    if start_date is None:
+        start_date = last_date + pd.Timedelta(days=1)
+    else:
+        start_date = pd.to_datetime(start_date)
+    recent = df.tail(30)
+    forecast_rows = []
+    weather_cols = ['temp_max', 'temp_min', 'temp_avg', 'rainfall', 'wind_speed', 'wind_direction', 'solar_radiation', 'pressure', 'humidity', 'cloud_cover']
+
+    for i in range(days):
+        d = start_date + pd.Timedelta(days=i)
+        month_slice = df[pd.to_datetime(df['date']).dt.month == d.month]
+        src = month_slice if len(month_slice) >= 10 else recent
+        vals = {c: float(src[c].mean()) for c in weather_cols}
+        vals['date'] = d
+        forecast_rows.append(vals)
+
+    return pd.DataFrame(forecast_rows)
+
+def fetch_local_weather_data():
+    """
+    No-API weather provider:
+    - history from local daily weather (last 14+ buffer days)
+    - future from local climatology continuation
+    """
+    df_daily = df_weather.copy().sort_values('date').reset_index(drop=True)
+    df_daily['date'] = pd.to_datetime(df_daily['date'])
+
+    if df_daily.empty:
+        return None, None, {}
+
+    df_hist = df_daily.tail(SEQ_LENGTH + 6).copy()
+    today = pd.to_datetime(datetime.now().date())
+    df_fore = build_local_daily_forecast(df_daily, days=8, start_date=today)
+    return df_hist, df_fore, {'hourly': {}}
 
 def fetch_nasa_history(start_date, end_date):
     """
@@ -339,30 +419,89 @@ def fetch_weather_data():
 @app.route('/hourly/<date_str>', methods=['GET'])
 def get_hourly(date_str):
     try:
-        # Fetch hourly data for specific date from Open-Meteo
-        # Need start_date and end_date to be the same
-        url = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&start_date={date_str}&end_date={date_str}&hourly=temperature_2m,relative_humidity_2m,rain,surface_pressure,cloud_cover,wind_speed_10m&timezone=auto"
-        r = requests.get(url, timeout=10).json()
-        
-        hourly = r.get('hourly', {})
-        if not hourly:
-            return jsonify({'error': 'No hourly data'}), 404
-            
-        # Structure for Frontend
+        # No-API mode: serve hourly data from local CSV for exact historical dates
+        df_h = load_local_hourly_weather()
+        if df_h.empty:
+            return jsonify({'error': 'No hourly data database loaded'}), 404
+
+        day = pd.to_datetime(date_str, errors='coerce')
+        if pd.isna(day):
+            return jsonify({'error': 'Invalid date'}), 400
+
+        day_start = day.normalize()
+        day_end = day_start + pd.Timedelta(days=1)
+        sel = df_h[(df_h['datetime'] >= day_start) & (df_h['datetime'] < day_end)].copy()
+
+        # If we have exact historical data, use it (structure for frontend)
+        if not sel.empty:
+            result = []
+            for _, row in sel.iterrows():
+                dt = pd.to_datetime(row['datetime'])
+                temp = float(row.get('T2M', 0.0))
+                humidity = float(row.get('RH2M', 0.0))
+                rain = float(row.get('PRECTOTCORR', 0.0))
+                wind = float(row.get('WS2M', 0.0))
+                result.append({
+                    'time': dt.strftime('%H:%M'), # "14:00"
+                    'temp': temp,
+                    'humidity': humidity,
+                    'rain': rain,
+                    'wind': wind,
+                    'condition': 'Rainy' if rain > 0.5 else ('Cloudy' if humidity > 75 else 'Sunny')
+                })
+            return jsonify(result)
+
+        # For future/forecast dates (where sel is empty), generate diurnal curve from daily forecast
+        with forecast_lock:
+            # Look up the forecasted day
+            day_str_key = day_start.strftime('%Y-%m-%d')
+            day_forecast = latest_daily_forecast.get(day_str_key)
+
+        if not day_forecast:
+            return jsonify({'error': 'No forecast data available for this date yet. Try generating a forecast first.'}), 404
+
+        # Generate diurnal curve from the daily min/max/avg
+        temp_min = float(day_forecast.get('temp_min', 20.0))
+        temp_max = float(day_forecast.get('temp_max', 30.0))
+        humidity_avg = float(day_forecast.get('humidity', 70.0))
+        wind_avg = float(day_forecast.get('wind_speed', 2.0))
+        rainfall_total = float(day_forecast.get('rainfall', 0.0))
+
         result = []
-        for i, time_str in enumerate(hourly['time']):
-            # time_str is ISO "2023-10-27T00:00"
-            dt = datetime.fromisoformat(time_str)
+        for h in range(24):
+            # Diurnal temperature model (simple sine wave peaking around 14:00)
+            # Minimum around 05:00
+            hour_offset = (h - 5) % 24
+            sine_term = np.sin(hour_offset * np.pi / 12 - np.pi/2) # -1 at h=5, +1 at h=17
+            # Shift peak to 14:00 manually
+            t_rad = (h - 14) * np.pi / 12
+            cur_temp = temp_min + (temp_max - temp_min) * ((np.cos(t_rad) + 1) / 2)
+
+            # Humidity generally inverse to temp
+            temp_ratio = (cur_temp - temp_min) / (temp_max - temp_min + 0.1)
+            # Humidity peaks at night, lowest in afternoon
+            cur_humid = np.clip(humidity_avg + 15 * (1 - 2 * temp_ratio), 0, 100)
+
+            # Distribute rain more realistically (only if > 0.5mm total)
+            cur_rain = 0.0
+            if rainfall_total > 0.5:
+                # Only rain during "rainy hours" (e.g., 14:00 - 20:00 or random block)
+                if 14 <= h <= 20: 
+                    cur_rain = (rainfall_total / 7.0) * (np.random.random() * 1.5)
+
             result.append({
-                'time': dt.strftime('%H:%M'), # "14:00"
-                'temp': hourly['temperature_2m'][i],
-                'humidity': hourly['relative_humidity_2m'][i],
-                'rain': hourly['rain'][i],
-                'wind': hourly['wind_speed_10m'][i],
-                'condition': 'Rainy' if hourly['rain'][i] > 0.5 else ('Cloudy' if hourly['cloud_cover'][i] > 50 else 'Sunny')
+                'time': f"{h:02d}:00",
+                'temp': round(cur_temp, 1),
+                'humidity': round(cur_humid, 1),
+                'rain': round(cur_rain, 2),
+                'wind': round(wind_avg, 1),
+                'condition': 'Rainy' if cur_rain > 0.2 else ('Cloudy' if cur_humid > 75 else 'Sunny'),
+                'climatological': False, # It's AI-generated diurnal curve, not static fallback
+                'ai_forecast': True
             })
-            
+
         return jsonify(result)
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -385,6 +524,52 @@ def parse_meteo(data_json):
     })
     return df
 
+def get_current_hour_aqi_observation():
+    """
+    Return AQI observation for the current local hour from data/vizag_aqi_hourly.csv.
+    Uses ONLY exact current-hour match.
+    """
+    csv_path = os.path.join(DATA_DIR, "vizag_aqi_hourly.csv")
+    if not os.path.exists(csv_path):
+        return None
+
+    try:
+        df = pd.read_csv(csv_path)
+        if 'datetime' not in df.columns:
+            return None
+
+        df['datetime'] = pd.to_datetime(df['datetime'], errors='coerce')
+        df = df.dropna(subset=['datetime'])
+        if df.empty:
+            return None
+
+        now_hour = pd.Timestamp(datetime.now().replace(minute=0, second=0, microsecond=0))
+        match = df[df['datetime'] == now_hour]
+        if match.empty:
+            return None
+
+        row = match.iloc[-1]
+        pm25 = float(row['pm2_5']) if ('pm2_5' in row and pd.notna(row['pm2_5'])) else None
+        pm10 = float(row['pm10']) if ('pm10' in row and pd.notna(row['pm10'])) else None
+        if pm25 is None and pm10 is None:
+            return None
+
+        # Keep PM consistency when both are present
+        if pm25 is not None and pm10 is not None:
+            if pm25 > pm10:
+                pm25 = pm10
+            if pm25 < 0.25 * pm10:
+                pm25 = 0.25 * pm10
+
+        return {
+            'datetime': now_hour.isoformat(),
+            'pm2_5': pm25,
+            'pm10': pm10
+        }
+    except Exception as e:
+        print(f"Failed reading current-hour AQI observation: {e}")
+        return None
+
 def get_bias_correction(date_str):
     """
     Residual-Based Bias Correction.
@@ -392,10 +577,49 @@ def get_bias_correction(date_str):
     """
     d = pd.to_datetime(date_str)
     month = d.month
-    # Winter months: Oct(10), Nov(11), Dec(12), Jan(1), Feb(2)
-    if month in [10, 11, 12, 1, 2]:
-        return 60.0
+    # Winter/Spring transition (Oct-March): +15.0 offset for PM
+    if month in [10, 11, 12, 1, 2, 3]:
+        return 15.0
     return 0.0
+
+def calculate_india_aqi_from_pm25(pm25):
+    """Convert PM2.5 concentration (ug/m3) to India AQI sub-index."""
+    try:
+        c = float(pm25)
+    except (TypeError, ValueError):
+        return 0
+
+    if c < 0:
+        c = 0.0
+
+    breakpoints = [
+        (0.0, 30.0, 0, 50),
+        (30.0, 60.0, 51, 100),
+        (60.0, 90.0, 101, 200),
+        (90.0, 120.0, 201, 300),
+        (120.0, 250.0, 301, 400),
+        (250.0, 500.0, 401, 500),
+    ]
+
+    for bp_lo, bp_hi, i_lo, i_hi in breakpoints:
+        if c <= bp_hi:
+            aqi = ((i_hi - i_lo) / (bp_hi - bp_lo)) * (c - bp_lo) + i_lo
+            return int(round(max(0.0, min(500.0, aqi))))
+
+    return 500
+
+def get_aqi_status_and_color(aqi_value):
+    if aqi_value <= 50:
+        return "Good", "#00e400"
+    if aqi_value <= 100:
+        return "Satisfactory", "#ffff00"
+    if aqi_value <= 200:
+        return "Moderate", "#ff7e00"
+    if aqi_value <= 300:
+        return "Poor", "#ff0000"
+    if aqi_value <= 400:
+        return "Very Poor", "#99004c"
+    return "Severe", "#7e0023"
 
 def get_aqi_recommendations(pm25, status):
     """Return actionable recommendations based on air quality level."""
@@ -460,7 +684,7 @@ def get_aqi_recommendations(pm25, status):
             ],
             "icon": "😷"
         }
-    else:  # Very Poor
+    elif status == "Very Poor":
         return {
             "title": "Very poor air quality",
             "summary": "Health alert: everyone may experience serious health effects.",
@@ -478,6 +702,26 @@ def get_aqi_recommendations(pm25, status):
                 "Venturing out without a proper mask"
             ],
             "icon": "🚨"
+        }
+
+    else:  # Severe
+        return {
+            "title": "Severe air quality",
+            "summary": "Emergency conditions. Serious health effects likely for all groups.",
+            "do": [
+                "Stay indoors and keep all windows/doors closed",
+                "Run HEPA air purifier continuously",
+                "Avoid travel unless essential",
+                "Use N95/KN95 masks if stepping outside is unavoidable",
+                "Follow local health advisories"
+            ],
+            "avoid": [
+                "Any outdoor exercise",
+                "Outdoor work without proper respiratory protection",
+                "Long commutes in heavy traffic",
+                "Indoor smoke sources (candles, incense, smoking)"
+            ],
+            "icon": "!"
         }
 
 # Helper: Get season from month
@@ -544,7 +788,7 @@ def predict():
         # Lazy load models if not already loaded
         load_models_lazy()
         
-        global lstm_full, feature_extractor, xgb_models, mc_predictor, quantile_predictor, conformal_predictor, active_targets, preprocessor
+        global lstm_full, feature_extractor, xgb_models, mc_predictor, active_targets, preprocessor
         
         method = request.args.get('method', 'mc_dropout')
         
@@ -557,12 +801,14 @@ def predict():
                 return jsonify(forecast_cache[cache_key])
 
         # 2. Data Fetching & Preparation
-        # Now returns (DataFrame, JSON)
-        df_hist, fore_json = fetch_weather_data()
-        
-        # History is already a DataFrame now (from Hybrid logic)
-        # Forecast is still JSON
-        df_fore = parse_meteo(fore_json)
+        if LOCAL_DATA_ONLY:
+            df_hist, df_fore, fore_json = fetch_local_weather_data()
+        else:
+            # Returns (DataFrame, JSON)
+            df_hist, fore_json = fetch_weather_data()
+            # History is already a DataFrame now (from Hybrid logic)
+            # Forecast is still JSON
+            df_fore = parse_meteo(fore_json)
         
         if df_hist is None or len(df_hist) == 0:
             return jsonify({'error': 'Failed to fetch historical data'}), 500
@@ -615,6 +861,20 @@ def predict():
             target_row = df_full.iloc[i + SEQ_LENGTH]
             feat_dict = {col: float(target_row[col]) for col in preprocessor.lstm_features}
             d = pd.to_datetime(target_date)
+            
+            # Additional Gas features from target day (use 0 if missing; preprocessing will use climatology inside prepare_xgb_data logically, 
+            # but here at inference time we mock the same logic).
+            gas_features = ['carbon_monoxide', 'nitrogen_dioxide', 'sulphur_dioxide', 'ammonia']
+            for g in gas_features:
+                if g in target_row and pd.notna(target_row[g]):
+                    feat_dict[g] = float(target_row[g])
+                elif preprocessor.gas_monthly_means.get(g):
+                    month_means = preprocessor.gas_monthly_means[g]
+                    # Fallback to monthly climatology mean for inference
+                    feat_dict[g] = float(month_means.get(d.month, np.mean(list(month_means.values()))))
+                else:
+                    feat_dict[g] = 0.0
+
             feat_dict.update({
                 'month': d.month,
                 'day_of_week': d.dayofweek,
@@ -647,7 +907,8 @@ def predict():
                 # Standard weather predictions
                 XGB_FEATURE_NAMES = [f'emb_{j}' for j in range(32)] + \
                                   preprocessor.lstm_features + \
-                                  ['month', 'day_of_week', 'day', 'is_weekend', 'wind_dir_sin', 'wind_dir_cos', 'pressure_delta']
+                                  ['month', 'day_of_week', 'day', 'is_weekend', 'wind_dir_sin', 'wind_dir_cos', 'pressure_delta'] + \
+                                  ['carbon_monoxide', 'nitrogen_dioxide', 'sulphur_dioxide', 'ammonia']
                 
                 # Consolidate feature dict and ensure all values are floats
                 feat_dict_std = base_feat_list[i].copy()
@@ -660,16 +921,22 @@ def predict():
                 # Non-PM Targets
                 for target in active_targets:
                     if target not in ['pm2_5', 'pm10'] and target in xgb_models:
-                        day_res[target] = xgb_predict(xgb_models[target], X_xgb)[0]
+                        val = xgb_predict(xgb_models[target], X_xgb)[0]
+                        day_res[target] = max(0, val)
                 
                 # PM Targets with MC Dropout Uncertainty
-                bias = get_bias_correction(target_dates[i])
+                d_month = pd.to_datetime(target_dates[i]).month
+                bias_pm25 = (bias_corrector.get('pm2_5', {}).get(d_month, 0) if bias_corrector else 0) + get_bias_correction(target_dates[i])
+                bias_pm10 = (bias_corrector.get('pm10', {}).get(d_month, 0) if bias_corrector else 0) + get_bias_correction(target_dates[i])
+
                 for target in ['pm2_5', 'pm10']:
                     if target in res:
-                        day_res[target] = res[target]['prediction'] + bias
+                        # Extract the dynamic bias for this target
+                        t_bias = bias_pm25 if target == 'pm2_5' else bias_pm10
+                        day_res[target] = res[target]['prediction'] + t_bias
                         unc = res[target]['uncertainty'].copy()
-                        unc['confidence_90'] = [round(x + bias, 2) for x in unc['confidence_90']]
-                        unc['confidence_95'] = [round(x + bias, 2) for x in unc['confidence_95']]
+                        unc['confidence_90'] = [round(x + t_bias, 2) for x in unc['confidence_90']]
+                        unc['confidence_95'] = [round(x + t_bias, 2) for x in unc['confidence_95']]
                         day_res[f'{target}_uncertainty'] = unc
                 
                 forecasts.append(day_res)
@@ -689,7 +956,8 @@ def predict():
                 
                 XGB_FEATURE_NAMES = [f'emb_{j}' for j in range(32)] + \
                                   preprocessor.lstm_features + \
-                                  ['month', 'day_of_week', 'day', 'is_weekend', 'wind_dir_sin', 'wind_dir_cos', 'pressure_delta']
+                                  ['month', 'day_of_week', 'day', 'is_weekend', 'wind_dir_sin', 'wind_dir_cos', 'pressure_delta'] + \
+                                  ['carbon_monoxide', 'nitrogen_dioxide', 'sulphur_dioxide', 'ammonia']
                 
                 X_xgb = pd.DataFrame([feat_dict_std])[XGB_FEATURE_NAMES].astype('float32')
                 
@@ -700,19 +968,6 @@ def predict():
                         if target in ['pm2_5', 'pm10']:
                             val = np.expm1(val) + bias
                         day_res[target] = max(0, val)
-                
-                # Add specialized uncertainty if needed
-                if method == 'quantile' and quantile_predictor:
-                    q_res = quantile_predictor.predict(X_xgb, bias)
-                    for target in ['pm2_5', 'pm10']:
-                        if target in q_res:
-                            day_res[target] = q_res[target]['prediction']
-                            day_res[f'{target}_uncertainty'] = q_res[target]['uncertainty']
-                elif method == 'conformal' and conformal_predictor:
-                   for target in ['pm2_5', 'pm10']:
-                        val = day_res.get(target)
-                        if val is not None:
-                            day_res[f'{target}_uncertainty'] = conformal_predictor.predict(val, target)
                 
                 # Standard Fallback logic for when Neural Core is missing
                 if feature_extractor is None:
@@ -743,6 +998,12 @@ def predict():
                 if isinstance(v, (float, np.float32, np.float64)) and not k.endswith('_uncertainty'):
                     day[k] = round(float(v), 2)
 
+        # Cache the forecasts to feed the hourly diurnal model
+        with forecast_lock:
+            for day_data in forecasts:
+                d_str = pd.to_datetime(day_data['date']).strftime('%Y-%m-%d')
+                latest_daily_forecast[d_str] = day_data
+
         # 6. Response Construction
         main_pred = forecasts[0]
         
@@ -767,18 +1028,29 @@ def predict():
         except Exception as hourly_err:
             print(f"Failed to extract current hour data: {hourly_err}")
 
+        # Strict current-hour AQI override from local hourly AQI dataset (if exact hour exists)
+        current_hour_obs = get_current_hour_aqi_observation()
+        if current_hour_obs:
+            if current_hour_obs.get('pm2_5') is not None:
+                main_pred['pm2_5'] = round(float(current_hour_obs['pm2_5']), 2)
+            if current_hour_obs.get('pm10') is not None:
+                main_pred['pm10'] = round(float(current_hour_obs['pm10']), 2)
+
         pm25 = main_pred['pm2_5']
-        aqi_status = "Good"
-        aqi_color = "#00e400"
-        if pm25 > 30: aqi_status = "Satisfactory"; aqi_color = "#ffff00"
-        if pm25 > 60: aqi_status = "Moderate"; aqi_color = "#ff7e00"
-        if pm25 > 90: aqi_status = "Poor"; aqi_color = "#ff0000"
-        if pm25 > 120: aqi_status = "Very Poor"; aqi_color = "#99004c"
+        aqi_value = calculate_india_aqi_from_pm25(pm25)
+        aqi_status, aqi_color = get_aqi_status_and_color(aqi_value)
         
         response = {
             'prediction_date': main_pred['date'].strftime('%Y-%m-%d'),
             'data': main_pred,
-            'aqi': {'status': aqi_status, 'color': aqi_color, 'recommendations': get_aqi_recommendations(pm25, aqi_status)},
+            'aqi': {
+                'value': aqi_value,
+                'status': aqi_status,
+                'color': aqi_color,
+                'recommendations': get_aqi_recommendations(pm25, aqi_status),
+                'source': 'current_hour_dataset' if current_hour_obs else 'model_pm25',
+                'observed_at': current_hour_obs.get('datetime') if current_hour_obs else None
+            },
             'forecast': [{**d, 'date': d['date'].strftime('%Y-%m-%d')} for d in forecasts]
         }
         

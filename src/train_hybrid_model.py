@@ -4,7 +4,7 @@ import xgboost as xgb
 import tensorflow as tf
 from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout, Input
-from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import matplotlib.pyplot as plt
 import os
@@ -13,7 +13,7 @@ from preprocessing import DataPreprocessor
 
 # Config
 SEQ_LENGTH = 14
-EPOCHS_LSTM = 50
+EPOCHS_LSTM = 80
 BATCH_SIZE = 32
 
 os.makedirs("models", exist_ok=True)
@@ -22,9 +22,9 @@ os.makedirs("plots", exist_ok=True)
 # 1. Initialize & Load
 print("Initializing...")
 preprocessor = DataPreprocessor(sequence_length=SEQ_LENGTH)
-df_weather, df_combined = preprocessor.process_data(
-    "data/final_weather_dataset_2010-2025.csv",
-    "data/final_dataset.csv"
+df_weather, df_combined = preprocessor.process_hourly_data(
+    "data/vizag_aqi_hourly.csv",
+    "data/visakhapatnam_weather_hourly_2015_2025.csv"
 )
 
 # 2. Fit Scalers
@@ -73,7 +73,10 @@ history = lstm_model.fit(
     validation_data=(X_test, y_test),
     epochs=EPOCHS_LSTM,
     batch_size=BATCH_SIZE,
-    callbacks=[EarlyStopping(patience=5, restore_best_weights=True)],
+    callbacks=[
+        EarlyStopping(patience=8, monitor='val_mae', restore_best_weights=True),
+        ReduceLROnPlateau(monitor='val_mae', factor=0.5, patience=3, min_lr=1e-5)
+    ],
     verbose=1
 )
 lstm_model.save("models/lstm_hybrid_chain.h5")
@@ -108,29 +111,29 @@ for target in preprocessor.target_columns:
     # Per-target hyperparameters for better accuracy
     if target == 'pm2_5':
         params = {
-            "n_estimators": 600,
-            "learning_rate": 0.03,
-            "max_depth": 5,
+            "n_estimators": 800,
+            "learning_rate": 0.02,
+            "max_depth": 7,
             "subsample": 0.8,
             "colsample_bytree": 0.8,
-            "gamma": 0.2,
-            "min_child_weight": 3,
+            "gamma": 0.1,
+            "min_child_weight": 2,
             "reg_alpha": 0.5,
-            "reg_lambda": 1.2,
+            "reg_lambda": 1.5,
             "objective": "reg:squarederror",
             "random_state": 42,
         }
     elif target == 'pm10':
         params = {
-            "n_estimators": 500,
-            "learning_rate": 0.04,
+            "n_estimators": 600,
+            "learning_rate": 0.03,
             "max_depth": 6,
             "subsample": 0.85,
             "colsample_bytree": 0.85,
-            "gamma": 0.15,
+            "gamma": 0.1,
             "min_child_weight": 2,
             "reg_alpha": 0.3,
-            "reg_lambda": 1.0,
+            "reg_lambda": 1.2,
             "objective": "reg:squarederror",
             "random_state": 42,
         }
@@ -206,6 +209,9 @@ if 'pm2_5' in y_pred_final and 'pm10' in y_pred_final:
     y_pred_final['pm2_5'] = np.maximum(y_pred_final['pm2_5'], 0.25 * y_pred_final['pm10'])
 
 # 3. Calculate Metrics
+bias_corrector = {'pm10': {}, 'pm2_5': {}}
+meta_test['month'] = pd.to_datetime(meta_test['date']).dt.month.values
+
 results = []
 for col in all_targets:
     y_t = y_true_final[col]
@@ -217,6 +223,17 @@ for col in all_targets:
     
     print(f"{col}: RMSE={np.sqrt(mse):.4f}, MAE={mae:.4f}, R2={r2:.4f}")
     results.append({'Target': col, 'RMSE': np.sqrt(mse), 'MAE': mae, 'R2': r2})
+
+    # Save residual bias for PM
+    if col in pm_targets:
+        residuals = y_t - y_p
+        monthly_bias = residuals.groupby(meta_test['month']).mean().to_dict()
+        bias_corrector[col] = monthly_bias
+        print(f"  {col} learned monthly bias offsets: {monthly_bias}")
+
+# Save the bias corrector map
+with open("models/bias_corrector.pkl", "wb") as f:
+    pickle.dump(bias_corrector, f)
 
 # Save Metrics
 metrics_df = pd.DataFrame(results)
