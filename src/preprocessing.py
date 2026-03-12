@@ -214,10 +214,16 @@ class DataPreprocessor:
         else:
             fire_agg = pd.DataFrame(columns=['date', 'active_fires_count', 'fire_frp'])
 
-        # Left merge onto weather, because weather is continuous. Days with no fired detected get 0.
+        # Left merge onto weather. Days with missing fire data become NaN.
         w_agg = pd.merge(w_agg, fire_agg, on='date', how='left')
-        w_agg['active_fires_count'] = w_agg['active_fires_count'].fillna(0.0)
-        w_agg['fire_frp'] = w_agg['fire_frp'].fillna(0.0)
+        
+        # We replace any 0.0 with NaN as requested, then interpolate so the LSTM doesn't crash
+        w_agg['active_fires_count'] = w_agg['active_fires_count'].replace(0.0, np.nan)
+        w_agg['fire_frp'] = w_agg['fire_frp'].replace(0.0, np.nan)
+        
+        # Interpolate the NaNs (forward fill then backward fill) to maintain continuous variance
+        w_agg['active_fires_count'] = w_agg['active_fires_count'].interpolate(method='linear').ffill().bfill()
+        w_agg['fire_frp'] = w_agg['fire_frp'].interpolate(method='linear').ffill().bfill()
 
         # Separate outputs
         df_weather = w_agg.copy()
