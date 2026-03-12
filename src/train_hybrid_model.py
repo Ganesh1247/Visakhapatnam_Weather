@@ -24,7 +24,8 @@ print("Initializing...")
 preprocessor = DataPreprocessor(sequence_length=SEQ_LENGTH)
 df_weather, df_combined = preprocessor.process_hourly_data(
     "data/vizag_aqi_hourly.csv",
-    "data/visakhapatnam_weather_hourly_2015_2025.csv"
+    "data/visakhapatnam_weather_hourly_2015_2025.csv",
+    "data/fire_archive_SV-C2_725728.csv"
 )
 
 # 2. Fit Scalers

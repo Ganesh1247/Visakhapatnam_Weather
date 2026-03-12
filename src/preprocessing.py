@@ -11,17 +11,18 @@ class DataPreprocessor:
         self.scaler_targets = MinMaxScaler()
 
         # LSTM features (must match trained model - 10 features, NO season)
+        # LSTM features (must match trained model - 12 features, NO season)
         self.lstm_features = [
             'temp_max', 'temp_min', 'temp_avg', 'humidity',
             'wind_speed', 'wind_direction', 'pressure', 'rainfall',
-            'solar_radiation', 'cloud_cover'
+            'solar_radiation', 'cloud_cover', 'active_fires_count', 'fire_frp'
         ]
 
         # XGBoost features (includes season for better predictions)
         self.weather_features = [
             'temp_max', 'temp_min', 'temp_avg', 'humidity',
             'wind_speed', 'wind_direction', 'pressure', 'rainfall',
-            'solar_radiation', 'cloud_cover', 'season'
+            'solar_radiation', 'cloud_cover', 'active_fires_count', 'fire_frp', 'season'
         ]
 
         # Targets (PMs will be log-transformed)
@@ -56,7 +57,7 @@ class DataPreprocessor:
 
         return df_weather, df_combined
 
-    def process_hourly_data(self, aqi_hourly_path: str, weather_hourly_path: str):
+    def process_hourly_data(self, aqi_hourly_path: str, weather_hourly_path: str, fire_data_path=None):
         """
         Build DAILY training frames from two separate hourly datasets:
         - AQI hourly CSV (targets + gas co-predictors source)
@@ -200,6 +201,24 @@ class DataPreprocessor:
             lambda m: 0 if m in [1, 2] else (1 if m in [3, 4, 5] else (2 if m in [6, 7, 8, 9] else 3))
         )
 
+        # --- NASA FIRMS Fire Data Aggregation ---
+        if fire_data_path and pd.io.common.file_exists(fire_data_path):
+            df_fire = pd.read_csv(fire_data_path)
+            # Acq_date in NASA FIRMS is YYYY-MM-DD
+            df_fire['date'] = pd.to_datetime(df_fire['acq_date'])
+            # We count rows per day (active_fires_count) and sum the FRP (Fire Radiative Power)
+            fire_agg = df_fire.groupby('date', as_index=False).agg({
+                'latitude': 'count',
+                'frp': 'sum'
+            }).rename(columns={'latitude': 'active_fires_count', 'frp': 'fire_frp'})
+        else:
+            fire_agg = pd.DataFrame(columns=['date', 'active_fires_count', 'fire_frp'])
+
+        # Left merge onto weather, because weather is continuous. Days with no fired detected get 0.
+        w_agg = pd.merge(w_agg, fire_agg, on='date', how='left')
+        w_agg['active_fires_count'] = w_agg['active_fires_count'].fillna(0.0)
+        w_agg['fire_frp'] = w_agg['fire_frp'].fillna(0.0)
+
         # Separate outputs
         df_weather = w_agg.copy()
         df_combined = pd.merge(w_agg, df_aqi_d, on='date', how='inner').sort_values('date').reset_index(drop=True)
@@ -232,6 +251,12 @@ class DataPreprocessor:
         """
         df_engineered = df.copy()
         df_engineered = df_engineered.sort_values('date')
+
+        # Provide live zero-fill fallbacks for missing fire features during inference
+        if 'active_fires_count' not in df_engineered.columns:
+            df_engineered['active_fires_count'] = 0.0
+        if 'fire_frp' not in df_engineered.columns:
+            df_engineered['fire_frp'] = 0.0
 
         # For inference-time data that doesn't have PM columns, create plausible defaults
         # using monthly climatological means stored from training.
