@@ -11,18 +11,20 @@ class DataPreprocessor:
         self.scaler_targets = MinMaxScaler()
 
         # LSTM features (must match trained model - 10 features, NO season)
-        # LSTM features (must match trained model - 12 features, NO season)
+        # LSTM features (must match trained model - 13 features, NO season)
         self.lstm_features = [
             'temp_max', 'temp_min', 'temp_avg', 'humidity',
             'wind_speed', 'wind_direction', 'pressure', 'rainfall',
-            'solar_radiation', 'cloud_cover', 'active_fires_count', 'fire_frp'
+            'solar_radiation', 'cloud_cover', 'active_fires_count', 'fire_frp',
+            'traffic_congestion_index'
         ]
 
         # XGBoost features (includes season for better predictions)
         self.weather_features = [
             'temp_max', 'temp_min', 'temp_avg', 'humidity',
             'wind_speed', 'wind_direction', 'pressure', 'rainfall',
-            'solar_radiation', 'cloud_cover', 'active_fires_count', 'fire_frp', 'season'
+            'solar_radiation', 'cloud_cover', 'active_fires_count', 'fire_frp',
+            'traffic_congestion_index', 'season'
         ]
 
         # Targets (PMs will be log-transformed)
@@ -57,7 +59,7 @@ class DataPreprocessor:
 
         return df_weather, df_combined
 
-    def process_hourly_data(self, aqi_hourly_path: str, weather_hourly_path: str, fire_data_path=None):
+    def process_hourly_data(self, aqi_hourly_path: str, weather_hourly_path: str, fire_data_path=None, traffic_data_path=None):
         """
         Build DAILY training frames from two separate hourly datasets:
         - AQI hourly CSV (targets + gas co-predictors source)
@@ -224,6 +226,17 @@ class DataPreprocessor:
         # Interpolate the NaNs (forward fill then backward fill) to maintain continuous variance
         w_agg['active_fires_count'] = w_agg['active_fires_count'].interpolate(method='linear').ffill().bfill()
         w_agg['fire_frp'] = w_agg['fire_frp'].interpolate(method='linear').ffill().bfill()
+        
+        # --- Visakhapatnam Traffic Data ---
+        if traffic_data_path and pd.io.common.file_exists(traffic_data_path):
+            df_traffic = pd.read_csv(traffic_data_path)
+            df_traffic['date'] = pd.to_datetime(df_traffic['date'])
+            w_agg = pd.merge(w_agg, df_traffic, on='date', how='left')
+        
+        # Fill missing traffic with a plausible historical mean (city default)
+        if 'traffic_congestion_index' not in w_agg.columns:
+            w_agg['traffic_congestion_index'] = 50.0
+        w_agg['traffic_congestion_index'] = w_agg['traffic_congestion_index'].fillna(50.0)
 
         # Separate outputs
         df_weather = w_agg.copy()
@@ -263,6 +276,8 @@ class DataPreprocessor:
             df_engineered['active_fires_count'] = 0.0
         if 'fire_frp' not in df_engineered.columns:
             df_engineered['fire_frp'] = 0.0
+        if 'traffic_congestion_index' not in df_engineered.columns:
+            df_engineered['traffic_congestion_index'] = 50.0
 
         # For inference-time data that doesn't have PM columns, create plausible defaults
         # using monthly climatological means stored from training.
