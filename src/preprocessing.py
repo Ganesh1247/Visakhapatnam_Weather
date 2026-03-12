@@ -92,6 +92,16 @@ class DataPreprocessor:
         df_aqi_h = df_aqi_h.dropna(subset=['datetime']).sort_values('datetime')
         df_w_h = df_w_h.dropna(subset=['datetime']).sort_values('datetime')
 
+        # --- Impute Nulls (Linear Interpolation for smooth weather/AQI transitions) ---
+        # Interpolate numeric columns, then fill remaining edges
+        df_aqi_numeric = df_aqi_h.select_dtypes(include=[np.number])
+        if not df_aqi_numeric.empty:
+            df_aqi_h[df_aqi_numeric.columns] = df_aqi_h[df_aqi_numeric.columns].interpolate(method='linear').bfill().ffill()
+
+        df_w_numeric = df_w_h.select_dtypes(include=[np.number])
+        if not df_w_numeric.empty:
+            df_w_h[df_w_numeric.columns] = df_w_h[df_w_numeric.columns].interpolate(method='linear').bfill().ffill()
+
         # --- AQI daily aggregation (separate source) ---
         # Normalize AQI pollutant column names
         aqi_col_map = {str(c).strip().lower(): c for c in df_aqi_h.columns}
@@ -204,13 +214,54 @@ class DataPreprocessor:
         for g in self.gas_features:
             if g in df_combined.columns:
                 self.gas_monthly_means[g] = df_combined.groupby('_month')[g].mean().to_dict()
-        df_combined = df_combined.drop(columns=['_month'])
+        # Apply Lag/Rolling Engineered Features
+        df_combined = self.add_engineered_features(df_combined)
 
         print(f"Hourly AQI rows: {len(df_aqi_h)}, hourly weather rows: {len(df_w_h)}")
         print(f"Daily weather rows: {len(df_weather)}, aligned daily training rows: {len(df_combined)}")
         print(f"Gas features available: {[g for g in self.gas_features if g in df_combined.columns]}")
+        print(f"Total features after engineering: {len(df_combined.columns)}")
 
         return df_weather.reset_index(drop=True), df_combined.reset_index(drop=True)
+
+    def add_engineered_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Add explicit historical "memory" features to supercharge tree-based models (XGBoost).
+        If PM columns are absent (inference-time with weather-only data), fill them with
+        monthly climatological defaults so lag/rolling features can still be computed.
+        """
+        df_engineered = df.copy()
+        df_engineered = df_engineered.sort_values('date')
+
+        # For inference-time data that doesn't have PM columns, create plausible defaults
+        # using monthly climatological means stored from training.
+        for col in ['pm2_5', 'pm10']:
+            if col not in df_engineered.columns:
+                # Use monthly mean if available, otherwise sensible constant
+                if self.gas_monthly_means.get(col):
+                    month_map = self.gas_monthly_means[col]
+                    df_engineered[col] = pd.to_datetime(df_engineered['date']).dt.month.map(
+                        lambda m: month_map.get(m, float(np.mean(list(month_map.values()))))
+                    )
+                else:
+                    # Hardcoded Visakhapatnam regional averages as absolute fallback
+                    df_engineered[col] = 40.0 if col == 'pm2_5' else 70.0
+
+        # 1. Immediate History (Lags)
+        for col in ['pm2_5', 'pm10']:
+            if col in df_engineered.columns:
+                df_engineered[f'{col}_lag_1'] = df_engineered[col].shift(1)
+                df_engineered[f'{col}_lag_2'] = df_engineered[col].shift(2)
+
+        # 2. Rolling Trends (Averages)
+        for col in ['pm2_5', 'pm10', 'wind_speed', 'humidity', 'temp_max', 'rainfall']:
+            if col in df_engineered.columns:
+                df_engineered[f'{col}_rolling_3'] = df_engineered[col].rolling(window=3).mean()
+                df_engineered[f'{col}_rolling_7'] = df_engineered[col].rolling(window=7).mean()
+
+        # Handle NaNs created by lagging/rolling at the start of the dataset
+        df_engineered = df_engineered.bfill()
+        return df_engineered
 
     def apply_log_transform(self, df: pd.DataFrame) -> pd.DataFrame:
         """Apply np.log1p to PM columns to enforce non-negativity"""
@@ -320,6 +371,11 @@ class DataPreprocessor:
                 ).values
             else:
                 features[g] = 0.0
+
+        # Engineered Memory Features
+        engineered_cols = [col for col in df_meta.columns if '_lag_' in col or '_rolling_' in col]
+        for col in engineered_cols:
+            features[col] = df_meta[col].values
 
         # Targets (Log-transformed)
         df_log = self.apply_log_transform(df_meta)

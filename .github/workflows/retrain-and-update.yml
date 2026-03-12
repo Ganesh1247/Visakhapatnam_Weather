@@ -1,0 +1,81 @@
+name: Retrain Model & Update Diagnostics
+
+# Triggers:
+# 1. Manually via the GitHub Actions UI (workflow_dispatch)
+# 2. Automatically when training data CSVs are pushed to main
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'data/vizag_aqi_hourly.csv'
+      - 'data/visakhapatnam_weather_hourly_2015_2025.csv'
+      - 'src/train_hybrid_model.py'
+      - 'src/preprocessing.py'
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repository (with large files)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          # Strip any leftover git-lfs pointer lines that pip can't parse
+          grep -v '^version https://' requirements.txt | grep -v '^oid ' | grep -v '^size ' > /tmp/clean_requirements.txt
+          pip install -r /tmp/clean_requirements.txt
+
+      - name: Create output directories
+        run: |
+          mkdir -p models plots data
+
+      - name: Run Training Script
+        run: |
+          cd $GITHUB_WORKSPACE
+          python src/train_hybrid_model.py
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+
+      - name: Commit updated diagnostics back to GitHub
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Stage all updated outputs
+          git add data/metrics_scientific.csv
+          git add data/aqi_accuracy.txt
+          git add plots/pm25_true_vs_pred_last60.png || true
+          git add plots/pm10_true_vs_pred_last60.png || true
+          git add models/ || true
+
+          # Only commit if there are real changes
+          if git diff --cached --quiet; then
+            echo "No changes to commit — diagnostics unchanged."
+          else
+            git commit -m "chore(ci): auto-update model diagnostics after retraining [skip ci]"
+            git push origin main
+          fi
+
+      - name: Deploy updated artefacts to Hugging Face
+        if: ${{ secrets.HF_SPACE_ID != '' && secrets.HF_TOKEN != '' }}
+        env:
+          HF_SPACE_ID: ${{ secrets.HF_SPACE_ID }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git lfs install
+          git remote add huggingface "https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE_ID}"
+          git push huggingface HEAD:main --force

@@ -81,10 +81,22 @@ class MCDropoutPredictor:
         
         # 2. Construct XGBoost Feature Matrix for ALL days and ALL iterations
         # IMPORTANT: Order must match the models exactly: 32 embeddings + 10 weather + 7 time/derived + 4 gas
+        # IMPORTANT: Order must match the models exactly: 32 embeddings + 10 weather + time + gas + engineered
+        engineered_names = [
+            'pm2_5_lag_1', 'pm2_5_lag_2',
+            'pm10_lag_1', 'pm10_lag_2',
+            'pm2_5_rolling_3', 'pm2_5_rolling_7',
+            'pm10_rolling_3', 'pm10_rolling_7',
+            'wind_speed_rolling_3', 'wind_speed_rolling_7',
+            'humidity_rolling_3', 'humidity_rolling_7',
+            'temp_max_rolling_3', 'temp_max_rolling_7',
+            'rainfall_rolling_3', 'rainfall_rolling_7'
+        ]
         xgb_feature_names = [f'emb_{j}' for j in range(embedding_dim)] + \
                             self.preprocessor.lstm_features + \
                             ['month', 'day_of_week', 'day', 'is_weekend', 'wind_dir_sin', 'wind_dir_cos', 'pressure_delta'] + \
-                            ['carbon_monoxide', 'nitrogen_dioxide', 'sulphur_dioxide', 'ammonia']
+                            ['carbon_monoxide', 'nitrogen_dioxide', 'sulphur_dioxide', 'ammonia'] + \
+                            engineered_names
                             
         total_rows = batch_size * self.n_iter
         X_xgb_np = np.zeros((total_rows, len(xgb_feature_names)), dtype=np.float32)
@@ -97,6 +109,10 @@ class MCDropoutPredictor:
         feat_map = {name: i for i, name in enumerate(xgb_feature_names)}
         
         for i, feat_dict in enumerate(base_feat_list):
+            # i is the day index. Each day is replicated n_iter times in X_xgb_np.
+            # But wait: mc_embeddings is shape (batch_size * n_iter, 32).
+            # The tiling in mc_embeddings was: np.repeat(X, n_iter, axis=0)
+            # This means day 0 is indices 0 to n_iter-1, day 1 is n_iter to 2*n_iter - 1, etc.
             start_row = i * self.n_iter
             end_row = (i + 1) * self.n_iter
             for col, val in feat_dict.items():

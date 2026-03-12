@@ -832,6 +832,9 @@ def predict():
             if col != 'season':
                 df_combined_full[col] = df_combined_full[col].interpolate(method='linear').ffill().bfill()
         
+        # Apply the exact same feature engineering used during training!
+        df_combined_full = preprocessor.add_engineered_features(df_combined_full)
+        
         df_fore_future = df_fore[df_fore['date'] >= pd.to_datetime(datetime.now().date())].reset_index(drop=True)
         df_full = df_combined_full.copy()
         df_full['date_temp'] = pd.to_datetime(df_full['date'])
@@ -884,6 +887,15 @@ def predict():
                 'wind_dir_cos': float(np.cos(np.deg2rad(float(target_row['wind_direction'])))),
                 'pressure_delta': float(target_row['pressure']) - float(df_full.iloc[i + SEQ_LENGTH - 1]['pressure'])
             })
+            
+            # Engineered Memory Features (added during new preprocessing)
+            engineered_cols = [c for c in df_full.columns if '_lag_' in c or '_rolling_' in c]
+            for c in engineered_cols:
+                if c in target_row and pd.notna(target_row[c]):
+                    feat_dict[c] = float(target_row[c])
+                else:
+                    feat_dict[c] = 0.0
+                    
             base_feat_list.append(feat_dict)
 
         X_lstm_batch = np.array(X_lstm_batch) # (7, 14, 10)
@@ -905,10 +917,25 @@ def predict():
                 day_res = {'date': target_dates[i]}
                 
                 # Standard weather predictions
+                
+                # We must exactly match the column generation order from preprocessing.py
+                # preprocessing order: loops through ['pm2_5', 'pm10'] for lags, then ['pm2_5', 'pm10', 'wind_speed', 'humidity', 'temp_max', 'rainfall'] for rolls.
+                engineered_names = [
+                    'pm2_5_lag_1', 'pm2_5_lag_2',
+                    'pm10_lag_1', 'pm10_lag_2',
+                    'pm2_5_rolling_3', 'pm2_5_rolling_7',
+                    'pm10_rolling_3', 'pm10_rolling_7',
+                    'wind_speed_rolling_3', 'wind_speed_rolling_7',
+                    'humidity_rolling_3', 'humidity_rolling_7',
+                    'temp_max_rolling_3', 'temp_max_rolling_7',
+                    'rainfall_rolling_3', 'rainfall_rolling_7'
+                ]
+                
                 XGB_FEATURE_NAMES = [f'emb_{j}' for j in range(32)] + \
                                   preprocessor.lstm_features + \
                                   ['month', 'day_of_week', 'day', 'is_weekend', 'wind_dir_sin', 'wind_dir_cos', 'pressure_delta'] + \
-                                  ['carbon_monoxide', 'nitrogen_dioxide', 'sulphur_dioxide', 'ammonia']
+                                  ['carbon_monoxide', 'nitrogen_dioxide', 'sulphur_dioxide', 'ammonia'] + \
+                                  engineered_names
                 
                 # Consolidate feature dict and ensure all values are floats
                 feat_dict_std = base_feat_list[i].copy()

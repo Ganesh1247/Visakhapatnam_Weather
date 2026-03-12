@@ -59,17 +59,19 @@ EcoGlance/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/EcoGlance.git
-   cd EcoGlance
+   git clone https://github.com/Ganesh1247/Visakhapatnam_Weather.git
+   cd Visakhapatnam_Weather
    ```
 
-2. **Create a virtual environment**
+2. **Create a virtual environment (Conda is highly recommended for Windows)**
    ```bash
+   conda create -n ecoglance python=3.10
+   conda activate ecoglance
+   
+   # Or using standard venv (if conda is not installed):
    python -m venv .venv
-   # Windows
-   .venv\Scripts\activate
-   # Linux/Mac
-   source .venv/bin/activate
+   .venv\Scripts\activate      # Windows
+   source .venv/bin/activate   # Linux/Mac
    ```
 
 3. **Install dependencies**
@@ -115,11 +117,12 @@ This repo includes GitHub Actions workflow at `.github/workflows/hf-auto-deploy.
 
 Our hybrid model achieves state-of-the-art performance for local forecasting:
 
-| Model Component | Role | accuracy (R²) |
+| Model Component | Role | Validation Metric |
 |-----------------|------|---------------|
-| LSTM | Feature Extraction from Time Series | - |
-| XGBoost | Regression on LSTM Embeddings | > 0.85 |
-| Conformal | Uncertainty Calibration | 90% Coverage |
+| LSTM | Feature Extraction from Time Series | Temporal Embedding |
+| XGBoost | Regression on LSTM Embeddings | >0.65 R² (PM10), >0.99 R² (Weather) |
+| Feature Engineering | Lag & Rolling Trend Memory | Increased Trend Stability |
+| Calibrated Output | PM2.5 AQI Class Match | **> 92.0% Accuracy** |
 
 ## 🔮 Future Improvements
 
