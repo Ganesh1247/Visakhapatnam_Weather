@@ -1093,19 +1093,27 @@ def predict():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-from generate_metrics import generate_metrics
-
 @app.route('/stats', methods=['GET'])
 def get_stats():
-    # Return metrics
+    """Return model performance metrics directly from the training output CSV."""
     try:
-        # Trigger live update of metrics
-        generate_metrics()
-        
-        if os.path.exists("metrics_scientific.csv"):
-            df = pd.read_csv("metrics_scientific.csv")
-            return jsonify(df.to_dict(orient='records'))
-        return jsonify([])
+        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # Primary: written by train_hybrid_model.py after every retrain
+        csv_path = os.path.join(BASE_DIR, "data", "metrics_scientific.csv")
+        # Fallback: legacy root-level copy
+        if not os.path.exists(csv_path):
+            csv_path = os.path.join(BASE_DIR, "metrics_scientific.csv")
+        if not os.path.exists(csv_path):
+            return jsonify([])
+
+        df = pd.read_csv(csv_path)
+        # Normalise column names to the lowercase keys the frontend expects
+        df.columns = [c.strip().lower().replace(' ', '_') for c in df.columns]
+        # Map 'r2' / 'r2_score' to 'r2'
+        if 'r2_score' in df.columns:
+            df = df.rename(columns={'r2_score': 'r2'})
+
+        return jsonify(df.to_dict(orient='records'))
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
