@@ -1,33 +1,40 @@
 import pandas as pd
 import os
-import random
-import time
 
 def generate_metrics():
-    # Base DIR
+    """
+    Read the real metrics from the CSV written by train_hybrid_model.py.
+    The CSV is at <project_root>/data/metrics_scientific.csv.
+    Previously this function returned hardcoded fake values — now it returns
+    the live post-training ground truth.
+    """
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    OUTPUT_PATH = os.path.join(BASE_DIR, "metrics_scientific.csv")
-    
-    # Simulate slight live variations (Model uncertainty / Live validation)
-    def jitter(val, scale=0.05):
-        return round(val + random.uniform(-scale, scale), 3)
 
-    # Scientific results from training - simplified representation with live jitter
-    metrics = [
-        {"target": "pm10", "rmse": jitter(28.42), "mae": jitter(19.54), "r2": jitter(0.812, 0.005)},
-        {"target": "pm2_5", "rmse": jitter(22.15), "mae": jitter(14.82), "r2": jitter(0.795, 0.005)},
-        {"target": "temp_avg", "rmse": jitter(1.24), "mae": jitter(0.98), "r2": jitter(0.945, 0.002)},
-        {"target": "humidity", "rmse": jitter(5.82), "mae": jitter(4.12), "r2": jitter(0.887, 0.005)},
-        {"target": "wind_speed", "rmse": jitter(2.15), "mae": jitter(1.64), "r2": jitter(0.762, 0.005)},
-        {"target": "rainfall", "rmse": jitter(12.4), "mae": jitter(4.8), "r2": jitter(0.42, 0.01)}
-    ]
-    
-    df = pd.DataFrame(metrics)
-    # Add timestamp for verification
-    df['last_updated'] = time.time()
-    
+    # training script writes here
+    TRAINING_CSV = os.path.join(BASE_DIR, "data", "metrics_scientific.csv")
+    # legacy path kept for backward compat (used by /stats)
+    OUTPUT_PATH  = os.path.join(BASE_DIR, "metrics_scientific.csv")
+
+    if not os.path.exists(TRAINING_CSV):
+        print(f"[generate_metrics] WARNING: {TRAINING_CSV} not found – using empty metrics.")
+        return
+
+    df = pd.read_csv(TRAINING_CSV)
+
+    # Normalise column names – training script uses 'Target','RMSE','MAE','R2'
+    col_map = {c.lower(): c for c in df.columns}
+    rename = {}
+    for src in list(df.columns):
+        lc = src.lower()
+        if lc == 'target':   rename[src] = 'target'
+        elif lc == 'rmse':   rename[src] = 'rmse'
+        elif lc == 'mae':    rename[src] = 'mae'
+        elif lc in ('r2', 'r²', 'r2_score'): rename[src] = 'r2'
+    df = df.rename(columns=rename)
+
+    # Write to the legacy path so the /stats route picks it up without change
     df.to_csv(OUTPUT_PATH, index=False)
-    print(f"Generated diagnostics at {OUTPUT_PATH}")
+    print(f"[generate_metrics] Synced real training metrics → {OUTPUT_PATH}")
 
 if __name__ == "__main__":
     generate_metrics()
