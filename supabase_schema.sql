@@ -6,8 +6,12 @@ create table if not exists public.users (
     password_hash text,
     otp text,
     otp_expiry timestamptz,
+    phone_number text,          -- E.164 format, e.g. +919876543210
     created_at timestamptz default now()
 );
+
+-- Migration: add phone_number to existing tables
+alter table public.users add column if not exists phone_number text;
 
 -- Optional: if you enable RLS, backend should use service-role key for server writes/reads.
 -- alter table public.users enable row level security;

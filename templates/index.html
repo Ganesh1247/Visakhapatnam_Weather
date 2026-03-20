@@ -1696,7 +1696,8 @@
                 document.getElementById('feels-like').textContent = tempVal + '°';
                 document.getElementById('humidity-detail').textContent = Math.round(data.data.humidity) + '%';
                 document.getElementById('wind-detail').innerHTML = `${data.data.wind_speed.toFixed(1)} <span class="text-[10px] opacity-40">m/s</span>`;
-                document.getElementById('rain-detail').innerHTML = `${data.data.rainfall.toFixed(1)} <span class="text-[10px] opacity-40">mm</span>`;
+                const rainProb = data.data.precipitation_probability !== undefined ? data.data.precipitation_probability : 0;
+                document.getElementById('rain-detail').innerHTML = `${data.data.rainfall.toFixed(1)} <span class="text-[10px] opacity-40">mm</span> <span class="text-[10px] text-amber-400/60 ml-1">(${rainProb}%)</span>`;
 
                 const weatherIcon = getWeatherIcon(data.data.rainfall, data.data.temp_avg);
                 document.getElementById('weather-icon-main').textContent = weatherIcon;

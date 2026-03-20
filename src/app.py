@@ -26,6 +26,7 @@ from auth import (
 from backend.uncertainty.mc_dropout import MCDropoutPredictor
 import time
 import threading
+import pytz
 
 # Initialize Flask with correct template and static folders
 # Since app.py is in src/, templates are in ../templates
@@ -62,6 +63,15 @@ app.json = NumpyJSONProvider(app)
 # Initialize Database
 # Database is in ../data/users.db relative to src/
 init_db()
+
+# ── Start SMS/WhatsApp alert scheduler (10 AM & 6 PM IST) ──────────────────
+try:
+    from sms_alerts import start_alert_scheduler
+    start_alert_scheduler()
+except Exception as _sms_err:
+    print(f"[WARN] SMS alert scheduler could not start: {_sms_err}")
+# ────────────────────────────────────────────────────────────────────────────
+
 
 # Config
 SEQ_LENGTH = 14
@@ -196,7 +206,7 @@ forecast_cache = {
     'lock': threading.Lock()
 }
 CACHE_DURATION = 3600  # 1 Hour
-LOCAL_DATA_ONLY = True
+LOCAL_DATA_ONLY = False
 
 # Local hourly weather cache (for no-API mode)
 local_weather_hourly = None
@@ -410,7 +420,7 @@ def fetch_weather_data():
         df_hist_final = df_om
 
     # 2. Future Forecast (7 Days)
-    url_fore = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,rain_sum,wind_speed_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,surface_pressure_mean,relative_humidity_2m_mean,cloud_cover_mean&hourly=temperature_2m,relative_humidity_2m,rain,wind_speed_10m&forecast_days=8&timezone=auto"
+    url_fore = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,rain_sum,wind_speed_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,surface_pressure_mean,relative_humidity_2m_mean,cloud_cover_mean,precipitation_probability_max&hourly=temperature_2m,relative_humidity_2m,rain,wind_speed_10m,precipitation_probability&forecast_days=8&timezone=auto"
     r_fore = requests.get(url_fore, timeout=15).json()
     
     # Return DataFrames not JSON to simplify downstream
@@ -741,13 +751,14 @@ def login_page():
 def signup():
     username = request.json.get('username', '').strip()
     password = request.json.get('password', '')
-    
+    phone_number = request.json.get('phone_number', '').strip()
+
     if not username or len(username) < 3:
         return jsonify({'error': 'Username must be at least 3 characters'}), 400
     if not password or len(password) < 6:
         return jsonify({'error': 'Password must be at least 6 characters'}), 400
 
-    created, result = create_user_credentials(username, password)
+    created, result = create_user_credentials(username, password, phone_number or None)
     if not created:
         return jsonify({'error': result}), 400
 
@@ -828,6 +839,15 @@ def predict():
         df_combined_full = df_combined_full.drop_duplicates(subset=['date']).sort_values('date').reset_index(drop=True)
         df_combined_full = df_combined_full.set_index('date').resample('D').asfreq().reset_index()
         
+        # Live API data (Open-Meteo) does not include fire/traffic columns.
+        # Fill them with sensible defaults so the interpolation loop doesn't crash.
+        if 'active_fires_count' not in df_combined_full.columns:
+            df_combined_full['active_fires_count'] = 0.0
+        if 'fire_frp' not in df_combined_full.columns:
+            df_combined_full['fire_frp'] = 0.0
+        if 'traffic_congestion_index' not in df_combined_full.columns:
+            df_combined_full['traffic_congestion_index'] = 50.0
+
         for col in preprocessor.weather_features:
             if col != 'season':
                 df_combined_full[col] = df_combined_full[col].interpolate(method='linear').ffill().bfill()
@@ -1039,19 +1059,27 @@ def predict():
             hourly = fore_json.get('hourly', {})
             if hourly:
                 # Get current hour in local time (matching Open-Meteo's timezone=auto)
-                now_local = datetime.now()
-                # Find matching hour in hourly data
-                # Open-Meteo hourly time is ISO strings like "2023-10-27T07:00"
+                # Since we are using timezone=auto in the URL, the 'time' strings in 'hourly'
+                # are already in the local timezone of the coordinates (Asia/Kolkata).
+                # We need to match it with the current local time.
+                now_local = datetime.now(pytz.timezone('Asia/Kolkata'))
                 current_hour_str = now_local.strftime('%Y-%m-%dT%H:00')
-                if current_hour_str in hourly.get('time', []):
-                    idx = hourly['time'].index(current_hour_str)
+                
+                print(f"Syncing Hero with current local hour: {current_hour_str}")
+                
+                print(f"DEBUG: current_hour_str={current_hour_str}")
+                all_times = hourly.get('time', [])
+                if current_hour_str in all_times:
+                    idx = all_times.index(current_hour_str)
+                    print(f"DEBUG: Found match at index {idx}")
                     main_pred['temp_avg'] = hourly['temperature_2m'][idx]
                     main_pred['humidity'] = hourly['relative_humidity_2m'][idx]
-                    main_pred['wind_speed'] = hourly['wind_speed_10m'][idx] / 3.6 # km/h to m/s if needed (Hero uses m/s label)
-                    # Check what units Hero expected. Line 802: wind_speed.toFixed(1) <span class="text-[10px] opacity-40">m/s</span>
-                    # Open-Meteo wind_speed_10m is usually km/h by default.
+                    main_pred['wind_speed'] = hourly['wind_speed_10m'][idx] / 3.6 # km/h to m/s
                     main_pred['rainfall'] = hourly['rain'][idx]
-                    print(f"Updated Hero section with current hour ({current_hour_str}) data.")
+                    main_pred['precipitation_probability'] = hourly.get('precipitation_probability', [0]*len(all_times))[idx]
+                    print(f"DEBUG: Updated Hero: temp={main_pred['temp_avg']}, rain={main_pred['rainfall']}, prob={main_pred['precipitation_probability']}")
+                else:
+                    print(f"DEBUG: No hourly match for {current_hour_str}. Available range: {all_times[0] if all_times else 'N/A'} to {all_times[-1] if all_times else 'N/A'}")
         except Exception as hourly_err:
             print(f"Failed to extract current hour data: {hourly_err}")
 
