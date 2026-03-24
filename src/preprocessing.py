@@ -4,7 +4,7 @@ from sklearn.preprocessing import MinMaxScaler
 from typing import Tuple, List, Dict
 
 class DataPreprocessor:
-    def __init__(self, sequence_length: int = 14):
+    def __init__(self, sequence_length: int = 21):
         self.sequence_length = sequence_length
         self.scaler_lstm = MinMaxScaler()
         self.scaler_weather = MinMaxScaler()
@@ -99,11 +99,11 @@ class DataPreprocessor:
         # Interpolate numeric columns, then fill remaining edges
         df_aqi_numeric = df_aqi_h.select_dtypes(include=[np.number])
         if not df_aqi_numeric.empty:
-            df_aqi_h[df_aqi_numeric.columns] = df_aqi_h[df_aqi_numeric.columns].interpolate(method='linear').bfill().ffill()
+            df_aqi_h[df_aqi_numeric.columns] = df_aqi_h[df_aqi_numeric.columns].apply(pd.to_numeric, errors='coerce').interpolate(method='linear').bfill().ffill()
 
         df_w_numeric = df_w_h.select_dtypes(include=[np.number])
         if not df_w_numeric.empty:
-            df_w_h[df_w_numeric.columns] = df_w_h[df_w_numeric.columns].interpolate(method='linear').bfill().ffill()
+            df_w_h[df_w_numeric.columns] = df_w_h[df_w_numeric.columns].apply(pd.to_numeric, errors='coerce').interpolate(method='linear').bfill().ffill()
 
         # --- AQI daily aggregation (separate source) ---
         # Normalize AQI pollutant column names
@@ -220,12 +220,12 @@ class DataPreprocessor:
         w_agg = pd.merge(w_agg, fire_agg, on='date', how='left')
         
         # We replace any 0.0 with NaN as requested, then interpolate so the LSTM doesn't crash
-        w_agg['active_fires_count'] = w_agg['active_fires_count'].replace(0.0, np.nan)
-        w_agg['fire_frp'] = w_agg['fire_frp'].replace(0.0, np.nan)
+        w_agg['active_fires_count'] = pd.to_numeric(w_agg['active_fires_count'], errors='coerce').replace(0.0, np.nan)
+        w_agg['fire_frp'] = pd.to_numeric(w_agg['fire_frp'], errors='coerce').replace(0.0, np.nan)
         
         # Interpolate the NaNs (forward fill then backward fill) to maintain continuous variance
-        w_agg['active_fires_count'] = w_agg['active_fires_count'].interpolate(method='linear').ffill().bfill()
-        w_agg['fire_frp'] = w_agg['fire_frp'].interpolate(method='linear').ffill().bfill()
+        w_agg['active_fires_count'] = w_agg['active_fires_count'].interpolate(method='linear').ffill().bfill().fillna(0.0)
+        w_agg['fire_frp'] = w_agg['fire_frp'].interpolate(method='linear').ffill().bfill().fillna(0.0)
         
         # --- Visakhapatnam Traffic Data ---
         if traffic_data_path and pd.io.common.file_exists(traffic_data_path):
@@ -298,12 +298,25 @@ class DataPreprocessor:
             if col in df_engineered.columns:
                 df_engineered[f'{col}_lag_1'] = df_engineered[col].shift(1)
                 df_engineered[f'{col}_lag_2'] = df_engineered[col].shift(2)
+                df_engineered[f'{col}_lag_7'] = df_engineered[col].shift(7)
+                df_engineered[f'{col}_lag_14'] = df_engineered[col].shift(14)
+                df_engineered[f'{col}_lag_21'] = df_engineered[col].shift(21)
+                df_engineered[f'{col}_lag_30'] = df_engineered[col].shift(30)
 
         # 2. Rolling Trends (Averages)
         for col in ['pm2_5', 'pm10', 'wind_speed', 'humidity', 'temp_max', 'rainfall']:
             if col in df_engineered.columns:
                 df_engineered[f'{col}_rolling_3'] = df_engineered[col].rolling(window=3).mean()
                 df_engineered[f'{col}_rolling_7'] = df_engineered[col].rolling(window=7).mean()
+                df_engineered[f'{col}_rolling_14'] = df_engineered[col].rolling(window=14).mean()
+                df_engineered[f'{col}_rolling_30'] = df_engineered[col].rolling(window=30).mean()
+
+        # 3. Wind Transport & Stability Features
+        if 'pm2_5_lag_1' in df_engineered.columns and 'wind_speed' in df_engineered.columns:
+            df_engineered['pollution_transport'] = df_engineered['pm2_5_lag_1'] * df_engineered['wind_speed']
+            
+        if 'temp_max' in df_engineered.columns and 'temp_min' in df_engineered.columns and 'wind_speed' in df_engineered.columns:
+            df_engineered['stability_index'] = df_engineered['wind_speed'] / (df_engineered['temp_max'] - df_engineered['temp_min'] + 1)
 
         # Handle NaNs created by lagging/rolling at the start of the dataset
         df_engineered = df_engineered.bfill()
@@ -419,7 +432,7 @@ class DataPreprocessor:
                 features[g] = 0.0
 
         # Engineered Memory Features
-        engineered_cols = [col for col in df_meta.columns if '_lag_' in col or '_rolling_' in col]
+        engineered_cols = [col for col in df_meta.columns if '_lag_' in col or '_rolling_' in col or col in ['pollution_transport', 'stability_index']]
         for col in engineered_cols:
             features[col] = df_meta[col].values
 

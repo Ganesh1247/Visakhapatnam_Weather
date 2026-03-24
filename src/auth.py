@@ -94,15 +94,18 @@ def init_db():
                   password_hash TEXT,
                   otp TEXT,
                   otp_expiry TIMESTAMP,
+                  phone_number TEXT,
                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
-    try:
-        c.execute('ALTER TABLE users ADD COLUMN username TEXT')
-    except sqlite3.OperationalError:
-        pass
-    try:
-        c.execute('ALTER TABLE users ADD COLUMN password_hash TEXT')
-    except sqlite3.OperationalError:
-        pass
+    # Migrations for existing databases
+    for col_def in [
+        'ALTER TABLE users ADD COLUMN username TEXT',
+        'ALTER TABLE users ADD COLUMN password_hash TEXT',
+        'ALTER TABLE users ADD COLUMN phone_number TEXT',
+    ]:
+        try:
+            c.execute(col_def)
+        except sqlite3.OperationalError:
+            pass
     c.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username)')
     conn.commit()
     conn.close()
@@ -335,10 +338,11 @@ def set_user_credentials(email, username, password):
     finally:
         conn.close()
 
-def create_user_credentials(username, password):
-    """Create a brand-new user with username/password and synthetic email key."""
+def create_user_credentials(username, password, phone_number=None):
+    """Create a brand-new user with username/password/phone and synthetic email key."""
     username = (username or "").strip()
     password = password or ""
+    phone_number = (phone_number or "").strip() or None
     if len(username) < 3 or len(password) < 6:
         return False, "Username must be at least 3 characters and password at least 6 characters"
 
@@ -353,31 +357,67 @@ def create_user_credentials(username, password):
             if existing.data and len(existing.data) > 0:
                 return False, "Username already taken"
 
-            try:
-                supabase.table('users').insert({
-                    'email': synthetic_email,
-                    'username': username,
-                    'password_hash': password_hash
-                }).execute()
-            except Exception as e:
-                if _is_missing_column_error(e, "email"):
-                    # Supabase schema variant without email column.
-                    supabase.table('users').insert({
-                        'username': username,
-                        'password_hash': password_hash
-                    }).execute()
-                else:
-                    raise
-            return True, synthetic_email
-        except Exception as e:
-            print(f"Supabase Create User Error. Falling back to SQLite: {e}")
+            insert_payload = {
+                'email': synthetic_email,
+                'username': username,
+                'password_hash': password_hash,
+            }
+            if phone_number:
+                insert_payload['phone_number'] = phone_number
 
+            inserted = False
+            last_err = None
+
+            # Level 1 — try full payload
+            try:
+                supabase.table('users').insert(insert_payload).execute()
+                inserted = True
+            except Exception as e:
+                last_err = e
+                err_msg = str(e).lower()
+
+                # Level 2 — phone_number column not yet in Supabase schema
+                if _is_missing_column_error(e, "phone_number") or "phone_number" in err_msg:
+                    print("[WARN] Supabase: phone_number column missing – storing without it.")
+                    payload_no_phone = {k: v for k, v in insert_payload.items() if k != 'phone_number'}
+                    try:
+                        supabase.table('users').insert(payload_no_phone).execute()
+                        inserted = True
+                    except Exception as e2:
+                        last_err = e2
+                        # Level 3 — also no email column
+                        if _is_missing_column_error(e2, "email"):
+                            no_email = {k: v for k, v in payload_no_phone.items() if k != 'email'}
+                            supabase.table('users').insert(no_email).execute()
+                            inserted = True
+                        else:
+                            raise e2
+
+                # Level 2b — no email column (original schema variant)
+                elif _is_missing_column_error(e, "email"):
+                    no_email = {k: v for k, v in insert_payload.items() if k != 'email'}
+                    supabase.table('users').insert(no_email).execute()
+                    inserted = True
+                else:
+                    raise e
+
+            if inserted:
+                return True, synthetic_email
+
+        except Exception as e:
+            print(f"Supabase Create User Error: {e}")
+            err_str = str(e)
+            if "duplicate" in err_str.lower() or "unique" in err_str.lower():
+                return False, "Username already taken"
+            return False, f"Account creation failed: {err_str[:120]}"
+
+    # SQLite path (only reached when Supabase is not configured at all)
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     try:
         c.execute(
-            'INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)',
-            (synthetic_email, username, password_hash)
+            'INSERT INTO users (email, username, password_hash, phone_number) VALUES (?, ?, ?, ?)',
+            (synthetic_email, username, password_hash, phone_number)
         )
         conn.commit()
         return True, synthetic_email

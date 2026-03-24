@@ -245,7 +245,7 @@
             </div>
 
             <!-- Content Container -->
-            <div class="relative min-h-[320px]">
+            <div class="relative min-h-[380px]">
 
                 <!-- LOGIN FLOW -->
                 <div id="login-view" class="form-content space-y-8">
@@ -311,7 +311,7 @@
 
                 <!-- SIGNUP FLOW -->
                 <div id="signup-view" class="form-content form-hidden space-y-8">
-                    <div class="space-y-8 py-4">
+                    <div class="space-y-6 py-4">
                         <div class="input-group space-y-3 text-center">
                             <div
                                 class="w-14 h-14 mx-auto rounded-2xl bg-white/5 flex items-center justify-center text-emerald-400 mb-2">
@@ -340,6 +340,44 @@
                                 </button>
                             </div>
                         </div>
+
+                        <!-- ★ PHONE NUMBER FIELD ★ -->
+                        <div class="input-group space-y-2">
+                            <label class="flex items-center gap-2 text-[10px] font-black text-white/30 uppercase tracking-widest ml-1">
+                                <i class="ri-notification-3-line text-emerald-400/70 text-sm"></i>
+                                Mobile Number
+                                <span class="normal-case tracking-normal font-semibold text-emerald-400/60">(for daily alerts)</span>
+                            </label>
+                            <div class="flex gap-2">
+                                <!-- Country code selector -->
+                                <div class="relative flex-shrink-0">
+                                    <select id="phone-country-code"
+                                        class="appearance-none h-full bg-white/5 border border-white/10 rounded-2xl pl-4 pr-8 py-4 text-white/80 text-sm focus:outline-none focus:border-emerald-500/50 cursor-pointer"
+                                        style="background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.3)'/%3E%3C/svg%3E&quot;); background-repeat: no-repeat; background-position: right 10px center;">
+                                        <option value="+91">🇮🇳 +91</option>
+                                        <option value="+1">🇺🇸 +1</option>
+                                        <option value="+44">🇬🇧 +44</option>
+                                        <option value="+971">🇦🇪 +971</option>
+                                        <option value="+65">🇸🇬 +65</option>
+                                        <option value="+61">🇦🇺 +61</option>
+                                        <option value="+49">🇩🇪 +49</option>
+                                    </select>
+                                </div>
+                                <!-- Number input -->
+                                <div class="relative flex-1 group">
+                                    <i class="ri-smartphone-line absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-emerald-400/60 transition-colors"></i>
+                                    <input type="tel" id="new-phone" placeholder="10-digit number"
+                                        maxlength="15" inputmode="numeric"
+                                        class="w-full bg-white/5 border border-white/10 rounded-2xl pl-11 pr-5 py-4 text-white placeholder:text-white/20 focus:outline-none focus:border-emerald-500/50 focus:bg-white/8 focus:shadow-[0_0_20px_rgba(52,211,153,0.08)] transition-all duration-300">
+                                </div>
+                            </div>
+                            <p class="text-[9px] text-white/20 ml-1 leading-relaxed">
+                                📲 Receive daily AQI &amp; weather warnings at <strong class="text-white/30">10:00 AM</strong> and <strong class="text-white/30">6:00 PM</strong>.
+                                Leave blank to skip alerts.
+                            </p>
+                        </div>
+                        <!-- ★ END PHONE FIELD ★ -->
+
                         <button onclick="performSignup()" id="btn-signup-action"
                             class="w-full btn-premium bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-black py-5 rounded-3xl mt-4">Create
                             Account</button>
@@ -515,8 +553,17 @@
             async function performSignup() {
                 const u = document.getElementById('new-user').value.trim();
                 const p = document.getElementById('new-pass').value;
+                const rawPhone = (document.getElementById('new-phone')?.value || '').replace(/\D/g, '');
+                const countryCode = document.getElementById('phone-country-code')?.value || '+91';
+                const phone_number = rawPhone ? countryCode + rawPhone : '';
+
                 if (u.length < 3) return setStatus('Identity too short', 'error');
                 if (p.length < 6) return setStatus('Key too simple', 'error');
+
+                // Validate phone if provided
+                if (rawPhone && rawPhone.length < 7) {
+                    return setStatus('Phone number too short', 'error');
+                }
 
                 const btn = document.getElementById('btn-signup-action');
                 btn.disabled = true;
@@ -526,7 +573,7 @@
                     const res = await fetch('/signup', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username: u, password: p })
+                        body: JSON.stringify({ username: u, password: p, phone_number: phone_number })
                     });
                     const data = await res.json();
                     if (res.ok && data.redirect) {

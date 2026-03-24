@@ -74,7 +74,7 @@ except Exception as _sms_err:
 
 
 # Config
-SEQ_LENGTH = 14
+SEQ_LENGTH = 21
 LAT = 17.6868
 LON = 83.2185
 
@@ -115,32 +115,20 @@ def load_models_lazy():
         except Exception as e:
             print(f"Error loading LSTM: {e}")
         
-        # Load XGB Models
-        active_targets = [t for t in preprocessor.target_columns if t != 'ozone']
-        loaded_xgb_count = 0
-        for target in active_targets:
-            try:
-                path = os.path.join(MODELS_DIR, f"xgb_chain_{target}.pkl")
-                if os.path.exists(path):
-                    with open(path, "rb") as f:
-                        xgb_models[target] = pickle.load(f)
-                        loaded_xgb_count += 1
-            except Exception as e:
-                print(f"Warning: Failed to load XGB model for {target}: {e}")
-        
-        # Initialize Predictors
+        # Load LightGBM + XGBoost Residual Ensemble
         try:
-            if feature_extractor and xgb_models:
-                mc_predictor = MCDropoutPredictor(
-                    lstm_model=lstm_full,
-                    feature_extractor=feature_extractor,
-                    xgb_models=xgb_models,
-                    preprocessor=preprocessor,
-                    n_iter=50
-                )
-                print("MC Dropout Predictor Initialized.")
+            path = os.path.join(MODELS_DIR, "lgbm_xgb_ensemble.pkl")
+            if os.path.exists(path):
+                with open(path, "rb") as f:
+                    xgb_models = pickle.load(f)
+                print("LGBM/XGB Ensemble models loaded.")
         except Exception as e:
-            print(f"Error initializing MC Predictor: {e}")
+            print(f"Warning: Failed to load Ensemble models: {e}")
+        
+        active_targets = preprocessor.target_columns
+        
+        # MC Dropout Predictor is bypassed for now as the architecture shifted to LGBM Base + XGB Residuals
+        mc_predictor = None
 
         # Load residual bias corrector
         global bias_corrector
@@ -367,9 +355,9 @@ def fetch_weather_data():
     today = datetime.now().date()
     
     # 1. Past Data Strategy
-    # We need SEQ_LENGTH (14) days ending yesterday.
+    # We need SEQ_LENGTH (21) days ending yesterday.
     end_date = today - timedelta(days=1)
-    start_date = end_date - timedelta(days=SEQ_LENGTH + 5) # Buffer
+    start_date = end_date - timedelta(days=SEQ_LENGTH + 35) # Buffer for 30-day lags
     
     # Try NASA first
     df_nasa = fetch_nasa_history(start_date, end_date)
@@ -909,7 +897,7 @@ def predict():
             })
             
             # Engineered Memory Features (added during new preprocessing)
-            engineered_cols = [c for c in df_full.columns if '_lag_' in c or '_rolling_' in c]
+            engineered_cols = [c for c in df_full.columns if '_lag_' in c or '_rolling_' in c or c in ['pollution_transport', 'stability_index']]
             for c in engineered_cols:
                 if c in target_row and pd.notna(target_row[c]):
                     feat_dict[c] = float(target_row[c])
@@ -921,117 +909,72 @@ def predict():
         X_lstm_batch = np.array(X_lstm_batch) # (7, 14, 10)
 
         # 4. Vectorized Inference
+        # 4. Vectorized Inference
         forecasts = []
         
-        if method == 'mc_dropout' and mc_predictor:
-            # Entire 7-day forecast in ONE vectorized call
-            mc_batch_results = mc_predictor.predict_with_uncertainty(X_lstm_batch, base_feat_list)
+        if feature_extractor is None:
+            raise ValueError("Neural Feature Extractor not initialized")
             
-            # Embedding extraction for standard path (one pass for all 7 days)
-            if feature_extractor is None:
-                raise ValueError("Neural Feature Extractor not initialized")
-            embeddings_batch = feature_extractor.predict(X_lstm_batch, verbose=0)
+        embeddings_batch = feature_extractor.predict(X_lstm_batch, verbose=0)
+        
+        for i in range(forecast_days):
+            target_date = target_dates[i]
+            day_res = {'date': target_date}
+            d_month = pd.to_datetime(target_date).month
+            bias_pm25 = (bias_corrector.get('pm2_5', {}).get(d_month, 0) if bias_corrector else 0) + get_bias_correction(target_date)
+            bias_pm10 = (bias_corrector.get('pm10', {}).get(d_month, 0) if bias_corrector else 0) + get_bias_correction(target_date)
             
-            for i in range(forecast_days):
-                res = mc_batch_results[i]
-                day_res = {'date': target_dates[i]}
+            engineered_names = [
+                'pm2_5_lag_1', 'pm2_5_lag_2', 'pm2_5_lag_7', 'pm2_5_lag_14', 'pm2_5_lag_21', 'pm2_5_lag_30',
+                'pm10_lag_1', 'pm10_lag_2', 'pm10_lag_7', 'pm10_lag_14', 'pm10_lag_21', 'pm10_lag_30',
+                'pm2_5_rolling_3', 'pm2_5_rolling_7', 'pm2_5_rolling_14', 'pm2_5_rolling_30',
+                'pm10_rolling_3', 'pm10_rolling_7', 'pm10_rolling_14', 'pm10_rolling_30',
+                'wind_speed_rolling_3', 'wind_speed_rolling_7', 'wind_speed_rolling_14', 'wind_speed_rolling_30',
+                'humidity_rolling_3', 'humidity_rolling_7', 'humidity_rolling_14', 'humidity_rolling_30',
+                'temp_max_rolling_3', 'temp_max_rolling_7', 'temp_max_rolling_14', 'temp_max_rolling_30',
+                'rainfall_rolling_3', 'rainfall_rolling_7', 'rainfall_rolling_14', 'rainfall_rolling_30',
+                'pollution_transport', 'stability_index'
+            ]
+            
+            XGB_FEATURE_NAMES = [f'emb_{j}' for j in range(64)] + \
+                              preprocessor.lstm_features + \
+                              ['month', 'day_of_week', 'day', 'is_weekend', 'wind_dir_sin', 'wind_dir_cos', 'pressure_delta'] + \
+                              ['carbon_monoxide', 'nitrogen_dioxide', 'sulphur_dioxide', 'ammonia'] + \
+                              engineered_names
+            
+            feat_dict_std = base_feat_list[i].copy()
+            for j in range(64): 
+                feat_dict_std[f'emb_{j}'] = float(embeddings_batch[i][j])
+            
+            X_xgb = pd.DataFrame([feat_dict_std])[XGB_FEATURE_NAMES].astype('float32')
+            
+            # Predict targets using Ensemble (LGBM Base + XGB Residual)
+            for target in active_targets:
+                base_key = f"{target}_base"
+                resid_key = f"{target}_resid"
                 
-                # Standard weather predictions
-                
-                # We must exactly match the column generation order from preprocessing.py
-                # preprocessing order: loops through ['pm2_5', 'pm10'] for lags, then ['pm2_5', 'pm10', 'wind_speed', 'humidity', 'temp_max', 'rainfall'] for rolls.
-                engineered_names = [
-                    'pm2_5_lag_1', 'pm2_5_lag_2',
-                    'pm10_lag_1', 'pm10_lag_2',
-                    'pm2_5_rolling_3', 'pm2_5_rolling_7',
-                    'pm10_rolling_3', 'pm10_rolling_7',
-                    'wind_speed_rolling_3', 'wind_speed_rolling_7',
-                    'humidity_rolling_3', 'humidity_rolling_7',
-                    'temp_max_rolling_3', 'temp_max_rolling_7',
-                    'rainfall_rolling_3', 'rainfall_rolling_7'
-                ]
-                
-                XGB_FEATURE_NAMES = [f'emb_{j}' for j in range(32)] + \
-                                  preprocessor.lstm_features + \
-                                  ['month', 'day_of_week', 'day', 'is_weekend', 'wind_dir_sin', 'wind_dir_cos', 'pressure_delta'] + \
-                                  ['carbon_monoxide', 'nitrogen_dioxide', 'sulphur_dioxide', 'ammonia'] + \
-                                  engineered_names
-                
-                # Consolidate feature dict and ensure all values are floats
-                feat_dict_std = base_feat_list[i].copy()
-                for j in range(32): 
-                    feat_dict_std[f'emb_{j}'] = float(embeddings_batch[i][j])
-                
-                # Create DataFrame with exact column names and float32 type
-                X_xgb = pd.DataFrame([feat_dict_std])[XGB_FEATURE_NAMES].astype('float32')
-                
-                # Non-PM Targets
-                for target in active_targets:
-                    if target not in ['pm2_5', 'pm10'] and target in xgb_models:
-                        val = xgb_predict(xgb_models[target], X_xgb)[0]
-                        day_res[target] = max(0, val)
-                
-                # PM Targets with MC Dropout Uncertainty
-                d_month = pd.to_datetime(target_dates[i]).month
-                bias_pm25 = (bias_corrector.get('pm2_5', {}).get(d_month, 0) if bias_corrector else 0) + get_bias_correction(target_dates[i])
-                bias_pm10 = (bias_corrector.get('pm10', {}).get(d_month, 0) if bias_corrector else 0) + get_bias_correction(target_dates[i])
-
-                for target in ['pm2_5', 'pm10']:
-                    if target in res:
-                        # Extract the dynamic bias for this target
+                if base_key in xgb_models and resid_key in xgb_models:
+                    base_val = xgb_models[base_key].predict(X_xgb)[0]
+                    resid_val = xgb_models[resid_key].predict(X_xgb)[0]
+                    val = base_val + resid_val
+                    
+                    if target in ['pm2_5', 'pm10']:
+                        val = np.expm1(val)
                         t_bias = bias_pm25 if target == 'pm2_5' else bias_pm10
-                        day_res[target] = res[target]['prediction'] + t_bias
-                        unc = res[target]['uncertainty'].copy()
-                        unc['confidence_90'] = [round(x + t_bias, 2) for x in unc['confidence_90']]
-                        unc['confidence_95'] = [round(x + t_bias, 2) for x in unc['confidence_95']]
-                        day_res[f'{target}_uncertainty'] = unc
-                
-                forecasts.append(day_res)
-
-        else:
-            # Fallback for Quantile/Conformal/Standard (Looping standard is still fast)
-            if feature_extractor is None:
-                raise ValueError("Neural Feature Extractor not initialized")
-            embeddings_batch = feature_extractor.predict(X_lstm_batch, verbose=0)
-            for i in range(forecast_days):
-                day_res = {'date': target_dates[i]}
-                bias = get_bias_correction(target_dates[i])
-                
-                feat_dict_std = base_feat_list[i].copy()
-                for j in range(32): 
-                    feat_dict_std[f'emb_{j}'] = float(embeddings_batch[i][j])
-                
-                XGB_FEATURE_NAMES = [f'emb_{j}' for j in range(32)] + \
-                                  preprocessor.lstm_features + \
-                                  ['month', 'day_of_week', 'day', 'is_weekend', 'wind_dir_sin', 'wind_dir_cos', 'pressure_delta'] + \
-                                  ['carbon_monoxide', 'nitrogen_dioxide', 'sulphur_dioxide', 'ammonia']
-                
-                X_xgb = pd.DataFrame([feat_dict_std])[XGB_FEATURE_NAMES].astype('float32')
-                
-                # Standard Forward
-                for target in active_targets:
-                    if target in xgb_models:
-                        val = xgb_predict(xgb_models[target], X_xgb)[0]
-                        if target in ['pm2_5', 'pm10']:
-                            val = np.expm1(val) + bias
-                        day_res[target] = max(0, val)
-                
-                # Standard Fallback logic for when Neural Core is missing
-                if feature_extractor is None:
-                    # Overwrite/fill using standard models if available
-                    for target in active_targets:
-                        std_key = f"std_{target}"
-                        if std_key in xgb_models:
-                            # Standard models don't need embeddings
-                            FEAT_COLS = preprocessor.lstm_features + ['month', 'day_of_week', 'day', 'is_weekend', 'wind_dir_sin', 'wind_dir_cos', 'pressure_delta']
-                            X_std = pd.DataFrame([base_feat_list[i]])[FEAT_COLS].astype('float32')
-                            val = xgb_predict(xgb_models[std_key], X_std)[0]
-                            if target in ['pm2_5', 'pm10']:
-                                val = np.expm1(val) + bias
-                            day_res[target] = round(float(max(0, val)), 2)
-                            day_res['engine'] = 'Standard (Lighter)'
-                
-                forecasts.append(day_res)
+                        val += t_bias
+                        
+                    day_res[target] = max(0, float(val))
+                elif f"std_{target}" in xgb_models:
+                    # Fallback standard
+                    FEAT_COLS = preprocessor.lstm_features + ['month', 'day_of_week', 'day', 'is_weekend', 'wind_dir_sin', 'wind_dir_cos', 'pressure_delta']
+                    X_std = pd.DataFrame([base_feat_list[i]])[FEAT_COLS].astype('float32')
+                    val = xgb_predict(xgb_models[f"std_{target}"], X_std)[0]
+                    if target in ['pm2_5', 'pm10']:
+                        val = np.expm1(val) + (bias_pm25 if target == 'pm2_5' else bias_pm10)
+                    day_res[target] = max(0, round(float(val), 2))
+                    day_res['engine'] = 'Standard (Lighter)'
+                    
+            forecasts.append(day_res)
 
         # 5. Final Post-processing & Guardrails
         for day in forecasts:

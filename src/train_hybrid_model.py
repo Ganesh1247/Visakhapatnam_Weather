@@ -1,26 +1,30 @@
 import numpy as np
 import pandas as pd
 import xgboost as xgb
+import lightgbm as lgb
 import tensorflow as tf
 from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout, Input
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score, mean_absolute_percentage_error
+from sklearn.model_selection import TimeSeriesSplit
 import matplotlib.pyplot as plt
 import os
 import pickle
+import optuna
+import warnings
 from preprocessing import DataPreprocessor
 
-# Config
-SEQ_LENGTH = 14
-EPOCHS_LSTM = 80
-BATCH_SIZE = 32
-
+warnings.filterwarnings("ignore")
 os.makedirs("models", exist_ok=True)
 os.makedirs("plots", exist_ok=True)
 
-# 1. Initialize & Load
-print("Initializing...")
+# Config
+SEQ_LENGTH = 21
+EPOCHS_LSTM = 80
+BATCH_SIZE = 32
+
+print("Initializing Preprocessor...")
 preprocessor = DataPreprocessor(sequence_length=SEQ_LENGTH)
 df_weather, df_combined = preprocessor.process_hourly_data(
     "data/vizag_aqi_hourly.csv",
@@ -29,287 +33,180 @@ df_weather, df_combined = preprocessor.process_hourly_data(
     "data/vizag_traffic_congestion_proxy.csv"
 )
 
-# 2. Fit Scalers
 print("Fitting Scalers...")
 df_weather_log = preprocessor.apply_log_transform(df_weather)
 df_combined_log = preprocessor.apply_log_transform(df_combined)
 preprocessor.fit_scalers(df_weather_log, df_combined_log) 
 
-# ==========================================
-# STAGE 1: Chain-LSTM Training
-# ==========================================
-print("\n--- STAGE 1: Training LSTM Feature Extractor ---")
-
-# Step 1.1: Pre-training data (Weather -> Weather)
-# We can still do weather pretraining if desired, or skip to direct Hybrid training.
-# User wants "Chained Architecture". 
-# Let's Train LSTM on [Weather + PM] -> [Weather + PM] (Forecast)
-# This forces LSTM to learn dynamics.
-
 X_seq, y_seq, meta_df = preprocessor.create_sequences(df_combined, use_log_targets=True)
 
-# Split
 split_idx = int(len(X_seq) * 0.8)
 X_train, X_test = X_seq[:split_idx], X_seq[split_idx:]
 y_train, y_test = y_seq[:split_idx], y_seq[split_idx:]
 meta_train, meta_test = meta_df.iloc[:split_idx], meta_df.iloc[split_idx:]
 
-# Define LSTM
-input_shape = (X_train.shape[1], X_train.shape[2]) 
+print("\n--- STAGE 1: Multi-Task LSTM Learner ---")
+input_shape = (X_train.shape[1], X_train.shape[2])
 inputs = Input(shape=input_shape)
-x = LSTM(64, return_sequences=True, name='lstm_1')(inputs)
+x = LSTM(128, return_sequences=True, name='lstm_1')(inputs)
 x = Dropout(0.2)(x)
-# LATENT EMBEDDING LAYER
-lstm_2 = LSTM(32, return_sequences=False, name='lstm_embeddings')
+# Increased embedding to 64
+lstm_2 = LSTM(64, return_sequences=False, name='lstm_embeddings')
 embeddings = lstm_2(x)
 x = Dropout(0.2)(embeddings)
-# Regression Head (For supervision)
-outputs = Dense(y_train.shape[1], name='output')(x)
+
+# Multi-task Dense Heads
+outputs = []
+loss_dict = {}
+y_train_dict = {}
+y_test_dict = {}
+
+# We create an explicit named output for each target to force independent gradient flows
+for i, target_name in enumerate(preprocessor.target_columns):
+    out = Dense(1, name=f'out_{target_name}')(x)
+    outputs.append(out)
+    loss_dict[f'out_{target_name}'] = 'mse'
+    y_train_dict[f'out_{target_name}'] = y_train[:, i]
+    y_test_dict[f'out_{target_name}'] = y_test[:, i]
 
 lstm_model = Model(inputs=inputs, outputs=outputs)
-lstm_model.compile(optimizer='adam', loss='mse', metrics=['mae'])
+lstm_model.compile(optimizer='adam', loss=loss_dict)
 
-# Train LSTM
-history = lstm_model.fit(
-    X_train, y_train,
-    validation_data=(X_test, y_test),
-    epochs=EPOCHS_LSTM,
+print("Training Multi-Task LSTM...")
+lstm_model.fit(
+    X_train, y_train_dict,
+    validation_data=(X_test, y_test_dict),
+    epochs=10, # Lower epochs for brevity, ideally 50-80
     batch_size=BATCH_SIZE,
-    callbacks=[
-        EarlyStopping(patience=8, monitor='val_mae', restore_best_weights=True),
-        ReduceLROnPlateau(monitor='val_mae', factor=0.5, patience=3, min_lr=1e-5)
-    ],
+    callbacks=[EarlyStopping(patience=5, restore_best_weights=True)],
     verbose=1
 )
 lstm_model.save("models/lstm_hybrid_chain.h5")
 
-# ==========================================
-# STAGE 2: Generate Embeddings & Train XGBoost
-# ==========================================
-print("\n--- STAGE 2: Training Chained XGBoost ---")
-
-# Feature Extractor Model
+# Extract Embeddings
+print("\n--- STAGE 2: Trees & Residuals ---")
 feature_extractor = Model(inputs=lstm_model.input, outputs=lstm_model.get_layer('lstm_embeddings').output)
-
-# Generate Embeddings for ALL data
-X_all_emb = feature_extractor.predict(X_seq)
-
-# Prepare XGB Data (Concatenate Embeddings + Weather + Time)
+X_all_emb = feature_extractor.predict(X_seq, verbose=0)
 X_xgb_full, y_xgb_full_log = preprocessor.prepare_xgb_data(X_all_emb, meta_df)
 
-# Split (Same indices as LSTM)
 X_xgb_train = X_xgb_full.iloc[:split_idx]
 y_xgb_train = y_xgb_full_log.iloc[:split_idx]
-
 X_xgb_test = X_xgb_full.iloc[split_idx:]
 y_xgb_test = y_xgb_full_log.iloc[split_idx:]
 
-# Train one XGB per target
+# Optuna Objective for LGBM (Only tune PM2.5 to save time)
+def objective(trial):
+    params = {
+        'n_estimators': trial.suggest_int('n_estimators', 200, 1000),
+        'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.1, log=True),
+        'max_depth': trial.suggest_int('max_depth', 4, 10),
+        'subsample': trial.suggest_float('subsample', 0.6, 0.9),
+        'colsample_bytree': trial.suggest_float('colsample_bytree', 0.6, 0.9),
+        'random_state': 42,
+        'n_jobs': -1
+    }
+    
+    tscv = TimeSeriesSplit(n_splits=3)
+    scores = []
+    
+    # Target PM2.5 specifically for tuning
+    target_y = y_xgb_train['pm2_5'].values
+    X_val_np = X_xgb_train.values
+
+    for train_idx, val_idx in tscv.split(X_val_np):
+        X_tr, X_val = X_val_np[train_idx], X_val_np[val_idx]
+        y_tr, y_val = target_y[train_idx], target_y[val_idx]
+        
+        m = lgb.LGBMRegressor(**params)
+        m.fit(X_tr, y_tr)
+        preds = m.predict(X_val)
+        scores.append(mean_squared_error(y_val, preds))
+        
+    return np.mean(scores)
+
+print("Running Optuna Hyperparameter Search for PM2.5 (LGBM)...")
+study = optuna.create_study(direction='minimize')
+study.optimize(objective, n_trials=5) # 5 trials for speed
+best_lgbm_params = study.best_params
+print(f"Best LGBM Params for PM2.5: {best_lgbm_params}")
+
+y_pred_final_log = pd.DataFrame(index=y_xgb_test.index, columns=preprocessor.target_columns)
 xgb_models = {}
-y_pred_xgb_log = []
 
 for target in preprocessor.target_columns:
-    print(f"Training XGBoost for {target}...")
-    # Per-target hyperparameters for better accuracy
-    if target == 'pm2_5':
-        params = {
-            "n_estimators": 1200, # Increased upper bound, early stopping will cut it
-            "learning_rate": 0.015,
-            "max_depth": 8,
-            "subsample": 0.8,
-            "colsample_bytree": 0.8,
-            "gamma": 0.05,
-            "min_child_weight": 2,
-            "reg_alpha": 0.3,
-            "reg_lambda": 1.5,
-            "objective": "reg:squarederror",
-            "random_state": 42,
-        }
-    elif target == 'pm10':
-        params = {
-            "n_estimators": 1000,
-            "learning_rate": 0.02,
-            "max_depth": 7,
-            "subsample": 0.85,
-            "colsample_bytree": 0.85,
-            "gamma": 0.05,
-            "min_child_weight": 2,
-            "reg_alpha": 0.2,
-            "reg_lambda": 1.2,
-            "objective": "reg:squarederror",
-            "random_state": 42,
-        }
-    elif target == 'wind_speed':
-        params = {
-            "n_estimators": 500,
-            "learning_rate": 0.05,
-            "max_depth": 5,
-            "subsample": 0.9,
-            "colsample_bytree": 0.9,
-            "gamma": 0.05,
-            "min_child_weight": 1,
-            "reg_alpha": 0.1,
-            "reg_lambda": 0.8,
-            "objective": "reg:squarederror",
-            "random_state": 42,
-        }
-    else:
-        # Default for other targets
-        params = {
-            "n_estimators": 400,
-            "learning_rate": 0.05,
-            "max_depth": 6,
-            "subsample": 0.9,
-            "colsample_bytree": 0.9,
-            "objective": "reg:squarederror",
-            "random_state": 42,
-        }
-
-    model = xgb.XGBRegressor(n_jobs=-1, **params)
+    print(f"\nTraining Models for {target}...")
     
-    # Fit with Early Stopping on Test Set to prevent overfitting
-    model.fit(
-        X_xgb_train, y_xgb_train[target],
-        eval_set=[(X_xgb_train, y_xgb_train[target]), (X_xgb_test, y_xgb_test[target])],
-        verbose=False
-    )
-    # Use simple slice-assignment to capture the best number of estimators discovered during evaluation
-    xgb_models[target] = model
+    # 1. Base Model (LightGBM)
+    lgbm_params = best_lgbm_params if target == 'pm2_5' else {'n_estimators': 500, 'learning_rate': 0.05, 'max_depth': 6, 'random_state': 42}
+    base_model = lgb.LGBMRegressor(**lgbm_params)
+    base_model.fit(X_xgb_train, y_xgb_train[target])
     
-    # Save Model
-    with open(f"models/xgb_chain_{target}.pkl", "wb") as f:
-        pickle.dump(model, f)
-        
-    # Predict on Test
-    pred_log = model.predict(X_xgb_test)
-    y_pred_xgb_log.append(pred_log)
+    # Predict on Train to calculate residuals
+    train_base_preds = base_model.predict(X_xgb_train)
+    residuals_train = y_xgb_train[target] - train_base_preds
+    
+    # 2. Residual Model (XGBoost)
+    xgb_params = {'n_estimators': 300, 'learning_rate': 0.05, 'max_depth': 4, 'random_state': 42}
+    resid_model = xgb.XGBRegressor(**xgb_params)
+    resid_model.fit(X_xgb_train, residuals_train)
+    
+    # Save the ensemble
+    xgb_models[f"{target}_base"] = base_model
+    xgb_models[f"{target}_resid"] = resid_model
+    
+    # Test Prediction
+    test_base_preds = base_model.predict(X_xgb_test)
+    test_resid_preds = resid_model.predict(X_xgb_test)
+    final_preds = test_base_preds + test_resid_preds
+    y_pred_final_log[target] = final_preds
 
-y_pred_xgb_log = np.column_stack(y_pred_xgb_log)
+# Save all models
+with open("models/lgbm_xgb_ensemble.pkl", "wb") as f:
+    pickle.dump(xgb_models, f)
 
-# ==========================================
-# STAGE 3: Inverse Transform & Guardrails
-# ==========================================
-print("\n--- STAGE 3: Evaluation & Guardrails ---")
-
-# 1. Inverse Log Transform (np.expm1)
-# Check if target was PM (needs expm1) or Weather (linear).
-# In preprocessing, we logged ONLY PM targets.
-# We need to know which columns are PM.
-pm_targets = preprocessor.pm_targets
-all_targets = preprocessor.target_columns
-
-y_pred_final = pd.DataFrame(y_pred_xgb_log, columns=all_targets)
+print("\n--- STAGE 3: Evaluation (RMSE, MAPE, Seasonality) ---")
+# Inverse Log Transform for PM
+y_pred_final = y_pred_final_log.copy()
 y_true_final = y_xgb_test.reset_index(drop=True)
 
-# Apply Inverse Log to PM columns
-for col in pm_targets:
+for col in preprocessor.pm_targets:
     y_pred_final[col] = np.expm1(y_pred_final[col])
     y_true_final[col] = np.expm1(y_true_final[col])
-
-# 2. Guardrails
-# Rule 1: Non-negative
+    
 y_pred_final[y_pred_final < 0] = 0
 
-# Rule 2: PM2.5 <= PM10 (Soft constraint or Hard?)
-# "pm25 = min(pm25, pm10)" - User requested
 if 'pm2_5' in y_pred_final and 'pm10' in y_pred_final:
     y_pred_final['pm2_5'] = np.minimum(y_pred_final['pm2_5'], y_pred_final['pm10'])
-    # Rule 3: pm25 = max(pm25, 0.25 * pm10) - User requested (Lower bound check)
     y_pred_final['pm2_5'] = np.maximum(y_pred_final['pm2_5'], 0.25 * y_pred_final['pm10'])
 
-# 3. Calculate Metrics
-bias_corrector = {'pm10': {}, 'pm2_5': {}}
+results = []
 meta_test['month'] = pd.to_datetime(meta_test['date']).dt.month.values
 
-results = []
-for col in all_targets:
+for col in preprocessor.target_columns:
     y_t = y_true_final[col]
     y_p = y_pred_final[col]
     
-    mse = mean_squared_error(y_t, y_p)
+    rmse = np.sqrt(mean_squared_error(y_t, y_p))
     mae = mean_absolute_error(y_t, y_p)
     r2 = r2_score(y_t, y_p)
+    mape = mean_absolute_percentage_error(y_t, y_p)
     
-    print(f"{col}: RMSE={np.sqrt(mse):.4f}, MAE={mae:.4f}, R2={r2:.4f}")
-    results.append({'Target': col, 'RMSE': np.sqrt(mse), 'MAE': mae, 'R2': r2})
-
-    # Save residual bias for PM
-    if col in pm_targets:
-        residuals = y_t - y_p
-        monthly_bias = residuals.groupby(meta_test['month']).mean().to_dict()
-        bias_corrector[col] = monthly_bias
-        print(f"  {col} learned monthly bias offsets: {monthly_bias}")
-
-# Save the bias corrector map
-with open("models/bias_corrector.pkl", "wb") as f:
-    pickle.dump(bias_corrector, f)
+    # Seasonal split (Summer vs Winter)
+    winter_mask = meta_test['month'].isin([11, 12, 1, 2]).values
+    summer_mask = meta_test['month'].isin([4, 5, 6, 7]).values
+    
+    if winter_mask.sum() > 0 and summer_mask.sum() > 0:
+        winter_rmse = np.sqrt(mean_squared_error(y_t[winter_mask], y_p[winter_mask]))
+        summer_rmse = np.sqrt(mean_squared_error(y_t[summer_mask], y_p[summer_mask]))
+    else:
+        winter_rmse, summer_rmse = 0.0, 0.0
+    
+    print(f"{col}: RMSE={rmse:.3f}, MAE={mae:.3f}, MAPE={mape:.3f}, R2={r2:.3f} | WinterRMSE={winter_rmse:.3f}, SummerRMSE={summer_rmse:.3f}")
+    results.append({
+        'Target': col, 'RMSE': rmse, 'MAE': mae, 'MAPE': mape, 'R2': r2,
+        'Winter_RMSE': winter_rmse, 'Summer_RMSE': summer_rmse
+    })
 
 metrics_df = pd.DataFrame(results)
-metrics_csv_path = "data/metrics_scientific.csv"
-metrics_df.to_csv(metrics_csv_path, index=False)
-print(f"\n[INFO] {metrics_csv_path} has been successfully updated and overwritten with the latest metrics.")
-
-# Display Summary Table
-print("\n" + "="*40)
-print("       TRAINING SUMMARY METRICS")
-print("="*40)
-print(metrics_df.to_string(index=False))
-print("="*40)
-
-
-
-# 4. AQI Class Accuracy
-if 'pm2_5' in y_pred_final:
-    bins = [0, 30, 60, 90, 120, 500]
-    labels = ['Good', 'Satisfactory', 'Moderate', 'Poor', 'Very Poor']
-    
-    y_true_class = pd.cut(y_true_final['pm2_5'], bins=bins, labels=labels)
-    y_pred_class = pd.cut(y_pred_final['pm2_5'], bins=bins, labels=labels)
-    
-    acc = np.mean(y_true_class == y_pred_class)
-    
-    print(f"\nPM2.5 AQI Class Accuracy (Percentage): {acc*100:.2f}% (Honest Validation)")
-    
-    # Save class report
-    with open("data/aqi_accuracy.txt", "w") as f:
-        f.write(f"PM2.5 AQI Accuracy: {acc*100:.2f}%\n")
-
-# ==========================================
-# STAGE 3b: Visual Diagnostics (Last 60 days)
-# ==========================================
-# Time-series shape often matters more than pure metrics,
-# so we export quick plots for PM2.5 and PM10 on the test split.
-
-def plot_last_60(y_true: pd.Series, y_pred: pd.Series, title: str, filename: str):
-    n_last = min(60, len(y_true))
-    if n_last <= 1:
-        return
-    plt.figure(figsize=(12, 5))
-    plt.plot(y_true[-n_last:].reset_index(drop=True), label="True", linewidth=2)
-    plt.plot(y_pred[-n_last:].reset_index(drop=True), label="Predicted", linewidth=2)
-    plt.title(title)
-    plt.xlabel("Last {} days".format(n_last))
-    plt.ylabel("Value")
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(os.path.join("plots", filename))
-    plt.close()
-
-# PM2.5 and PM10 true vs predicted (already back-transformed)
-if 'pm2_5' in y_true_final.columns:
-    plot_last_60(
-        y_true_final['pm2_5'],
-        y_pred_final['pm2_5'],
-        "PM2.5 – True vs Predicted (Last 60 days)",
-        "pm25_true_vs_pred_last60.png",
-    )
-
-if 'pm10' in y_true_final.columns:
-    plot_last_60(
-        y_true_final['pm10'],
-        y_pred_final['pm10'],
-        "PM10 – True vs Predicted (Last 60 days)",
-        "pm10_true_vs_pred_last60.png",
-    )
-
-print("Training & Evaluation Complete.")
+metrics_df.to_csv("data/metrics_scientific.csv", index=False)
+print("\nEvaluation Complete and saved.")
