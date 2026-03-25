@@ -638,7 +638,7 @@
                         <div class="flex flex-col items-center sm:items-start text-center sm:text-left">
                             <div class="flex items-center gap-2 mb-4 flex-wrap justify-center sm:justify-start">
                                 <i class="ri-shield-check-line text-brand-400 text-sm opacity-80"></i>
-                                <span class="text-white/40 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest" id="aqi-severity-label">--</span>
+                                <span class="text-white/40 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest">LIVE AI STATUS</span>
                             </div>
                             
                             <h2 class="text-2xl sm:text-4xl font-heading font-black text-white mb-2" id="aqi-status-badge">Calibrating...</h2>
@@ -794,8 +794,8 @@
                         </div>
                     </div>
 
-                    <div id="hourly-inline-chart-wrap" class="hidden mt-3">
-                        <div class="hourly-inline-chart rounded-2xl bg-white/5 border border-white/10 p-3 sm:p-4">
+                    <div id="hourly-inline-chart-wrap" class="hidden mt-3 w-full overflow-x-auto rounded-2xl bg-white/5 border border-white/10 scrollbar-hide">
+                        <div class="p-3 sm:p-4 w-full h-64 sm:h-80 min-w-[600px] relative">
                             <canvas id="hourlyInlineChart"></canvas>
                         </div>
                     </div>
@@ -818,8 +818,10 @@
                             </div>
                         </div>
                     </div>
-                    <div class="h-64 sm:h-80 w-full">
-                        <canvas id="forecastChart"></canvas>
+                    <div class="w-full overflow-x-auto rounded-3xl pb-2 scrollbar-hide">
+                        <div class="h-64 sm:h-80 w-full min-w-[700px] relative">
+                            <canvas id="forecastChart"></canvas>
+                        </div>
                     </div>
                 </div>
 
@@ -1623,16 +1625,12 @@
         }
 
         function updateAQISeverityUI(aqiValue) {
-            const severityLabel = document.getElementById('aqi-severity-label');
             const severityPointer = document.getElementById('aqi-severity-pointer');
-            if (!severityLabel || !severityPointer) return;
+            if (!severityPointer) return;
 
-            const severity = getAQISeverity(aqiValue);
             const clamped = Math.max(0, Math.min(aqiValue, 500));
             const pointerLeft = (clamped / 500) * 100;
 
-            severityLabel.textContent = severity.label;
-            severityLabel.style.color = severity.color;
             severityPointer.style.left = `${pointerLeft}%`;
         }
 
