@@ -408,7 +408,7 @@ def fetch_weather_data():
         df_hist_final = df_om
 
     # 2. Future Forecast (7 Days)
-    url_fore = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,rain_sum,wind_speed_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,surface_pressure_mean,relative_humidity_2m_mean,cloud_cover_mean,precipitation_probability_max&hourly=temperature_2m,relative_humidity_2m,rain,wind_speed_10m,precipitation_probability&forecast_days=8&timezone=auto"
+    url_fore = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,rain_sum,wind_speed_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,surface_pressure_mean,relative_humidity_2m_mean,cloud_cover_mean,precipitation_probability_max,uv_index_max,sunrise,sunset&hourly=temperature_2m,relative_humidity_2m,rain,wind_speed_10m,precipitation_probability&forecast_days=8&timezone=auto"
     r_fore = requests.get(url_fore, timeout=15).json()
     
     # Return DataFrames not JSON to simplify downstream
@@ -541,7 +541,9 @@ def get_current_hour_aqi_observation():
         if df.empty:
             return None
 
-        now_hour = pd.Timestamp(datetime.now().replace(minute=0, second=0, microsecond=0))
+        import pytz
+        ist = pytz.timezone('Asia/Kolkata')
+        now_hour = pd.Timestamp(datetime.now(ist).replace(minute=0, second=0, microsecond=0, tzinfo=None))
         match = df[df['datetime'] == now_hour]
         if match.empty:
             return None
@@ -1025,6 +1027,24 @@ def predict():
                     print(f"DEBUG: No hourly match for {current_hour_str}. Available range: {all_times[0] if all_times else 'N/A'} to {all_times[-1] if all_times else 'N/A'}")
         except Exception as hourly_err:
             print(f"Failed to extract current hour data: {hourly_err}")
+
+        # Extract UV and Sunrise/Sunset for UI
+        try:
+            today_str = main_pred['date'].strftime('%Y-%m-%d')
+            daily = fore_json.get('daily', {})
+            times = daily.get('time', [])
+            idx = times.index(today_str) if today_str in times else 0
+            
+            main_pred['uv_index'] = daily.get('uv_index_max', [0]*8)[idx]
+            sun_r = daily.get('sunrise', ['--']*8)[idx]
+            sun_s = daily.get('sunset', ['--']*8)[idx]
+            main_pred['sunrise'] = sun_r.split('T')[-1] if 'T' in sun_r else sun_r
+            main_pred['sunset'] = sun_s.split('T')[-1] if 'T' in sun_s else sun_s
+        except Exception as ui_err:
+            print(f"Failed to extract UV/Sun data: {ui_err}")
+            main_pred['uv_index'] = 0
+            main_pred['sunrise'] = '--'
+            main_pred['sunset'] = '--'
 
         # Strict current-hour AQI override from local hourly AQI dataset (if exact hour exists)
         current_hour_obs = get_current_hour_aqi_observation()
