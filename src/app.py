@@ -783,6 +783,11 @@ def logout():
 def index():
     return render_template('index.html')
 
+@app.route('/webpushr-sw.js')
+def webpushr_sw():
+    from flask import send_from_directory
+    return send_from_directory(app.static_folder, 'webpushr-sw.js', mimetype='application/javascript')
+
 @app.route('/predict', methods=['GET'])
 def predict():
     try:

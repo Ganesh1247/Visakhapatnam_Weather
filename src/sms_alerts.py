@@ -45,6 +45,10 @@ TWILIO_TOKEN    = os.environ.get("TWILIO_AUTH_TOKEN", "").strip()
 TWILIO_FROM     = os.environ.get("TWILIO_FROM_NUMBER", "").strip()
 USE_WHATSAPP    = os.environ.get("TWILIO_USE_WHATSAPP", "false").lower() == "true"
 
+# ─── Webpushr Config ─────────────────────────────────────────────────────────
+WEBPUSHR_KEY    = os.environ.get("WEBPUSHR_KEY", "").strip()
+WEBPUSHR_TOKEN  = os.environ.get("WEBPUSHR_TOKEN", "").strip()
+
 # DB path (same as auth.py)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH  = os.path.join(BASE_DIR, "data", "users.db")
@@ -196,12 +200,56 @@ def get_current_forecast_summary():
 
 # ─── Core send function ───────────────────────────────────────────────────────
 
+def send_webpushr_notification(msg_body: str):
+    """Hits the Webpushr REST API to broadcast the message to all registered browsers."""
+    if not WEBPUSHR_KEY or not WEBPUSHR_TOKEN:
+        logger.debug("[Push] Webpushr credentials not set – skipping background push.")
+        return
+        
+    import requests
+    import json
+    
+    url = "https://api.webpushr.com/v1/notification/send/all"
+    headers = {
+        "webpushrKey": WEBPUSHR_KEY,
+        "webpushrAuthToken": WEBPUSHR_TOKEN,
+        "Content-Type": "application/json"
+    }
+    
+    # Parse title out of the message body (usually the first line)
+    title = msg_body.split('\n')[0].strip() if msg_body else "EcoGlance AQI & Weather Alert"
+    
+    payload = {
+        "title": title,
+        "message": msg_body,
+        "target_url": "/", # Relative routing to root
+        "icon": "https://ganesh1247-visakhapatnam-weather.hf.space/static/favicon.svg"
+    }
+    
+    try:
+        r = requests.post(url, headers=headers, data=json.dumps(payload), timeout=10)
+        if r.status_code == 200:
+            logger.info("[Push] ✓ Sent Webpushr Push Notification.")
+        else:
+            logger.warning(f"[Push] Webpushr API returned {r.status_code}: {r.text}")
+    except Exception as e:
+        logger.error(f"[Push] ✗ Failed to send push: {e}")
+
 def send_alert_to_all_users():
     """
     Main entry-point called by the scheduler (10 AM and 6 PM IST).
     Fetches forecast, formats message, and sends to every opted-in user.
     """
-    logger.info("[SMS] Daily alert job triggered.")
+    logger.info("[SMS+Push] Daily alert job triggered.")
+
+    msg_body = get_current_forecast_summary()
+    if not msg_body:
+        logger.warning("[SMS+Push] Forecast not available yet – skipping alert.")
+        return
+
+    # Trigger Webpushr Push broadly
+    send_webpushr_notification(msg_body)
+
     client = _twilio_client()
     if not client:
         logger.info("[SMS] No Twilio client – alert job skipped.")
@@ -209,11 +257,6 @@ def send_alert_to_all_users():
 
     if not TWILIO_FROM:
         logger.warning("[SMS] TWILIO_FROM_NUMBER not set – aborting.")
-        return
-
-    msg_body = get_current_forecast_summary()
-    if not msg_body:
-        logger.warning("[SMS] Forecast not available yet – skipping alert.")
         return
 
     recipients = get_all_phone_numbers()
