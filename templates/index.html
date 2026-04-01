@@ -1722,7 +1722,29 @@
                 // Update Hero Content
                 const tempVal = Math.round(data.data.temp_avg);
                 document.getElementById('temp-main').innerHTML = `${tempVal}<span class="text-6xl text-white/20">°</span>`;
-                document.getElementById('feels-like').textContent = tempVal + '°';
+                // Use apparent_temperature from API if available, else calculate via heat index formula
+                const apparentTemp = data.data.apparent_temperature != null
+                    ? Math.round(data.data.apparent_temperature)
+                    : (() => {
+                        const T = data.data.temp_avg;
+                        const H = data.data.humidity || 50;
+                        const W = (data.data.wind_speed || 0) * 3.6; // m/s → km/h
+                        // Heat Index (°C) – valid when T >= 27°C
+                        if (T >= 27) {
+                            const HI = -8.78469475556 + 1.61139411 * T + 2.3385523 * H
+                                - 0.14611605 * T * H - 0.012308094 * T * T
+                                - 0.016424828 * H * H + 0.002211732 * T * T * H
+                                + 0.00072546 * T * H * H - 0.000003582 * T * T * H * H;
+                            return Math.round(HI);
+                        }
+                        // Wind Chill – valid when T <= 10°C and W > 4.8 km/h
+                        if (T <= 10 && W > 4.8) {
+                            const WC = 13.12 + 0.6215 * T - 11.37 * Math.pow(W, 0.16) + 0.3965 * T * Math.pow(W, 0.16);
+                            return Math.round(WC);
+                        }
+                        return Math.round(T);
+                    })();
+                document.getElementById('feels-like').textContent = apparentTemp + '°';
                 document.getElementById('humidity-detail').textContent = Math.round(data.data.humidity) + '%';
                 document.getElementById('wind-detail').innerHTML = `${data.data.wind_speed.toFixed(1)} <span class="text-[10px] opacity-40">m/s</span>`;
                 const rainProb = data.data.precipitation_probability !== undefined ? data.data.precipitation_probability : 0;
