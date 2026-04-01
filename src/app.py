@@ -1052,38 +1052,7 @@ def predict():
             main_pred['sunrise'] = '--'
             main_pred['sunset'] = '--'
 
-        # ── Live AQI override: Open-Meteo Air Quality API (works on both HF and localhost) ──
-        # This replaces the local CSV lookup which only had data up to a fixed historical date.
-        try:
-            now_local_aq = datetime.now(pytz.timezone('Asia/Kolkata'))
-            current_hour_aq = now_local_aq.strftime('%Y-%m-%dT%H:00')
-            url_aq = (
-                f"https://air-quality-api.open-meteo.com/v1/air-quality"
-                f"?latitude={LAT}&longitude={LON}"
-                f"&hourly=pm2_5,pm10"
-                f"&timezone=auto&past_days=0&forecast_days=1"
-            )
-            r_aq = requests.get(url_aq, timeout=10).json()
-            aq_hourly = r_aq.get('hourly', {})
-            aq_times = aq_hourly.get('time', [])
-            if current_hour_aq in aq_times:
-                aq_idx = aq_times.index(current_hour_aq)
-                aq_pm25_list = aq_hourly.get('pm2_5', [])
-                aq_pm10_list = aq_hourly.get('pm10', [])
-                live_pm25 = aq_pm25_list[aq_idx] if aq_idx < len(aq_pm25_list) else None
-                live_pm10 = aq_pm10_list[aq_idx] if aq_idx < len(aq_pm10_list) else None
-                if live_pm25 is not None and live_pm25 > 0:
-                    main_pred['pm2_5'] = round(float(live_pm25), 2)
-                    print(f"[AQI] Live PM2.5 from Open-Meteo AQ API: {live_pm25}")
-                if live_pm10 is not None and live_pm10 > 0:
-                    main_pred['pm10'] = round(float(live_pm10), 2)
-                    print(f"[AQI] Live PM10 from Open-Meteo AQ API: {live_pm10}")
-            else:
-                print(f"[AQI] No AQ API match for {current_hour_aq}. Falling back to model.")
-        except Exception as aq_err:
-            print(f"[AQI] Open-Meteo AQ API failed: {aq_err}. Using model prediction.")
-
-        # Also try local CSV as secondary override (for extra accuracy when CSV has current data)
+        # Strict current-hour AQI override from local hourly AQI dataset (if exact hour exists)
         current_hour_obs = get_current_hour_aqi_observation()
         if current_hour_obs:
             if current_hour_obs.get('pm2_5') is not None:
