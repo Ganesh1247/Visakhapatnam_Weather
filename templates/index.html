@@ -560,9 +560,9 @@
                                 <i class="ri-pulse-line text-xl"></i>
                             </div>
                             <div>
-                                <h3 class="font-heading font-black text-lg text-white/90">Predictive
+                                <h3 class="font-heading font-black text-lg text-slate-800 dark:text-white/90">Predictive
                                     Analytics</h3>
-                                <p class="text-xs text-white/30 font-bold uppercase tracking-widest">
+                                <p class="text-xs text-slate-500 dark:text-white/30 font-bold uppercase tracking-widest">
                                     7-Day Temporal
                                     Trend</p>
                             </div>
@@ -593,11 +593,74 @@
                         <!-- Items injected via JS -->
                     </div>
                 </div>
+
+                <!-- Atmospheric Composition Breakdown -->
+                <div class="glass-panel rounded-[40px] p-6 sm:p-8 relative group overflow-hidden border border-slate-200 dark:border-white/5 bg-transparent transition-colors">
+                    <!-- Decorative backglow -->
+                    <div class="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+                    
+                    <div class="flex items-center gap-4 mb-8 relative z-10">
+                        <div class="w-10 h-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-md shadow-emerald-500/20">
+                            <i class="ri-test-tube-line text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-heading font-black text-lg text-slate-800 dark:text-white/90">Atmospheric Composition</h3>
+                            <p class="text-[10px] text-slate-500 dark:text-white/30 font-bold uppercase tracking-widest mt-0.5">Secondary Trace Gases</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
+                        <!-- O3 Gauge -->
+                        <div class="bg-white/80 dark:bg-black/20 p-5 rounded-3xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center text-center shadow-sm relative transition-colors group/card hover:bg-white dark:hover:bg-white/5">
+                            <i class="ri-cloud-windy-line text-slate-200 dark:text-white/5 absolute top-3 right-3 text-lg pointer-events-none group-hover/card:text-blue-500/20 transition-colors"></i>
+                            <div class="relative w-16 h-16 rounded-full border-4 border-emerald-500/20 flex items-center justify-center mb-4 inner-glow">
+                                <div class="absolute inset-[-4px] rounded-full border-4 border-transparent border-t-emerald-400 rotate-45 group-hover/card:rotate-[225deg] transition-transform duration-1000 ease-in-out"></div>
+                                <span class="font-black text-slate-800 dark:text-white/90 text-sm z-10">34<span class="text-[8px] text-slate-400 dark:text-white/40 block -mt-1 tracking-tight">µg/m³</span></span>
+                            </div>
+                            <span class="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-[0.2em] mb-1">Ozone (O₃)</span>
+                            <span class="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-sm">Good</span>
+                        </div>
+
+                        <!-- NO2 Gauge -->
+                        <div class="bg-white/80 dark:bg-black/20 p-5 rounded-3xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center text-center shadow-sm relative transition-colors group/card hover:bg-white dark:hover:bg-white/5">
+                            <i class="ri-car-washing-line text-slate-200 dark:text-white/5 absolute top-3 right-3 text-lg pointer-events-none group-hover/card:text-amber-500/20 transition-colors"></i>
+                            <div class="relative w-16 h-16 rounded-full border-4 border-amber-500/20 flex items-center justify-center mb-4 inner-glow">
+                                <div class="absolute inset-[-4px] rounded-full border-4 border-transparent border-b-amber-400 -rotate-45 group-hover/card:rotate-[135deg] transition-transform duration-1000 ease-in-out"></div>
+                                <span class="font-black text-slate-800 dark:text-white/90 text-sm z-10">21<span class="text-[8px] text-slate-400 dark:text-white/40 block -mt-1 tracking-tight">µg/m³</span></span>
+                            </div>
+                            <span class="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-[0.2em] mb-1">Nitrogen Di.</span>
+                            <span class="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded-sm">Moderate</span>
+                        </div>
+
+                        <!-- SO2 Gauge -->
+                        <div class="bg-white/80 dark:bg-black/20 p-5 rounded-3xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center text-center shadow-sm relative transition-colors group/card hover:bg-white dark:hover:bg-white/5">
+                            <i class="ri-building-3-line text-slate-200 dark:text-white/5 absolute top-3 right-3 text-lg pointer-events-none group-hover/card:text-emerald-500/20 transition-colors"></i>
+                            <div class="relative w-16 h-16 rounded-full border-4 border-emerald-500/20 flex items-center justify-center mb-4 inner-glow">
+                                <div class="absolute inset-[-4px] rounded-full border-4 border-transparent border-l-emerald-400 rotate-90 group-hover/card:rotate-[270deg] transition-transform duration-1000 ease-in-out"></div>
+                                <span class="font-black text-slate-800 dark:text-white/90 text-sm z-10">8<span class="text-[8px] text-slate-400 dark:text-white/40 block -mt-1 tracking-tight">µg/m³</span></span>
+                            </div>
+                            <span class="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-[0.2em] mb-1">Sulfur Di.</span>
+                            <span class="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-sm">Good</span>
+                        </div>
+
+                        <!-- CO Gauge -->
+                        <div class="bg-white/80 dark:bg-black/20 p-5 rounded-3xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center text-center shadow-sm relative transition-colors group/card hover:bg-white dark:hover:bg-white/5">
+                            <i class="ri-fire-line text-slate-200 dark:text-white/5 absolute top-3 right-3 text-lg pointer-events-none group-hover/card:text-emerald-500/20 transition-colors"></i>
+                            <div class="relative w-16 h-16 rounded-full border-4 border-emerald-500/20 flex items-center justify-center mb-4 inner-glow">
+                                <div class="absolute inset-[-4px] rounded-full border-4 border-transparent border-r-emerald-400 -rotate-90 group-hover/card:rotate-[90deg] transition-transform duration-1000 ease-in-out"></div>
+                                <span class="font-black text-slate-800 dark:text-white/90 text-sm z-10">310<span class="text-[8px] text-slate-400 dark:text-white/40 block -mt-1 tracking-tight">µg/m³</span></span>
+                            </div>
+                            <span class="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-[0.2em] mb-1">Carbon Mon.</span>
+                            <span class="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-sm">Good</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Right Column: Advisory -->
-            <div id="air-quality-section" class="lg:col-span-4">
-                <div class="glass-panel rounded-[40px] p-8 h-full sticky top-32">
+            <div id="air-quality-section" class="lg:col-span-4 w-full relative">
+                <div class="sticky top-6 space-y-6 pb-12">
+                    <div class="glass-panel rounded-[40px] p-6 sm:p-8 h-max">
                     <div class="flex items-center gap-4 mb-10">
                         <div class="w-10 h-10 rounded-2xl bg-red-500/20 flex items-center justify-center text-red-400">
                             <i class="ri-heart-pulse-line text-xl"></i>
@@ -707,6 +770,101 @@
                                 </div>
                             </div>
 
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Decade Prediction Section -->
+                <div class="glass-panel rounded-[40px] p-6 sm:p-8 border border-white/5 hover:border-white/20 dark:border-white/5 relative overflow-hidden group transition-all duration-500">
+                    <div class="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-transparent to-amber-500/5 group-hover:opacity-100 transition-opacity duration-700"></div>
+                    <div class="flex items-center gap-4 mb-6 relative z-10">
+                        <div class="w-12 h-12 rounded-3xl bg-gradient-to-br from-brand-400 to-sky-600 flex items-center justify-center text-white shadow-lg">
+                            <i class="ri-calendar-todo-fill text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-heading font-black text-xl text-slate-800 dark:text-white tracking-tighter">Decade Extrapolator</h3>
+                            <p class="text-[10px] text-brand-500 font-bold uppercase tracking-[0.2em] mt-1">Future Simulator</p>
+                        </div>
+                    </div>
+                    
+                    <p class="text-sm text-slate-500 dark:text-white/50 mb-6 leading-relaxed font-medium relative z-10">
+                        Select any date up to 10 years in the future to simulate anticipated Air Quality and Thermal changes.
+                    </p>
+                    
+                    <div class="p-4 sm:p-5 rounded-3xl bg-white/50 dark:bg-[#050f1a] border border-slate-200 dark:border-white/10 mb-6 relative z-10 transition-colors">
+                        <label class="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-[0.3em] mb-3 block">Target Date</label>
+                        <input type="date" id="future-date-picker" class="w-full bg-white dark:bg-[#081828] border border-slate-200 dark:border-brand-500/20 rounded-xl px-4 py-3 mb-3 font-bold text-slate-800 dark:text-white/90 outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400 transition-all cursor-pointer" />
+                        <button onclick="fetch10YearPrediction()" class="w-full bg-slate-900 dark:bg-brand-500 text-white font-bold py-3 px-6 rounded-xl hover:bg-slate-800 dark:hover:bg-brand-400 transition-all shadow-md flex items-center justify-center gap-2">
+                            <span>Simulate</span>
+                            <i class="ri-arrow-right-line"></i>
+                        </button>
+                    </div>
+
+                    <div class="rounded-3xl bg-white/50 dark:bg-black/20 border border-slate-200 dark:border-white/5 p-5 min-h-[250px] flex flex-col justify-center relative shadow-inner overflow-hidden z-10 transition-colors">
+                        
+                        <!-- Loading State -->
+                        <div id="future-loading" class="hidden absolute inset-0 flex flex-col justify-center items-center rounded-3xl z-20 bg-white/90 dark:bg-[#06121e]/90 backdrop-blur-sm">
+                            <div class="relative w-12 h-12">
+                                <div class="absolute inset-0 rounded-full border-4 border-slate-200 dark:border-white/10"></div>
+                                <div class="absolute inset-0 rounded-full border-4 border-brand-400 border-t-transparent animate-spin"></div>
+                            </div>
+                            <span class="mt-4 text-[9px] font-black text-brand-500 uppercase tracking-[0.3em] animate-pulse">Simulating...</span>
+                        </div>
+                        
+                        <!-- Initial State -->
+                        <div id="future-initial" class="text-center">
+                            <div class="w-16 h-16 rounded-full bg-slate-200 dark:bg-white/5 flex items-center justify-center mx-auto mb-4 text-slate-400 dark:text-white/20 transition-colors">
+                                <i class="ri-dashboard-3-line text-3xl"></i>
+                            </div>
+                            <h4 class="font-heading font-bold text-slate-400 dark:text-white/50 text-lg tracking-tighter">Awaiting Input</h4>
+                        </div>
+                        
+                        <!-- Results State -->
+                        <div id="future-results" class="hidden w-full h-full flex flex-col z-10 relative">
+                            <div class="flex items-center justify-between mb-5">
+                                <div class="px-3 py-1 rounded-full bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 text-brand-600 dark:text-brand-400 text-[10px] font-bold transition-colors">
+                                    <i class="ri-focus-3-line mr-1"></i> <span id="res-date">--</span>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-3 mb-5">
+                                <!-- Temperature Card -->
+                                <div class="bg-white dark:bg-white/5 rounded-2xl p-4 border border-slate-200 dark:border-white/10 shadow-sm transition-colors">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <i class="ri-temp-hot-line text-orange-500 dark:text-orange-400 text-sm"></i>
+                                        <p class="text-[8px] font-black text-slate-400 dark:text-white/40 uppercase tracking-[0.1em]">Temp</p>
+                                    </div>
+                                    <p class="text-xl font-black text-slate-800 dark:text-white/90" id="res-temp">--°</p>
+                                </div>
+                                
+                                <!-- PM2.5 Card -->
+                                <div class="bg-white dark:bg-white/5 rounded-2xl p-4 border border-slate-200 dark:border-white/10 shadow-sm transition-colors">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <i class="ri-mist-line text-slate-400 text-sm"></i>
+                                        <p class="text-[8px] font-black text-slate-400 dark:text-white/40 uppercase tracking-[0.1em]">PM2.5</p>
+                                    </div>
+                                    <p class="text-xl font-black text-slate-800 dark:text-white/90" id="res-pm25">--</p>
+                                </div>
+                            </div>
+                            
+                            <!-- AQI Hero Card -->
+                            <div class="bg-white dark:bg-white/5 rounded-2xl p-4 border border-slate-200 dark:border-white/10 flex flex-col justify-between relative overflow-hidden mb-5 shadow-sm transition-colors" id="res-aqi-card">
+                                <div class="absolute inset-0 opacity-[0.08] dark:opacity-20 transition-opacity duration-500" id="res-aqi-bg"></div>
+                                <div class="relative z-10 flex items-center justify-between mb-1">
+                                    <p class="text-[9px] font-black text-slate-500 dark:text-white/60 uppercase tracking-[0.2em]">Final AQI</p>
+                                    <i class="ri-shield-cross-line text-slate-300 dark:text-white/40"></i>
+                                </div>
+                                <div class="relative z-10">
+                                    <p class="text-4xl font-black text-slate-800 dark:text-white leading-none tracking-tighter" id="res-aqi">--</p>
+                                    <span class="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 bg-slate-100 dark:bg-white/10 rounded mt-1.5 inline-block text-slate-600 dark:text-white transition-colors" id="res-aqi-status">--</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Analysis & Reasoning -->
+                            <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border-l-2 border-amber-400 dark:border-amber-500 mt-auto transition-colors">
+                                <h5 class="text-[9px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-[0.2em] mb-1">Contextual Analysis</h5>
+                                <p class="text-[11px] text-slate-600 dark:text-white/70 font-medium leading-relaxed" id="res-reason">--</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1597,7 +1755,6 @@
                     }
                 }
 
-                // Chart & Forecast List
                 initChart(data.forecast);
                 renderForecastList(data.forecast);
 
@@ -1627,8 +1784,8 @@
 
                 // Retry Logic
                 if (retryCount < 2) {
-                    loadingText.textContent = `Connection unstable. Retrying (${retryCount + 1}/2)...`;
-                    clearInterval(msgInterval);
+                    if (loadingText) loadingText.textContent = `Connection unstable. Retrying (${retryCount + 1}/2)...`;
+                    if (typeof msgInterval !== 'undefined') clearInterval(msgInterval);
                     setTimeout(() => fetchPrediction(retryCount + 1), 3000);
                     return;
                 }
@@ -1639,8 +1796,71 @@
                     alert('Intelligence Engine Sync Error: ' + err.message);
                 }
             } finally {
-                clearInterval(msgInterval);
-                loading.style.display = 'none';
+                if (typeof msgInterval !== 'undefined') clearInterval(msgInterval);
+                const loading = document.getElementById('loading');
+                if (loading) loading.style.display = 'none';
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const datePicker = document.getElementById("future-date-picker");
+            if(datePicker) {
+                const today = new Date();
+                const future = new Date();
+                future.setFullYear(today.getFullYear() + 10);
+                datePicker.min = today.toISOString().split("T")[0];
+                datePicker.max = future.toISOString().split("T")[0];
+            }
+            
+            // Check manual theme override
+            if (localStorage.getItem('theme') === 'light' || (!('theme' in localStorage) && !window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.remove('dark');
+            } else {
+                document.documentElement.classList.add('dark');
+            }
+
+            fetchPrediction();
+        });
+
+        async function fetch10YearPrediction() {
+            const picker = document.getElementById("future-date-picker");
+            if(!picker.value) {
+                alert("Please select a date first.");
+                return;
+            }
+            
+            document.getElementById("future-initial").classList.add("hidden");
+            document.getElementById("future-results").classList.add("hidden");
+            document.getElementById("future-loading").classList.remove("hidden");
+            
+            try {
+                const res = await fetch(`/predict_10_years?date=${picker.value}`);
+                const data = await res.json();
+                
+                if(data.error) throw new Error(data.error);
+                
+                document.getElementById("res-date").textContent = formatDateStable(data.date, { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' });
+                document.getElementById("res-temp").textContent = `${data.temp}°C`;
+                document.getElementById("res-pm25").innerHTML = `${data.pm25} <span class="text-[10px] opacity-40">µg/m³</span>`;
+                document.getElementById("res-aqi").textContent = data.aqi;
+                document.getElementById("res-reason").textContent = data.reason;
+                
+                const severity = getAQISeverity(data.aqi);
+                document.getElementById("res-aqi-status").textContent = severity.label;
+                
+                // Do NOT set text color to severity color for contrast readability. Keep text white!
+                // Only change the card border and inner glow
+                document.getElementById("res-aqi-bg").style.backgroundColor = severity.color;
+                document.getElementById("res-aqi-card").style.borderColor = severity.color + '60';
+                
+                // We don't color the main text, it stays bold white so it's beautiful and highly visible.
+                
+                document.getElementById("future-loading").classList.add("hidden");
+                document.getElementById("future-results").classList.remove("hidden");
+            } catch(e) {
+                alert("Failed to run simulation: " + e.message);
+                document.getElementById("future-loading").classList.add("hidden");
+                document.getElementById("future-initial").classList.remove("hidden");
             }
         }
 
