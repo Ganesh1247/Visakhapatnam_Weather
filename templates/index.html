@@ -1218,6 +1218,13 @@
         let locationsData = {};
         let map = null;
         let mapMarkers = [];
+        let tileLayer = null;
+
+        function getMapTilesUrl(isDark) {
+            return isDark 
+                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+        }
 
         function initMap() {
             if (map) return;
@@ -1231,14 +1238,16 @@
             }
 
             try {
+                const isDark = document.documentElement.classList.contains('dark');
+                
                 // Initialize Map focused on Visakhapatnam
                 map = L.map('vizag-map', {
                     zoomControl: false,
                     attributionControl: false
                 }).setView([17.72, 83.28], 12);
 
-                // Premium Dark Theme for Map (CartoDB Dark Matter)
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                // Theme-aware Tile Layer
+                tileLayer = L.tileLayer(getMapTilesUrl(isDark), {
                     maxZoom: 19,
                     attribution: '© OpenStreetMap contributors'
                 }).addTo(map);
@@ -1414,16 +1423,36 @@
 
         function toggleTheme() {
             const html = document.documentElement;
-            if (html.classList.contains('dark')) {
+            const isDark = html.classList.contains('dark');
+            
+            if (isDark) {
                 html.classList.remove('dark');
                 localStorage.setItem('theme', 'light');
             } else {
                 html.classList.add('dark');
                 localStorage.setItem('theme', 'dark');
             }
+
+            const nowDark = html.classList.contains('dark');
+
+            // Update Map Tiles if map exists
+            if (map && tileLayer) {
+                map.removeLayer(tileLayer);
+                tileLayer = L.tileLayer(getMapTilesUrl(nowDark), {
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+                
+                // Update markers to match new contrast
+                updateMapMarkers();
+            }
+
             // Re-render charts with updated theme colors
             if (currentDataCache && currentDataCache.forecast) {
                 initChart(currentDataCache.forecast);
+            }
+            if (currentDataCache && currentDataCache.hourly) {
+                renderHourlyChart(currentDataCache.hourly);
             }
         }
 
