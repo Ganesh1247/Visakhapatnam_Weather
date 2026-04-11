@@ -1,3 +1,19 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:3fa7a3fa87bbb4fcd0754d7334c2ee449efcc8ff2dadddca1efc396e879dd0c6
-size 298
+flask==3.1.0
+flask-session==0.8.0
+numpy==1.26.4
+pandas==2.2.3
+scikit-learn==1.6.1
+xgboost==2.1.4
+lightgbm>=4.0.0
+tensorflow==2.18.0
+matplotlib==3.10.0
+requests==2.32.3
+python-dotenv==1.0.1
+supabase==2.13.0
+bcrypt==4.2.1
+gunicorn==23.0.0
+pytz==2024.2
+scipy==1.15.2
+twilio>=9.0.0
+APScheduler>=3.10.0
+fpdf2>=2.7.0

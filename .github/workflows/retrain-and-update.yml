@@ -35,9 +35,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          # Strip any leftover git-lfs pointer lines that pip can't parse
-          grep -v '^version https://' requirements.txt | grep -v '^oid ' | grep -v '^size ' > /tmp/clean_requirements.txt
-          pip install -r /tmp/clean_requirements.txt
+          pip install -r requirements.txt
 
       - name: Create output directories
         run: |

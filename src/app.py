@@ -113,7 +113,7 @@ def create_pdf_report(df, location_name, range_type):
     img_buf.seek(0)
     
     pdf.image(img_buf, x=15, y=pdf.get_y(), w=180)
-    pdf.ln(115)
+    pdf.ln(150) # Adjusted to prevent table overlap with chart (180w * 8/10h = 144mm)
     
     # Table Header
     pdf.set_font("helvetica", "B", 8)
