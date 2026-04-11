@@ -29,6 +29,24 @@ from auth import (
     init_db, login_required, verify_password, create_user_credentials
 )
 
+def calculate_india_aqi_from_pm25(pm25):
+    """Calculate the India National Air Quality Index (AQI) based on PM2.5 concentration."""
+    c = max(0, float(pm25) if pm25 is not None else 0)
+    # India AQI breakpoints for PM2.5 (24-hr average)
+    breakpoints = [
+        (0, 30, 0, 50),      # Good
+        (30, 60, 51, 100),   # Satisfactory
+        (60, 90, 101, 200),  # Moderate
+        (90, 120, 201, 300), # Poor
+        (120, 250, 301, 400),# Very Poor
+        (250, 500, 401, 500) # Severe
+    ]
+    for bpLo, bpHi, iLo, iHi in breakpoints:
+        if c <= bpHi:
+            aqi = ((iHi - iLo) / (bpHi - bpLo)) * (c - bpLo) + iLo
+            return int(round(max(0, min(500, aqi))))
+    return 500
+
 def fetch_aqi_history(start_date, end_date, lat, lon):
     """Fetch historical PM2.5 and PM10 from Open-Meteo Air Quality Archive."""
     try:
@@ -118,11 +136,10 @@ def create_pdf_report(df, location_name, range_type):
     # Table Header
     pdf.set_font("helvetica", "B", 8)
     pdf.set_fill_color(241, 245, 249)
-    cols = ['Date', 'Temp Avg', 'Humidity', 'Rain', 'Wind', 'PM2.5']
-    col_widths = [30, 25, 25, 25, 25, 25]
+    cols = ['Date', 'Temp Avg', 'Humidity', 'Rain', 'Wind', 'PM2.5', 'AQI Index']
+    col_widths = [30, 25, 25, 25, 25, 25, 30]
     
     for i, col in enumerate(cols):
-        # We don't use new_y="NEXT" here except for the last cell
         if i == len(cols) - 1:
             pdf.cell(col_widths[i], 8, col, border=1, fill=True, align='C', new_x="LMARGIN", new_y="NEXT")
         else:
@@ -130,14 +147,18 @@ def create_pdf_report(df, location_name, range_type):
     
     # Table Rows
     pdf.set_font("helvetica", "", 8)
-    for _, row in df.tail(10).iterrows(): # Show last 10 entries in table to save space
+    for _, row in df.tail(12).iterrows(): # Show last 12 entries
         pdf.cell(col_widths[0], 7, str(row['date'])[:10], border=1, align='C')
         pdf.cell(col_widths[1], 7, f"{row['temp_avg']:.1f}°C", border=1, align='C')
         pdf.cell(col_widths[2], 7, f"{row['humidity']:.1f}%", border=1, align='C')
         pdf.cell(col_widths[3], 7, f"{row['rainfall']:.1f}mm", border=1, align='C')
         pdf.cell(col_widths[4], 7, f"{row['wind_speed']:.1f}m/s", border=1, align='C')
-        pm25_val = f"{row['pm2_5']:.1f}" if 'pm2_5' in row and pd.notna(row['pm2_5']) else "N/A"
-        pdf.cell(col_widths[5], 7, pm25_val, border=1, align='C', new_x="LMARGIN", new_y="NEXT")
+        pm25_val = float(row['pm2_5']) if 'pm2_5' in row and pd.notna(row['pm2_5']) else 0
+        pdf.cell(col_widths[5], 7, f"{pm25_val:.1f}" if pm25_val > 0 else "N/A", border=1, align='C')
+        
+        # Calculate AQI sub-index for the row
+        aqi_val = calculate_india_aqi_from_pm25(pm25_val) if pm25_val > 0 else "N/A"
+        pdf.cell(col_widths[6], 7, str(aqi_val), border=1, align='C', new_x="LMARGIN", new_y="NEXT")
         
     plt.close() # Clean up memory
     return pdf.output()
