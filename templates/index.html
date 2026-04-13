@@ -5,7 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EcoGlance | AI Weather & Air Quality</title>
-    <!-- start webpushr code --> <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('setup',{'key':'BL-Q1GxA8N7OyhSEZNrENGFM4kS5uEAE3iRSRtT9f4d-uWDlB-WeuPBtpec4fq_JEjBHWIPrWWCKW7TX3EtnaII' });</script><!-- end webpushr code -->
+    <!-- start webpushr code -->
+    <script>(function (w, d, s, id) { if (typeof (w.webpushr) !== 'undefined') return; w.webpushr = w.webpushr || function () { (w.webpushr.q = w.webpushr.q || []).push(arguments) }; var js, fjs = d.getElementsByTagName(s)[0]; js = d.createElement(s); js.id = id; js.async = 1; js.src = "https://cdn.webpushr.com/app.min.js"; fjs.parentNode.appendChild(js); }(window, document, 'script', 'webpushr-jssdk')); webpushr('setup', { 'key': 'BL-Q1GxA8N7OyhSEZNrENGFM4kS5uEAE3iRSRtT9f4d-uWDlB-WeuPBtpec4fq_JEjBHWIPrWWCKW7TX3EtnaII' });</script>
+    <!-- end webpushr code -->
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
 
     <!-- Fonts -->
@@ -21,8 +23,10 @@
     <!-- Tailwind CSS -->
     <link href="{{ url_for('static', filename='output.css') }}" rel="stylesheet">
     <!-- Leaflet Map -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -54,10 +58,24 @@
         }
 
         @keyframes rain {
-            0% { transform: translateY(-10vh) scaleY(1); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; transform: translateY(110vh) scaleY(1); }
-            100% { transform: translateY(110vh) scaleY(0); opacity: 0; }
+            0% {
+                transform: translateY(-10vh) scaleY(1);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 1;
+                transform: translateY(110vh) scaleY(1);
+            }
+
+            100% {
+                transform: translateY(110vh) scaleY(0);
+                opacity: 0;
+            }
         }
 
         /* Adjust UI for gloomy rain */
@@ -236,7 +254,7 @@
             border-radius: 20px;
             padding: 0;
             overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
         }
 
         .premium-popup .leaflet-popup-content {
@@ -264,7 +282,8 @@
     class="bg-mesh font-sans antialiased text-slate-200 min-h-screen selection:bg-brand-500 selection:text-white transition-all duration-700 flex flex-col overflow-x-hidden">
 
     <!-- Rain Container -->
-    <div id="rain-container" class="fixed inset-0 pointer-events-none z-[100] transition-opacity duration-1000 opacity-0"></div>
+    <div id="rain-container"
+        class="fixed inset-0 pointer-events-none z-[100] transition-opacity duration-1000 opacity-0"></div>
 
     <!-- Background Blobs -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
@@ -405,11 +424,13 @@
 
             <!-- AQI Summary Card (Now the main focus) -->
             <div class="lg:col-span-7 group">
-                <div class="glass-panel rounded-[40px] p-6 sm:p-10 h-full relative overflow-hidden transition-all duration-500 hover:border-white/20 flex flex-col sm:flex-row items-center sm:items-start gap-8 border border-white/5">
+                <div
+                    class="glass-panel rounded-[40px] p-6 sm:p-10 h-full relative overflow-hidden transition-all duration-500 hover:border-white/20 flex flex-col sm:flex-row items-center sm:items-start gap-8 border border-white/5">
                     <div class="absolute inset-0 bg-gradient-to-br from-brand-500/10 to-transparent opacity-40"></div>
-                    
+
                     <!-- Left: Large Gauge -->
-                    <div class="relative w-48 h-48 sm:w-64 sm:h-64 flex-shrink-0 group-hover:scale-105 transition-transform duration-700">
+                    <div
+                        class="relative w-48 h-48 sm:w-64 sm:h-64 flex-shrink-0 group-hover:scale-105 transition-transform duration-700">
                         <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                             <defs>
                                 <linearGradient id="aqi-glow" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -418,34 +439,52 @@
                                     <stop offset="100%" stop-color="#ef4444" />
                                 </linearGradient>
                             </defs>
-                            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="8" />
-                            <circle id="aqi-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#aqi-glow)" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="283" stroke-linecap="round" class="transition-all duration-1000 ease-out" />
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)"
+                                stroke-width="8" />
+                            <circle id="aqi-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#aqi-glow)"
+                                stroke-width="8" stroke-dasharray="283" stroke-dashoffset="283" stroke-linecap="round"
+                                class="transition-all duration-1000 ease-out" />
                         </svg>
                         <div class="absolute inset-0 flex flex-col items-center justify-center">
-                            <span class="text-6xl sm:text-7xl font-heading font-black text-white tracking-tighter" id="pm25-large">--</span>
-                            <span class="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mt-1">AQI</span>
+                            <span class="text-6xl sm:text-7xl font-heading font-black text-white tracking-tighter"
+                                id="pm25-large">--</span>
+                            <span
+                                class="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mt-1">AQI</span>
                         </div>
-                        <div class="absolute -inset-4 bg-brand-500/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                        <div
+                            class="absolute -inset-4 bg-brand-500/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                        </div>
                     </div>
 
                     <!-- Right: AQI Details -->
                     <div class="relative z-10 flex-grow flex flex-col justify-center w-full">
                         <div class="flex flex-col items-center sm:items-start text-center sm:text-left">
-                            <h1 id="selected-location-name" class="text-xs sm:text-sm font-black text-brand-400 uppercase tracking-[0.4em] mb-1">VISAKHAPATNAM CENTER</h1>
+                            <h1 id="selected-location-name"
+                                class="text-xs sm:text-sm font-black text-brand-400 uppercase tracking-[0.4em] mb-1">
+                                VISAKHAPATNAM CENTER</h1>
                             <div class="flex items-center gap-2 mb-4 flex-wrap justify-center sm:justify-start">
                                 <i class="ri-shield-check-line text-brand-400 text-sm opacity-80"></i>
-                                <span class="text-white/40 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest">LIVE AI STATUS</span>
+                                <span
+                                    class="text-white/40 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest">LIVE
+                                    AI STATUS</span>
                             </div>
-                            
-                            <h2 class="text-2xl sm:text-4xl font-heading font-black text-white mb-2" id="aqi-status-badge">Calibrating...</h2>
+
+                            <h2 class="text-2xl sm:text-4xl font-heading font-black text-white mb-2"
+                                id="aqi-status-badge">Calibrating...</h2>
                         </div>
-                        
+
                         <div class="w-full mt-6 mb-8">
-                            <div class="relative h-2 sm:h-3 rounded-full overflow-hidden bg-white/10 border border-white/10">
-                                <div class="absolute inset-0 bg-gradient-to-r from-green-500 via-yellow-400 via-orange-500 to-red-500"></div>
-                                <div id="aqi-severity-pointer" class="absolute top-1/2 -translate-y-1/2 -ml-2 w-4 h-4 rounded-full bg-white border-[3px] border-slate-900 shadow-[0_0_15px_rgba(255,255,255,1)] transition-all duration-500" style="left: 0%;"></div>
+                            <div
+                                class="relative h-2 sm:h-3 rounded-full overflow-hidden bg-white/10 border border-white/10">
+                                <div
+                                    class="absolute inset-0 bg-gradient-to-r from-green-500 via-yellow-400 via-orange-500 to-red-500">
+                                </div>
+                                <div id="aqi-severity-pointer"
+                                    class="absolute top-1/2 -translate-y-1/2 -ml-2 w-4 h-4 rounded-full bg-white border-[3px] border-slate-900 shadow-[0_0_15px_rgba(255,255,255,1)] transition-all duration-500"
+                                    style="left: 0%;"></div>
                             </div>
-                            <div class="mt-3 flex justify-between text-[8px] sm:text-[10px] font-black uppercase tracking-wider text-white/30">
+                            <div
+                                class="mt-3 flex justify-between text-[8px] sm:text-[10px] font-black uppercase tracking-wider text-white/30">
                                 <span>Good</span>
                                 <span>Mod</span>
                                 <span>Unhealthy</span>
@@ -454,12 +493,16 @@
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 hover:bg-white/10 transition-colors">
-                                <p class="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">PM10 Mass</p>
+                            <div
+                                class="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 hover:bg-white/10 transition-colors">
+                                <p class="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">PM10 Mass
+                                </p>
                                 <p class="text-xl sm:text-2xl font-black text-white/90" id="pm10-metric">--</p>
                             </div>
-                            <div class="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 hover:bg-white/10 transition-colors">
-                                <p class="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Max UV Index</p>
+                            <div
+                                class="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 hover:bg-white/10 transition-colors">
+                                <p class="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Max UV
+                                    Index</p>
                                 <p class="text-xl sm:text-2xl font-black text-white/90" id="uv-detail">--</p>
                             </div>
                         </div>
@@ -468,55 +511,69 @@
             </div>
             <!-- Hero Card: Current Weather -->
             <div class="lg:col-span-5 flex flex-col gap-6">
-                <div class="glass-panel rounded-[40px] p-6 sm:p-8 flex-grow relative overflow-hidden group border border-white/5 hover:border-white/20 transition-colors">
+                <div
+                    class="glass-panel rounded-[40px] p-6 sm:p-8 flex-grow relative overflow-hidden group border border-white/5 hover:border-white/20 transition-colors">
                     <div class="flex justify-between items-start mb-6">
                         <div>
-                            <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mb-2">Current Weather</p>
-                            <span class="text-white/40 text-[9px] font-bold uppercase tracking-widest" id="current-date">--</span>
+                            <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mb-2">Current
+                                Weather</p>
+                            <span class="text-white/40 text-[9px] font-bold uppercase tracking-widest"
+                                id="current-date">--</span>
                         </div>
-                        <div class="text-6xl filter drop-shadow-[0_0_20px_rgba(255,255,255,0.2)] group-hover:scale-110 transition-transform duration-500" id="weather-icon-main">☀️</div>
+                        <div class="text-6xl filter drop-shadow-[0_0_20px_rgba(255,255,255,0.2)] group-hover:scale-110 transition-transform duration-500"
+                            id="weather-icon-main">☀️</div>
                     </div>
-                    
+
                     <div class="flex items-end gap-3 mb-8">
-                        <h2 class="text-[64px] font-heading font-black text-white leading-none tracking-tighter" id="temp-main">--°</h2>
+                        <h2 class="text-[64px] font-heading font-black text-white leading-none tracking-tighter"
+                            id="temp-main">--°</h2>
                         <div class="pb-2">
                             <p class="text-lg font-black text-white/90 tracking-tight" id="weather-desc">--</p>
-                            <p class="text-[10px] text-white/40 font-bold uppercase">Feels <span id="feels-like" class="text-white/60">--°</span></p>
+                            <p class="text-[10px] text-white/40 font-bold uppercase">Feels <span id="feels-like"
+                                    class="text-white/60">--°</span></p>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mt-auto">
-                        <div class="bg-white/5 rounded-3xl p-3 border border-white/5 hover:bg-white/10 transition-colors">
+                        <div
+                            class="bg-white/5 rounded-3xl p-3 border border-white/5 hover:bg-white/10 transition-colors">
                             <p class="text-[8px] font-black text-white/30 uppercase tracking-[0.2em] mb-2">Humidity</p>
                             <div class="flex items-center gap-2">
                                 <i class="ri-drop-fill text-blue-400 text-lg"></i>
                                 <span class="font-bold text-white/90 text-sm" id="humidity-detail">--%</span>
                             </div>
                         </div>
-                        <div class="bg-white/5 rounded-3xl p-3 border border-white/5 hover:bg-white/10 transition-colors">
+                        <div
+                            class="bg-white/5 rounded-3xl p-3 border border-white/5 hover:bg-white/10 transition-colors">
                             <p class="text-[8px] font-black text-white/30 uppercase tracking-[0.2em] mb-2">Wind</p>
                             <div class="flex items-center gap-2">
                                 <i class="ri-windy-line text-cyan-400 text-lg"></i>
                                 <span class="font-bold text-white/90 text-sm" id="wind-detail">--</span>
                             </div>
                         </div>
-                        <div class="bg-white/5 rounded-3xl p-3 border border-white/5 hover:bg-white/10 transition-colors">
-                            <p class="text-[8px] font-black text-white/30 uppercase tracking-[0.2em] mb-2">Rain Chance</p>
+                        <div
+                            class="bg-white/5 rounded-3xl p-3 border border-white/5 hover:bg-white/10 transition-colors">
+                            <p class="text-[8px] font-black text-white/30 uppercase tracking-[0.2em] mb-2">Rain Chance
+                            </p>
                             <div class="flex items-center gap-2">
                                 <i class="ri-umbrella-line text-amber-400 text-lg"></i>
                                 <span class="font-bold text-white/90 text-sm" id="rain-detail">--</span>
                             </div>
                         </div>
-                        <div class="bg-white/5 rounded-3xl p-3 border border-white/5 hover:bg-white/10 transition-colors">
+                        <div
+                            class="bg-white/5 rounded-3xl p-3 border border-white/5 hover:bg-white/10 transition-colors">
                             <p class="text-[8px] font-black text-white/30 uppercase tracking-[0.2em] mb-2">Pressure</p>
                             <div class="flex items-center gap-2">
                                 <i class="ri-speed-mini-line text-purple-400 text-lg"></i>
-                                <span class="font-bold text-white/90 text-sm">1012 <span class="text-[8px] opacity-40">hPa</span></span>
+                                <span class="font-bold text-white/90 text-sm">1012 <span
+                                        class="text-[8px] opacity-40">hPa</span></span>
                             </div>
                         </div>
-                        <div class="bg-white/5 rounded-3xl p-3 border border-white/5 hover:bg-white/10 transition-colors md:col-span-2 flex items-center justify-between">
+                        <div
+                            class="bg-white/5 rounded-3xl p-3 border border-white/5 hover:bg-white/10 transition-colors md:col-span-2 flex items-center justify-between">
                             <div>
-                                <p class="text-[8px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Sun Cycle</p>
+                                <p class="text-[8px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Sun Cycle
+                                </p>
                                 <div class="flex flex-col gap-0.5 mt-2">
                                     <span class="font-bold text-white/90 text-xs" id="sunrise-detail">⬆ --</span>
                                     <span class="font-bold text-white/90 text-xs" id="sunset-detail">⬇ --</span>
@@ -532,44 +589,64 @@
         </div>
 
         <!-- Visakhapatnam Interactive Map -->
-        <div id="map-section" class="mb-12 glass-panel rounded-[40px] p-6 sm:p-8 overflow-hidden relative border border-white/5 reveal-init">
+        <div id="map-section"
+            class="mb-12 glass-panel rounded-[40px] p-6 sm:p-8 overflow-hidden relative border border-white/5 reveal-init">
             <div class="flex items-center gap-4 mb-6 relative z-10">
-                <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-lg shadow-indigo-500/20">
+                <div
+                    class="w-10 h-10 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-lg shadow-indigo-500/20">
                     <i class="ri-earth-line text-xl"></i>
                 </div>
                 <div>
                     <h3 class="font-heading font-black text-lg text-white/90">Regional Air Quality Map</h3>
-                    <p class="text-xs text-white/30 font-bold uppercase tracking-widest">Live Monitoring Stations in Visakhapatnam</p>
+                    <p class="text-xs text-white/30 font-bold uppercase tracking-widest">Live Monitoring Stations in
+                        Visakhapatnam</p>
                 </div>
             </div>
-            <div id="vizag-map" class="w-full rounded-3xl overflow-hidden border border-white/10 shadow-2xl relative z-10 transition-all duration-700 hover:border-indigo-500/30" style="height: 500px; min-height: 400px; background: #030712;">
-                <div class="absolute inset-0 bg-slate-900 animate-pulse flex flex-col items-center justify-center z-[1001]" id="map-loading">
+            <div id="vizag-map"
+                class="w-full rounded-3xl overflow-hidden border border-white/10 shadow-2xl relative z-10 transition-all duration-700 hover:border-indigo-500/30"
+                style="height: 500px; min-height: 400px; background: #030712;">
+                <div class="absolute inset-0 bg-slate-900 animate-pulse flex flex-col items-center justify-center z-[1001]"
+                    id="map-loading">
                     <div class="flex flex-col items-center gap-3">
                         <i class="ri-map-2-line text-4xl text-white/10 animate-spin"></i>
-                        <span class="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">Synching Geo-Engine...</span>
+                        <span class="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">Synching
+                            Geo-Engine...</span>
                     </div>
                 </div>
             </div>
-            
+
             <!-- Map Legend -->
-            <div class="absolute bottom-12 right-12 bg-[#0B1120]/90 backdrop-blur-xl p-6 rounded-[32px] border border-white/10 z-[1000] hidden md:block shadow-2xl">
+            <div
+                class="absolute bottom-12 right-12 bg-[#0B1120]/90 backdrop-blur-xl p-6 rounded-[32px] border border-white/10 z-[1000] hidden md:block shadow-2xl">
                 <p class="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-4">AQI Health Index</p>
                 <div class="space-y-4">
                     <div class="flex items-center gap-3 group/leg">
-                        <div class="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)] group-hover/leg:scale-125 transition"></div>
-                        <span class="text-[11px] font-bold text-white/60">0 - 50 <span class="text-[9px] text-white/30 uppercase ml-2">Good</span></span>
+                        <div
+                            class="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)] group-hover/leg:scale-125 transition">
+                        </div>
+                        <span class="text-[11px] font-bold text-white/60">0 - 50 <span
+                                class="text-[9px] text-white/30 uppercase ml-2">Good</span></span>
                     </div>
                     <div class="flex items-center gap-3 group/leg">
-                        <div class="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.6)] group-hover/leg:scale-125 transition"></div>
-                        <span class="text-[11px] font-bold text-white/60">51 - 100 <span class="text-[9px] text-white/30 uppercase ml-2">Moderate</span></span>
+                        <div
+                            class="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.6)] group-hover/leg:scale-125 transition">
+                        </div>
+                        <span class="text-[11px] font-bold text-white/60">51 - 100 <span
+                                class="text-[9px] text-white/30 uppercase ml-2">Moderate</span></span>
                     </div>
                     <div class="flex items-center gap-3 group/leg">
-                        <div class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.6)] group-hover/leg:scale-125 transition"></div>
-                        <span class="text-[11px] font-bold text-white/60">101 - 200 <span class="text-[9px] text-white/30 uppercase ml-2">Poor</span></span>
+                        <div
+                            class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.6)] group-hover/leg:scale-125 transition">
+                        </div>
+                        <span class="text-[11px] font-bold text-white/60">101 - 200 <span
+                                class="text-[9px] text-white/30 uppercase ml-2">Poor</span></span>
                     </div>
                     <div class="flex items-center gap-3 group/leg">
-                        <div class="w-2.5 h-2.5 rounded-full bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.6)] group-hover/leg:scale-125 transition"></div>
-                        <span class="text-[11px] font-bold text-white/60">201+ <span class="text-[9px] text-white/30 uppercase ml-2">Hazardous</span></span>
+                        <div
+                            class="w-2.5 h-2.5 rounded-full bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.6)] group-hover/leg:scale-125 transition">
+                        </div>
+                        <span class="text-[11px] font-bold text-white/60">201+ <span
+                                class="text-[9px] text-white/30 uppercase ml-2">Hazardous</span></span>
                     </div>
                 </div>
             </div>
@@ -578,38 +655,43 @@
         <!-- Location Selector & Report Download -->
         <div id="location-report-section" class="mb-12 space-y-6">
             <!-- Location Selector Bar -->
-            <div class="glass-panel rounded-[40px] p-5 sm:p-6 relative overflow-hidden border border-white/5 hover:border-white/15 transition-all">
+            <div
+                class="glass-panel rounded-[40px] p-5 sm:p-6 relative overflow-hidden border border-white/5 hover:border-white/15 transition-all">
                 <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-5">
                     <div class="flex items-center gap-3 flex-shrink-0">
-                        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 flex items-center justify-center text-cyan-400 shadow-md shadow-cyan-500/10">
+                        <div
+                            class="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 flex items-center justify-center text-cyan-400 shadow-md shadow-cyan-500/10">
                             <i class="ri-map-pin-2-line text-xl"></i>
                         </div>
                         <div>
-                            <h3 class="font-heading font-black text-base sm:text-lg text-slate-800 dark:text-white/90">Monitoring Zones</h3>
-                            <p class="text-[9px] text-slate-500 dark:text-white/30 font-bold uppercase tracking-[0.2em]">7 Visakhapatnam Stations</p>
+                            <h3 class="font-heading font-black text-base sm:text-lg text-slate-800 dark:text-white/90">
+                                Monitoring Zones</h3>
+                            <p
+                                class="text-[9px] text-slate-500 dark:text-white/30 font-bold uppercase tracking-[0.2em]">
+                                7 Visakhapatnam Stations</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-3 ml-auto flex-shrink-0">
-                        <select id="report-range" class="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[10px] font-black uppercase text-white/50 focus:outline-none focus:border-brand-500/50 appearance-none cursor-pointer hover:bg-white/10 transition-colors">
-                            <option value="week">Past Week</option>
-                            <option value="month">Past Month</option>
-                        </select>
-                        <button onclick="downloadReport()" id="btn-download-report" class="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-green-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest hover:from-emerald-500/20 hover:to-green-500/20 hover:border-emerald-400/40 transition-all group">
-                            <i class="ri-file-chart-line text-base group-hover:animate-bounce"></i>
-                            <span class="hidden sm:inline">Download Intelligence PDF</span>
-                            <span class="sm:hidden">PDF Report</span>
-                        </button>
+                        <div
+                            class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10">
+                            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                            <span class="text-[9px] font-black text-white/40 uppercase tracking-widest">Network
+                                Live</span>
+                        </div>
                     </div>
                 </div>
                 <div id="location-pills" class="flex flex-wrap gap-2 sm:gap-3">
                     <!-- Pills are injected by JS -->
-                    <div class="text-[10px] text-white/20 font-bold uppercase tracking-widest py-2 animate-pulse">Loading stations...</div>
+                    <div class="text-[10px] text-white/20 font-bold uppercase tracking-widest py-2 animate-pulse">
+                        Loading stations...</div>
                 </div>
                 <!-- Active Location Info -->
                 <div id="active-location-info" class="mt-4 pt-4 border-t border-white/5 flex items-center gap-3 hidden">
-                    <div class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.6)]"></div>
+                    <div class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.6)]">
+                    </div>
                     <span class="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Active: </span>
-                    <span id="active-location-name" class="text-[10px] font-black text-cyan-400 uppercase tracking-[0.15em]">--</span>
+                    <span id="active-location-name"
+                        class="text-[10px] font-black text-cyan-400 uppercase tracking-[0.15em]">--</span>
                     <span class="text-[9px] font-bold text-white/20 ml-2" id="active-location-coords">--</span>
                 </div>
             </div>
@@ -674,7 +756,8 @@
                         </div>
                     </div>
 
-                    <div id="hourly-inline-chart-wrap" class="hidden mt-3 w-full overflow-x-auto rounded-2xl bg-white/5 border border-white/10 scrollbar-hide">
+                    <div id="hourly-inline-chart-wrap"
+                        class="hidden mt-3 w-full overflow-x-auto rounded-2xl bg-white/5 border border-white/10 scrollbar-hide">
                         <div class="p-3 sm:p-4 w-full h-64 sm:h-80 min-w-[600px] relative">
                             <canvas id="hourlyInlineChart"></canvas>
                         </div>
@@ -692,7 +775,8 @@
                             <div>
                                 <h3 class="font-heading font-black text-lg text-slate-800 dark:text-white/90">Predictive
                                     Analytics</h3>
-                                <p class="text-xs text-slate-500 dark:text-white/30 font-bold uppercase tracking-widest">
+                                <p
+                                    class="text-xs text-slate-500 dark:text-white/30 font-bold uppercase tracking-widest">
                                     7-Day Temporal
                                     Trend</p>
                             </div>
@@ -725,63 +809,106 @@
                 </div>
 
                 <!-- Atmospheric Composition Breakdown -->
-                <div class="glass-panel rounded-[40px] p-6 sm:p-8 relative group overflow-hidden border border-slate-200 dark:border-white/5 bg-transparent transition-colors">
+                <div
+                    class="glass-panel rounded-[40px] p-6 sm:p-8 relative group overflow-hidden border border-slate-200 dark:border-white/5 bg-transparent transition-colors">
                     <!-- Decorative backglow -->
-                    <div class="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
-                    
+                    <div
+                        class="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
+                    </div>
+
                     <div class="flex items-center gap-4 mb-8 relative z-10">
-                        <div class="w-10 h-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-md shadow-emerald-500/20">
+                        <div
+                            class="w-10 h-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-md shadow-emerald-500/20">
                             <i class="ri-test-tube-line text-xl"></i>
                         </div>
                         <div>
-                            <h3 class="font-heading font-black text-lg text-slate-800 dark:text-white/90">Atmospheric Composition</h3>
-                            <p class="text-[10px] text-slate-500 dark:text-white/30 font-bold uppercase tracking-widest mt-0.5">Secondary Trace Gases</p>
+                            <h3 class="font-heading font-black text-lg text-slate-800 dark:text-white/90">Atmospheric
+                                Composition</h3>
+                            <p
+                                class="text-[10px] text-slate-500 dark:text-white/30 font-bold uppercase tracking-widest mt-0.5">
+                                Secondary Trace Gases</p>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
                         <!-- O3 Gauge -->
-                        <div class="bg-white/80 dark:bg-black/20 p-5 rounded-3xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center text-center shadow-sm relative transition-colors group/card hover:bg-white dark:hover:bg-white/5">
-                            <i class="ri-cloud-windy-line text-slate-200 dark:text-white/5 absolute top-3 right-3 text-lg pointer-events-none group-hover/card:text-blue-500/20 transition-colors"></i>
-                            <div class="relative w-16 h-16 rounded-full border-4 border-emerald-500/20 flex items-center justify-center mb-4 inner-glow">
-                                <div class="absolute inset-[-4px] rounded-full border-4 border-transparent border-t-emerald-400 rotate-45 group-hover/card:rotate-[225deg] transition-transform duration-1000 ease-in-out"></div>
-                                <span class="font-black text-slate-800 dark:text-white/90 text-sm z-10">34<span class="text-[8px] text-slate-400 dark:text-white/40 block -mt-1 tracking-tight">µg/m³</span></span>
+                        <div
+                            class="bg-white/80 dark:bg-black/20 p-5 rounded-3xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center text-center shadow-sm relative transition-colors group/card hover:bg-white dark:hover:bg-white/5">
+                            <i
+                                class="ri-cloud-windy-line text-slate-200 dark:text-white/5 absolute top-3 right-3 text-lg pointer-events-none group-hover/card:text-blue-500/20 transition-colors"></i>
+                            <div
+                                class="relative w-16 h-16 rounded-full border-4 border-emerald-500/20 flex items-center justify-center mb-4 inner-glow">
+                                <div
+                                    class="absolute inset-[-4px] rounded-full border-4 border-transparent border-t-emerald-400 rotate-45 group-hover/card:rotate-[225deg] transition-transform duration-1000 ease-in-out">
+                                </div>
+                                <span class="font-black text-slate-800 dark:text-white/90 text-sm z-10">34<span
+                                        class="text-[8px] text-slate-400 dark:text-white/40 block -mt-1 tracking-tight">µg/m³</span></span>
                             </div>
-                            <span class="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-[0.2em] mb-1">Ozone (O₃)</span>
-                            <span class="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-sm">Good</span>
+                            <span
+                                class="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-[0.2em] mb-1">Ozone
+                                (O₃)</span>
+                            <span
+                                class="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-sm">Good</span>
                         </div>
 
                         <!-- NO2 Gauge -->
-                        <div class="bg-white/80 dark:bg-black/20 p-5 rounded-3xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center text-center shadow-sm relative transition-colors group/card hover:bg-white dark:hover:bg-white/5">
-                            <i class="ri-car-washing-line text-slate-200 dark:text-white/5 absolute top-3 right-3 text-lg pointer-events-none group-hover/card:text-amber-500/20 transition-colors"></i>
-                            <div class="relative w-16 h-16 rounded-full border-4 border-amber-500/20 flex items-center justify-center mb-4 inner-glow">
-                                <div class="absolute inset-[-4px] rounded-full border-4 border-transparent border-b-amber-400 -rotate-45 group-hover/card:rotate-[135deg] transition-transform duration-1000 ease-in-out"></div>
-                                <span class="font-black text-slate-800 dark:text-white/90 text-sm z-10">21<span class="text-[8px] text-slate-400 dark:text-white/40 block -mt-1 tracking-tight">µg/m³</span></span>
+                        <div
+                            class="bg-white/80 dark:bg-black/20 p-5 rounded-3xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center text-center shadow-sm relative transition-colors group/card hover:bg-white dark:hover:bg-white/5">
+                            <i
+                                class="ri-car-washing-line text-slate-200 dark:text-white/5 absolute top-3 right-3 text-lg pointer-events-none group-hover/card:text-amber-500/20 transition-colors"></i>
+                            <div
+                                class="relative w-16 h-16 rounded-full border-4 border-amber-500/20 flex items-center justify-center mb-4 inner-glow">
+                                <div
+                                    class="absolute inset-[-4px] rounded-full border-4 border-transparent border-b-amber-400 -rotate-45 group-hover/card:rotate-[135deg] transition-transform duration-1000 ease-in-out">
+                                </div>
+                                <span class="font-black text-slate-800 dark:text-white/90 text-sm z-10">21<span
+                                        class="text-[8px] text-slate-400 dark:text-white/40 block -mt-1 tracking-tight">µg/m³</span></span>
                             </div>
-                            <span class="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-[0.2em] mb-1">Nitrogen Di.</span>
-                            <span class="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded-sm">Moderate</span>
+                            <span
+                                class="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-[0.2em] mb-1">Nitrogen
+                                Di.</span>
+                            <span
+                                class="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded-sm">Moderate</span>
                         </div>
 
                         <!-- SO2 Gauge -->
-                        <div class="bg-white/80 dark:bg-black/20 p-5 rounded-3xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center text-center shadow-sm relative transition-colors group/card hover:bg-white dark:hover:bg-white/5">
-                            <i class="ri-building-3-line text-slate-200 dark:text-white/5 absolute top-3 right-3 text-lg pointer-events-none group-hover/card:text-emerald-500/20 transition-colors"></i>
-                            <div class="relative w-16 h-16 rounded-full border-4 border-emerald-500/20 flex items-center justify-center mb-4 inner-glow">
-                                <div class="absolute inset-[-4px] rounded-full border-4 border-transparent border-l-emerald-400 rotate-90 group-hover/card:rotate-[270deg] transition-transform duration-1000 ease-in-out"></div>
-                                <span class="font-black text-slate-800 dark:text-white/90 text-sm z-10">8<span class="text-[8px] text-slate-400 dark:text-white/40 block -mt-1 tracking-tight">µg/m³</span></span>
+                        <div
+                            class="bg-white/80 dark:bg-black/20 p-5 rounded-3xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center text-center shadow-sm relative transition-colors group/card hover:bg-white dark:hover:bg-white/5">
+                            <i
+                                class="ri-building-3-line text-slate-200 dark:text-white/5 absolute top-3 right-3 text-lg pointer-events-none group-hover/card:text-emerald-500/20 transition-colors"></i>
+                            <div
+                                class="relative w-16 h-16 rounded-full border-4 border-emerald-500/20 flex items-center justify-center mb-4 inner-glow">
+                                <div
+                                    class="absolute inset-[-4px] rounded-full border-4 border-transparent border-l-emerald-400 rotate-90 group-hover/card:rotate-[270deg] transition-transform duration-1000 ease-in-out">
+                                </div>
+                                <span class="font-black text-slate-800 dark:text-white/90 text-sm z-10">8<span
+                                        class="text-[8px] text-slate-400 dark:text-white/40 block -mt-1 tracking-tight">µg/m³</span></span>
                             </div>
-                            <span class="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-[0.2em] mb-1">Sulfur Di.</span>
-                            <span class="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-sm">Good</span>
+                            <span
+                                class="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-[0.2em] mb-1">Sulfur
+                                Di.</span>
+                            <span
+                                class="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-sm">Good</span>
                         </div>
 
                         <!-- CO Gauge -->
-                        <div class="bg-white/80 dark:bg-black/20 p-5 rounded-3xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center text-center shadow-sm relative transition-colors group/card hover:bg-white dark:hover:bg-white/5">
-                            <i class="ri-fire-line text-slate-200 dark:text-white/5 absolute top-3 right-3 text-lg pointer-events-none group-hover/card:text-emerald-500/20 transition-colors"></i>
-                            <div class="relative w-16 h-16 rounded-full border-4 border-emerald-500/20 flex items-center justify-center mb-4 inner-glow">
-                                <div class="absolute inset-[-4px] rounded-full border-4 border-transparent border-r-emerald-400 -rotate-90 group-hover/card:rotate-[90deg] transition-transform duration-1000 ease-in-out"></div>
-                                <span class="font-black text-slate-800 dark:text-white/90 text-sm z-10">310<span class="text-[8px] text-slate-400 dark:text-white/40 block -mt-1 tracking-tight">µg/m³</span></span>
+                        <div
+                            class="bg-white/80 dark:bg-black/20 p-5 rounded-3xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center text-center shadow-sm relative transition-colors group/card hover:bg-white dark:hover:bg-white/5">
+                            <i
+                                class="ri-fire-line text-slate-200 dark:text-white/5 absolute top-3 right-3 text-lg pointer-events-none group-hover/card:text-emerald-500/20 transition-colors"></i>
+                            <div
+                                class="relative w-16 h-16 rounded-full border-4 border-emerald-500/20 flex items-center justify-center mb-4 inner-glow">
+                                <div
+                                    class="absolute inset-[-4px] rounded-full border-4 border-transparent border-r-emerald-400 -rotate-90 group-hover/card:rotate-[90deg] transition-transform duration-1000 ease-in-out">
+                                </div>
+                                <span class="font-black text-slate-800 dark:text-white/90 text-sm z-10">310<span
+                                        class="text-[8px] text-slate-400 dark:text-white/40 block -mt-1 tracking-tight">µg/m³</span></span>
                             </div>
-                            <span class="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-[0.2em] mb-1">Carbon Mon.</span>
-                            <span class="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-sm">Good</span>
+                            <span
+                                class="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-[0.2em] mb-1">Carbon
+                                Mon.</span>
+                            <span
+                                class="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-sm">Good</span>
                         </div>
                     </div>
                 </div>
@@ -791,223 +918,373 @@
             <div id="air-quality-section" class="lg:col-span-4 w-full relative">
                 <div class="sticky top-6 space-y-6 pb-12">
                     <div class="glass-panel rounded-[40px] p-6 sm:p-8 h-max">
-                    <div class="flex items-center gap-4 mb-10">
-                        <div class="w-10 h-10 rounded-2xl bg-red-500/20 flex items-center justify-center text-red-400">
-                            <i class="ri-heart-pulse-line text-xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-heading font-black text-lg text-white/90">Health
-                                Advisory</h3>
-                            <p class="text-xs text-white/30 font-bold uppercase tracking-widest">AI
-                                Safety Engine</p>
-                        </div>
-                    </div>
-
-                    <div class="space-y-8">
-                        <div class="bg-white/5 rounded-3xl p-6 border border-white/5">
-                            <div class="flex gap-4 items-start">
-                                <div class="text-3xl" id="rec-icon">🛡️</div>
-                                <div>
-                                    <h4 class="text-sm font-black text-white/90 uppercase mb-2 tracking-wide"
-                                        id="rec-title">Status Check</h4>
-                                    <p class="text-xs text-white/40 leading-relaxed font-medium" id="rec-summary">Our
-                                        models are currently analyzing data...</p>
-                                </div>
+                        <div class="flex items-center gap-4 mb-10">
+                            <div
+                                class="w-10 h-10 rounded-2xl bg-red-500/20 flex items-center justify-center text-red-400">
+                                <i class="ri-heart-pulse-line text-xl"></i>
                             </div>
-                        </div>
-
-                        <div class="space-y-6">
                             <div>
-                                <p class="text-[10px] font-black text-green-500/60 uppercase tracking-[0.3em] mb-4">
-                                    Recommended Actions</p>
-                                <ul class="space-y-3" id="rec-do">
-                                    <li class="flex items-center gap-3">
-                                        <div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                                        <span class="text-xs font-bold text-white/50">Computing...</span>
-                                    </li>
-                                </ul>
+                                <h3 class="font-heading font-black text-lg text-white/90">Health
+                                    Advisory</h3>
+                                <p class="text-xs text-white/30 font-bold uppercase tracking-widest">AI
+                                    Safety Engine</p>
                             </div>
+                        </div>
 
-                            <div id="rec-avoid-section" class="hidden">
-                                <p class="text-[10px] font-black text-red-500/60 uppercase tracking-[0.3em] mb-4">
-                                    Precautions</p>
-                                <ul class="space-y-3" id="rec-avoid">
-                                </ul>
-                            </div>
-
-                            <!-- Activity Suitability Matrix -->
-                            <div class="pt-6 border-t border-white/5">
-                                <p class="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-4">
-                                    Activity
-                                    Suitability</p>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div class="bg-white/5 rounded-2xl p-3 flex items-center justify-between group"
-                                        id="act-run">
-                                        <div class="flex items-center gap-3">
-                                            <div
-                                                class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-[.safe]:text-green-400 group-[.unsafe]:text-red-400 transition-colors">
-                                                <i class="ri-run-line"></i>
-                                            </div>
-                                            <span
-                                                class="text-[10px] font-bold text-white/60 uppercase tracking-wider">Running</span>
-                                        </div>
-                                        <div
-                                            class="w-2 h-2 rounded-full bg-white/10 group-[.safe]:bg-green-500 group-[.unsafe]:bg-red-500 shadow-[0_0_10px_currentColor] transition-colors">
-                                        </div>
-                                    </div>
-                                    <div class="bg-white/5 rounded-2xl p-3 flex items-center justify-between group"
-                                        id="act-cycle">
-                                        <div class="flex items-center gap-3">
-                                            <div
-                                                class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-[.safe]:text-green-400 group-[.unsafe]:text-red-400 transition-colors">
-                                                <i class="ri-riding-line"></i>
-                                            </div>
-                                            <span
-                                                class="text-[10px] font-bold text-white/60 uppercase tracking-wider">Cycling</span>
-                                        </div>
-                                        <div
-                                            class="w-2 h-2 rounded-full bg-white/10 group-[.safe]:bg-green-500 group-[.unsafe]:bg-red-500 shadow-[0_0_10px_currentColor] transition-colors">
-                                        </div>
-                                    </div>
-                                    <div class="bg-white/5 rounded-2xl p-3 flex items-center justify-between group"
-                                        id="act-walk">
-                                        <div class="flex items-center gap-3">
-                                            <div
-                                                class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-[.safe]:text-green-400 group-[.unsafe]:text-red-400 transition-colors">
-                                                <i class="ri-walk-line"></i>
-                                            </div>
-                                            <span
-                                                class="text-[10px] font-bold text-white/60 uppercase tracking-wider">Walking</span>
-                                        </div>
-                                        <div
-                                            class="w-2 h-2 rounded-full bg-white/10 group-[.safe]:bg-green-500 group-[.unsafe]:bg-red-500 shadow-[0_0_10px_currentColor] transition-colors">
-                                        </div>
-                                    </div>
-                                    <div class="bg-white/5 rounded-2xl p-3 flex items-center justify-between group"
-                                        id="act-vent">
-                                        <div class="flex items-center gap-3">
-                                            <div
-                                                class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-[.safe]:text-green-400 group-[.unsafe]:text-red-400 transition-colors">
-                                                <i class="ri-home-gear-line"></i>
-                                            </div>
-                                            <span
-                                                class="text-[10px] font-bold text-white/60 uppercase tracking-wider">Ventilation</span>
-                                        </div>
-                                        <div
-                                            class="w-2 h-2 rounded-full bg-white/10 group-[.safe]:bg-green-500 group-[.unsafe]:bg-red-500 shadow-[0_0_10px_currentColor] transition-colors">
-                                        </div>
+                        <div class="space-y-8">
+                            <div class="bg-white/5 rounded-3xl p-6 border border-white/5">
+                                <div class="flex gap-4 items-start">
+                                    <div class="text-3xl" id="rec-icon">🛡️</div>
+                                    <div>
+                                        <h4 class="text-sm font-black text-white/90 uppercase mb-2 tracking-wide"
+                                            id="rec-title">Status Check</h4>
+                                        <p class="text-xs text-white/40 leading-relaxed font-medium" id="rec-summary">
+                                            Our
+                                            models are currently analyzing data...</p>
                                     </div>
                                 </div>
                             </div>
 
+                            <div class="space-y-6">
+                                <div>
+                                    <p class="text-[10px] font-black text-green-500/60 uppercase tracking-[0.3em] mb-4">
+                                        Recommended Actions</p>
+                                    <ul class="space-y-3" id="rec-do">
+                                        <li class="flex items-center gap-3">
+                                            <div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                                            <span class="text-xs font-bold text-white/50">Computing...</span>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div id="rec-avoid-section" class="hidden">
+                                    <p class="text-[10px] font-black text-red-500/60 uppercase tracking-[0.3em] mb-4">
+                                        Precautions</p>
+                                    <ul class="space-y-3" id="rec-avoid">
+                                    </ul>
+                                </div>
+
+                                <!-- Activity Suitability Matrix -->
+                                <div class="pt-6 border-t border-white/5">
+                                    <p class="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-4">
+                                        Activity
+                                        Suitability</p>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div class="bg-white/5 rounded-2xl p-3 flex items-center justify-between group"
+                                            id="act-run">
+                                            <div class="flex items-center gap-3">
+                                                <div
+                                                    class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-[.safe]:text-green-400 group-[.unsafe]:text-red-400 transition-colors">
+                                                    <i class="ri-run-line"></i>
+                                                </div>
+                                                <span
+                                                    class="text-[10px] font-bold text-white/60 uppercase tracking-wider">Running</span>
+                                            </div>
+                                            <div
+                                                class="w-2 h-2 rounded-full bg-white/10 group-[.safe]:bg-green-500 group-[.unsafe]:bg-red-500 shadow-[0_0_10px_currentColor] transition-colors">
+                                            </div>
+                                        </div>
+                                        <div class="bg-white/5 rounded-2xl p-3 flex items-center justify-between group"
+                                            id="act-cycle">
+                                            <div class="flex items-center gap-3">
+                                                <div
+                                                    class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-[.safe]:text-green-400 group-[.unsafe]:text-red-400 transition-colors">
+                                                    <i class="ri-riding-line"></i>
+                                                </div>
+                                                <span
+                                                    class="text-[10px] font-bold text-white/60 uppercase tracking-wider">Cycling</span>
+                                            </div>
+                                            <div
+                                                class="w-2 h-2 rounded-full bg-white/10 group-[.safe]:bg-green-500 group-[.unsafe]:bg-red-500 shadow-[0_0_10px_currentColor] transition-colors">
+                                            </div>
+                                        </div>
+                                        <div class="bg-white/5 rounded-2xl p-3 flex items-center justify-between group"
+                                            id="act-walk">
+                                            <div class="flex items-center gap-3">
+                                                <div
+                                                    class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-[.safe]:text-green-400 group-[.unsafe]:text-red-400 transition-colors">
+                                                    <i class="ri-walk-line"></i>
+                                                </div>
+                                                <span
+                                                    class="text-[10px] font-bold text-white/60 uppercase tracking-wider">Walking</span>
+                                            </div>
+                                            <div
+                                                class="w-2 h-2 rounded-full bg-white/10 group-[.safe]:bg-green-500 group-[.unsafe]:bg-red-500 shadow-[0_0_10px_currentColor] transition-colors">
+                                            </div>
+                                        </div>
+                                        <div class="bg-white/5 rounded-2xl p-3 flex items-center justify-between group"
+                                            id="act-vent">
+                                            <div class="flex items-center gap-3">
+                                                <div
+                                                    class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-[.safe]:text-green-400 group-[.unsafe]:text-red-400 transition-colors">
+                                                    <i class="ri-home-gear-line"></i>
+                                                </div>
+                                                <span
+                                                    class="text-[10px] font-bold text-white/60 uppercase tracking-wider">Ventilation</span>
+                                            </div>
+                                            <div
+                                                class="w-2 h-2 rounded-full bg-white/10 group-[.safe]:bg-green-500 group-[.unsafe]:bg-red-500 shadow-[0_0_10px_currentColor] transition-colors">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
                         </div>
+                    </div>
+
+                    <!-- Decade Prediction Section -->
+                    <div
+                        class="glass-panel rounded-[40px] p-6 sm:p-8 border border-white/5 hover:border-white/20 dark:border-white/5 relative overflow-hidden group transition-all duration-500">
+                        <div
+                            class="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-transparent to-amber-500/5 group-hover:opacity-100 transition-opacity duration-700">
+                        </div>
+                        <div class="flex items-center gap-4 mb-6 relative z-10">
+                            <div
+                                class="w-12 h-12 rounded-3xl bg-gradient-to-br from-brand-400 to-sky-600 flex items-center justify-center text-white shadow-lg">
+                                <i class="ri-calendar-todo-fill text-2xl"></i>
+                            </div>
+                            <div>
+                                <h3
+                                    class="font-heading font-black text-xl text-slate-800 dark:text-white tracking-tighter">
+                                    Decade Extrapolator</h3>
+                                <p class="text-[10px] text-brand-500 font-bold uppercase tracking-[0.2em] mt-1">Future
+                                    Simulator</p>
+                            </div>
+                        </div>
+
+                        <p
+                            class="text-sm text-slate-500 dark:text-white/50 mb-6 leading-relaxed font-medium relative z-10">
+                            Select any date up to 10 years in the future to simulate anticipated Air Quality and Thermal
+                            changes.
+                        </p>
+
+                        <div
+                            class="p-4 sm:p-5 rounded-3xl bg-white/50 dark:bg-[#050f1a] border border-slate-200 dark:border-white/10 mb-6 relative z-10 transition-colors">
+                            <label
+                                class="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-[0.3em] mb-3 block">Target
+                                Date</label>
+                            <input type="date" id="future-date-picker"
+                                class="w-full bg-white dark:bg-[#081828] border border-slate-200 dark:border-brand-500/20 rounded-xl px-4 py-3 mb-3 font-bold text-slate-800 dark:text-white/90 outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400 transition-all cursor-pointer" />
+                            <button onclick="fetch10YearPrediction()"
+                                class="w-full bg-slate-900 dark:bg-brand-500 text-white font-bold py-3 px-6 rounded-xl hover:bg-slate-800 dark:hover:bg-brand-400 transition-all shadow-md flex items-center justify-center gap-2">
+                                <span>Simulate</span>
+                                <i class="ri-arrow-right-line"></i>
+                            </button>
+                        </div>
+
+                        <div
+                            class="rounded-3xl bg-white/50 dark:bg-black/20 border border-slate-200 dark:border-white/5 p-5 min-h-[250px] flex flex-col justify-center relative shadow-inner overflow-hidden z-10 transition-colors">
+
+                            <!-- Loading State -->
+                            <div id="future-loading"
+                                class="hidden absolute inset-0 flex flex-col justify-center items-center rounded-3xl z-20 bg-white/90 dark:bg-[#06121e]/90 backdrop-blur-sm">
+                                <div class="relative w-12 h-12">
+                                    <div
+                                        class="absolute inset-0 rounded-full border-4 border-slate-200 dark:border-white/10">
+                                    </div>
+                                    <div
+                                        class="absolute inset-0 rounded-full border-4 border-brand-400 border-t-transparent animate-spin">
+                                    </div>
+                                </div>
+                                <span
+                                    class="mt-4 text-[9px] font-black text-brand-500 uppercase tracking-[0.3em] animate-pulse">Simulating...</span>
+                            </div>
+
+                            <!-- Initial State -->
+                            <div id="future-initial" class="text-center">
+                                <div
+                                    class="w-16 h-16 rounded-full bg-slate-200 dark:bg-white/5 flex items-center justify-center mx-auto mb-4 text-slate-400 dark:text-white/20 transition-colors">
+                                    <i class="ri-dashboard-3-line text-3xl"></i>
+                                </div>
+                                <h4
+                                    class="font-heading font-bold text-slate-400 dark:text-white/50 text-lg tracking-tighter">
+                                    Awaiting Input</h4>
+                            </div>
+
+                            <!-- Results State -->
+                            <div id="future-results" class="hidden w-full h-full flex flex-col z-10 relative">
+                                <div class="flex items-center justify-between mb-5">
+                                    <div
+                                        class="px-3 py-1 rounded-full bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 text-brand-600 dark:text-brand-400 text-[10px] font-bold transition-colors">
+                                        <i class="ri-focus-3-line mr-1"></i> <span id="res-date">--</span>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3 mb-5">
+                                    <!-- Temperature Card -->
+                                    <div
+                                        class="bg-white dark:bg-white/5 rounded-2xl p-4 border border-slate-200 dark:border-white/10 shadow-sm transition-colors">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <i
+                                                class="ri-temp-hot-line text-orange-500 dark:text-orange-400 text-sm"></i>
+                                            <p
+                                                class="text-[8px] font-black text-slate-400 dark:text-white/40 uppercase tracking-[0.1em]">
+                                                Temp</p>
+                                        </div>
+                                        <p class="text-xl font-black text-slate-800 dark:text-white/90" id="res-temp">
+                                            --°</p>
+                                    </div>
+
+                                    <!-- PM2.5 Card -->
+                                    <div
+                                        class="bg-white dark:bg-white/5 rounded-2xl p-4 border border-slate-200 dark:border-white/10 shadow-sm transition-colors">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <i class="ri-mist-line text-slate-400 text-sm"></i>
+                                            <p
+                                                class="text-[8px] font-black text-slate-400 dark:text-white/40 uppercase tracking-[0.1em]">
+                                                PM2.5</p>
+                                        </div>
+                                        <p class="text-xl font-black text-slate-800 dark:text-white/90" id="res-pm25">--
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- AQI Hero Card -->
+                                <div class="bg-white dark:bg-white/5 rounded-2xl p-4 border border-slate-200 dark:border-white/10 flex flex-col justify-between relative overflow-hidden mb-5 shadow-sm transition-colors"
+                                    id="res-aqi-card">
+                                    <div class="absolute inset-0 opacity-[0.08] dark:opacity-20 transition-opacity duration-500"
+                                        id="res-aqi-bg"></div>
+                                    <div class="relative z-10 flex items-center justify-between mb-1">
+                                        <p
+                                            class="text-[9px] font-black text-slate-500 dark:text-white/60 uppercase tracking-[0.2em]">
+                                            Final AQI</p>
+                                        <i class="ri-shield-cross-line text-slate-300 dark:text-white/40"></i>
+                                    </div>
+                                    <div class="relative z-10">
+                                        <p class="text-4xl font-black text-slate-800 dark:text-white leading-none tracking-tighter"
+                                            id="res-aqi">--</p>
+                                        <span
+                                            class="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 bg-slate-100 dark:bg-white/10 rounded mt-1.5 inline-block text-slate-600 dark:text-white transition-colors"
+                                            id="res-aqi-status">--</span>
+                                    </div>
+                                </div>
+
+                                <!-- Analysis & Reasoning -->
+                                <div
+                                    class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border-l-2 border-amber-400 dark:border-amber-500 mt-auto transition-colors">
+                                    <h5
+                                        class="text-[9px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-[0.2em] mb-1">
+                                        Contextual Analysis</h5>
+                                    <p class="text-[11px] text-slate-600 dark:text-white/70 font-medium leading-relaxed"
+                                        id="res-reason">--</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Intelligence Reporting Hub -->
+                    <div id="reporting-section"
+                        class="mt-12 mb-12 glass-panel rounded-[40px] p-6 sm:p-10 relative overflow-hidden group border border-white/5 hover:border-white/15 transition-all duration-500 reveal-init">
+                        <div
+                            class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-brand-500/5 pointer-events-none">
+                        </div>
+
+                        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
+                            <div class="max-w-xl">
+                                <div class="flex items-center gap-4 mb-6">
+                                    <div
+                                        class="w-12 h-12 rounded-3xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/20">
+                                        <i class="ri-file-list-3-line text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-heading font-black text-2xl text-white tracking-tighter">
+                                            Intelligence Reporting Hub</h3>
+                                        <p
+                                            class="text-[10px] text-emerald-500 font-bold uppercase tracking-[0.3em] mt-1">
+                                            Export Environmental Insights</p>
+                                    </div>
+                                </div>
+                                <p class="text-sm text-white/40 leading-relaxed font-medium mb-8">
+                                    Generate and download comprehensive atmospheric analysis reports for <span
+                                        class="text-white/80" id="report-location-name">Visakhapatnam Center</span>.
+                                    Our AI processes historical trends, satellite data, and ground observations to
+                                    produce these scientific summaries.
+                                </p>
+
+                                <div class="flex flex-wrap gap-4">
+                                    <div
+                                        class="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-2xl border border-white/10">
+                                        <i class="ri-check-circle-fill text-emerald-500 text-sm"></i>
+                                        <span
+                                            class="text-[10px] font-bold text-white/60 uppercase tracking-widest">Trend
+                                            Visualization</span>
+                                    </div>
+                                    <div
+                                        class="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-2xl border border-white/10">
+                                        <i class="ri-check-circle-fill text-emerald-500 text-sm"></i>
+                                        <span
+                                            class="text-[10px] font-bold text-white/60 uppercase tracking-widest">Safety
+                                            Recommendations</span>
+                                    </div>
+                                    <div
+                                        class="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-2xl border border-white/10">
+                                        <i class="ri-check-circle-fill text-emerald-500 text-sm"></i>
+                                        <span
+                                            class="text-[10px] font-bold text-white/60 uppercase tracking-widest">Scientific
+                                            Indices</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row gap-4 lg:min-w-[400px]">
+                                <!-- Weekly Card -->
+                                <button onclick="downloadReport('week')" id="btn-report-week"
+                                    class="flex-1 glass-card p-6 rounded-3xl border border-white/10 bg-white/5 hover:bg-emerald-500/10 hover:border-emerald-500/40 transition-all text-left group/card">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <div
+                                            class="w-10 h-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover/card:scale-110 transition-transform">
+                                            <i class="ri-calendar-check-line text-xl"></i>
+                                        </div>
+                                        <i
+                                            class="ri-download-2-line text-white/20 group-hover/card:text-emerald-400 group-hover/card:translate-y-1 transition-all"></i>
+                                    </div>
+                                    <h4 class="font-bold text-white mb-1">Weekly Digest</h4>
+                                    <p class="text-[10px] text-white/30 uppercase font-black tracking-widest mb-4">Past
+                                        7 Days</p>
+                                    <div
+                                        class="flex items-center gap-2 text-[9px] font-black text-emerald-500/80 uppercase tracking-widest mt-auto">
+                                        <span>Download PDF</span>
+                                        <i class="ri-arrow-right-s-line"></i>
+                                    </div>
+                                </button>
+
+                                <!-- Monthly Card -->
+                                <button onclick="downloadReport('month')" id="btn-report-month"
+                                    class="flex-1 glass-card p-6 rounded-3xl border border-white/10 bg-white/5 hover:bg-brand-500/10 hover:border-brand-500/40 transition-all text-left group/card">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <div
+                                            class="w-10 h-10 rounded-2xl bg-brand-500/20 flex items-center justify-center text-brand-400 group-hover/card:scale-110 transition-transform">
+                                            <i class="ri-archive-line text-xl"></i>
+                                        </div>
+                                        <i
+                                            class="ri-download-2-line text-white/20 group-hover/card:text-brand-400 group-hover/card:translate-y-1 transition-all"></i>
+                                    </div>
+                                    <h4 class="font-bold text-white mb-1">Monthly Analytics</h4>
+                                    <p class="text-[10px] text-white/30 uppercase font-black tracking-widest mb-4">Past
+                                        30 Days</p>
+                                    <div
+                                        class="flex items-center gap-2 text-[9px] font-black text-brand-400/80 uppercase tracking-widest mt-auto">
+                                        <span>Download PDF</span>
+                                        <i class="ri-arrow-right-s-line"></i>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Progress bar (hidden by default) -->
+                        <div id="report-progress"
+                            class="hidden absolute bottom-0 left-0 h-1 bg-emerald-500 transition-all duration-[3000ms] ease-out"
+                            style="width: 0%"></div>
                     </div>
                 </div>
 
-                <!-- Decade Prediction Section -->
-                <div class="glass-panel rounded-[40px] p-6 sm:p-8 border border-white/5 hover:border-white/20 dark:border-white/5 relative overflow-hidden group transition-all duration-500">
-                    <div class="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-transparent to-amber-500/5 group-hover:opacity-100 transition-opacity duration-700"></div>
-                    <div class="flex items-center gap-4 mb-6 relative z-10">
-                        <div class="w-12 h-12 rounded-3xl bg-gradient-to-br from-brand-400 to-sky-600 flex items-center justify-center text-white shadow-lg">
-                            <i class="ri-calendar-todo-fill text-2xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-heading font-black text-xl text-slate-800 dark:text-white tracking-tighter">Decade Extrapolator</h3>
-                            <p class="text-[10px] text-brand-500 font-bold uppercase tracking-[0.2em] mt-1">Future Simulator</p>
-                        </div>
-                    </div>
-                    
-                    <p class="text-sm text-slate-500 dark:text-white/50 mb-6 leading-relaxed font-medium relative z-10">
-                        Select any date up to 10 years in the future to simulate anticipated Air Quality and Thermal changes.
-                    </p>
-                    
-                    <div class="p-4 sm:p-5 rounded-3xl bg-white/50 dark:bg-[#050f1a] border border-slate-200 dark:border-white/10 mb-6 relative z-10 transition-colors">
-                        <label class="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-[0.3em] mb-3 block">Target Date</label>
-                        <input type="date" id="future-date-picker" class="w-full bg-white dark:bg-[#081828] border border-slate-200 dark:border-brand-500/20 rounded-xl px-4 py-3 mb-3 font-bold text-slate-800 dark:text-white/90 outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400 transition-all cursor-pointer" />
-                        <button onclick="fetch10YearPrediction()" class="w-full bg-slate-900 dark:bg-brand-500 text-white font-bold py-3 px-6 rounded-xl hover:bg-slate-800 dark:hover:bg-brand-400 transition-all shadow-md flex items-center justify-center gap-2">
-                            <span>Simulate</span>
-                            <i class="ri-arrow-right-line"></i>
-                        </button>
-                    </div>
-
-                    <div class="rounded-3xl bg-white/50 dark:bg-black/20 border border-slate-200 dark:border-white/5 p-5 min-h-[250px] flex flex-col justify-center relative shadow-inner overflow-hidden z-10 transition-colors">
-                        
-                        <!-- Loading State -->
-                        <div id="future-loading" class="hidden absolute inset-0 flex flex-col justify-center items-center rounded-3xl z-20 bg-white/90 dark:bg-[#06121e]/90 backdrop-blur-sm">
-                            <div class="relative w-12 h-12">
-                                <div class="absolute inset-0 rounded-full border-4 border-slate-200 dark:border-white/10"></div>
-                                <div class="absolute inset-0 rounded-full border-4 border-brand-400 border-t-transparent animate-spin"></div>
-                            </div>
-                            <span class="mt-4 text-[9px] font-black text-brand-500 uppercase tracking-[0.3em] animate-pulse">Simulating...</span>
-                        </div>
-                        
-                        <!-- Initial State -->
-                        <div id="future-initial" class="text-center">
-                            <div class="w-16 h-16 rounded-full bg-slate-200 dark:bg-white/5 flex items-center justify-center mx-auto mb-4 text-slate-400 dark:text-white/20 transition-colors">
-                                <i class="ri-dashboard-3-line text-3xl"></i>
-                            </div>
-                            <h4 class="font-heading font-bold text-slate-400 dark:text-white/50 text-lg tracking-tighter">Awaiting Input</h4>
-                        </div>
-                        
-                        <!-- Results State -->
-                        <div id="future-results" class="hidden w-full h-full flex flex-col z-10 relative">
-                            <div class="flex items-center justify-between mb-5">
-                                <div class="px-3 py-1 rounded-full bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 text-brand-600 dark:text-brand-400 text-[10px] font-bold transition-colors">
-                                    <i class="ri-focus-3-line mr-1"></i> <span id="res-date">--</span>
-                                </div>
-                            </div>
-                            
-                            <div class="grid grid-cols-2 gap-3 mb-5">
-                                <!-- Temperature Card -->
-                                <div class="bg-white dark:bg-white/5 rounded-2xl p-4 border border-slate-200 dark:border-white/10 shadow-sm transition-colors">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <i class="ri-temp-hot-line text-orange-500 dark:text-orange-400 text-sm"></i>
-                                        <p class="text-[8px] font-black text-slate-400 dark:text-white/40 uppercase tracking-[0.1em]">Temp</p>
-                                    </div>
-                                    <p class="text-xl font-black text-slate-800 dark:text-white/90" id="res-temp">--°</p>
-                                </div>
-                                
-                                <!-- PM2.5 Card -->
-                                <div class="bg-white dark:bg-white/5 rounded-2xl p-4 border border-slate-200 dark:border-white/10 shadow-sm transition-colors">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <i class="ri-mist-line text-slate-400 text-sm"></i>
-                                        <p class="text-[8px] font-black text-slate-400 dark:text-white/40 uppercase tracking-[0.1em]">PM2.5</p>
-                                    </div>
-                                    <p class="text-xl font-black text-slate-800 dark:text-white/90" id="res-pm25">--</p>
-                                </div>
-                            </div>
-                            
-                            <!-- AQI Hero Card -->
-                            <div class="bg-white dark:bg-white/5 rounded-2xl p-4 border border-slate-200 dark:border-white/10 flex flex-col justify-between relative overflow-hidden mb-5 shadow-sm transition-colors" id="res-aqi-card">
-                                <div class="absolute inset-0 opacity-[0.08] dark:opacity-20 transition-opacity duration-500" id="res-aqi-bg"></div>
-                                <div class="relative z-10 flex items-center justify-between mb-1">
-                                    <p class="text-[9px] font-black text-slate-500 dark:text-white/60 uppercase tracking-[0.2em]">Final AQI</p>
-                                    <i class="ri-shield-cross-line text-slate-300 dark:text-white/40"></i>
-                                </div>
-                                <div class="relative z-10">
-                                    <p class="text-4xl font-black text-slate-800 dark:text-white leading-none tracking-tighter" id="res-aqi">--</p>
-                                    <span class="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 bg-slate-100 dark:bg-white/10 rounded mt-1.5 inline-block text-slate-600 dark:text-white transition-colors" id="res-aqi-status">--</span>
-                                </div>
-                            </div>
-                            
-                            <!-- Analysis & Reasoning -->
-                            <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border-l-2 border-amber-400 dark:border-amber-500 mt-auto transition-colors">
-                                <h5 class="text-[9px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-[0.2em] mb-1">Contextual Analysis</h5>
-                                <p class="text-[11px] text-slate-600 dark:text-white/70 font-medium leading-relaxed" id="res-reason">--</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <defs>
-            <linearGradient id="aqiGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#10b981" />
-                <stop offset="50%" stop-color="#eab308" />
-                <stop offset="100%" stop-color="#ef4444" />
-            </linearGradient>
-        </defs>
+                <defs>
+                    <linearGradient id="aqiGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#10b981" />
+                        <stop offset="50%" stop-color="#eab308" />
+                        <stop offset="100%" stop-color="#ef4444" />
+                    </linearGradient>
+                </defs>
 
     </main>
 
@@ -1219,9 +1496,10 @@
         let map = null;
         let mapMarkers = [];
         let tileLayer = null;
+        let basePM25 = 65; // Global state for map sync
 
         function getMapTilesUrl(isDark) {
-            return isDark 
+            return isDark
                 ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
                 : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
         }
@@ -1239,7 +1517,7 @@
 
             try {
                 const isDark = document.documentElement.classList.contains('dark');
-                
+
                 // Initialize Map focused on Visakhapatnam
                 map = L.map('vizag-map', {
                     zoomControl: false,
@@ -1278,7 +1556,7 @@
 
         function updateMapMarkers() {
             if (!map || !locationsData) return;
-            
+
             // Clear existing markers
             mapMarkers.forEach(m => map.removeLayer(m));
             mapMarkers = [];
@@ -1287,11 +1565,13 @@
 
             Object.keys(locationsData).forEach(name => {
                 const loc = locationsData[name];
-                
-                // We'll use a sample AQI if we don't have real-time data for all stations yet
-                // In a production app, we would fetch current AQI for each station.
-                const sampleAqi = name === selectedLocationName ? (Number(document.getElementById('pm25-large')?.textContent) || 65) : (50 + Math.random() * 80);
-                const sev = getAQISeverity(sampleAqi);
+
+                // CRITICAL FIX: To ensure consistency, calculate station AQI from base PM2.5
+                // This ensures map markers match the Hero section exactly for the selected station,
+                // and show realistic calibrated values for others based on their pollution profile.
+                const stationPM25 = basePM25 * (loc.aqi_mult || 1.0);
+                const stationAQI = calculateAqiFromPm25(stationPM25);
+                const sev = getAQISeverity(stationAQI);
 
                 const icon = L.divIcon({
                     className: 'custom-marker',
@@ -1299,7 +1579,7 @@
                         <div class="relative group cursor-pointer" onclick="selectLocation('${name}', ${loc.lat}, ${loc.lon})">
                             <div class="absolute -inset-2 bg-white/20 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity"></div>
                             <div class="w-8 h-8 rounded-full border-2 border-white/20 flex flex-col items-center justify-center shadow-2xl transition-all duration-300 group-hover:scale-125" style="background: ${sev.color}">
-                                <span class="text-[10px] font-black text-white">${Math.round(sampleAqi)}</span>
+                                <span class="text-[10px] font-black text-white">${stationAQI}</span>
                             </div>
                         </div>
                     `,
@@ -1314,11 +1594,11 @@
                         <h4 class="text-xs font-bold text-white mb-2 uppercase">${name}</h4>
                         <div class="flex items-center justify-between">
                             <span class="text-[9px] font-bold text-white/50">AQI Index</span>
-                            <span class="text-xs font-black" style="color: ${sev.color}">${Math.round(sampleAqi)}</span>
+                            <span class="text-xs font-black" style="color: ${sev.color}">${stationAQI}</span>
                         </div>
                     </div>
                 `, { closeButton: false, className: 'premium-popup' });
-                
+
                 mapMarkers.push(marker);
             });
         }
@@ -1336,8 +1616,8 @@
                         data-location="${name}"
                         class="location-pill px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.12em] border transition-all duration-300 cursor-pointer flex items-center gap-2
                         ${isActive
-                            ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-cyan-400/50 text-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.15)]'
-                            : 'bg-white/5 border-white/10 text-white/40 hover:text-white/70 hover:border-white/20 hover:bg-white/10'}">
+                        ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-cyan-400/50 text-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.15)]'
+                        : 'bg-white/5 border-white/10 text-white/40 hover:text-white/70 hover:border-white/20 hover:bg-white/10'}">
                         <i class="ri-map-pin-line text-xs ${isActive ? 'text-cyan-400' : 'text-white/20'}"></i>
                         ${name}
                     </button>`;
@@ -1351,6 +1631,12 @@
 
             // Update pills UI
             renderLocationPills();
+
+            // Update Report Section Header
+            const reportLoc = document.getElementById('report-location-name');
+            if (reportLoc) reportLoc.textContent = name;
+
+            // Update Map Markers (will use current basePM25 until fetchPrediction updates it)
             updateMapMarkers();
 
             // Show active location info
@@ -1368,13 +1654,21 @@
             fetchPrediction();
         }
 
-        function downloadReport() {
-            const btn = document.getElementById('btn-download-report');
-            const range = document.getElementById('report-range')?.value || 'week';
-            
+        function downloadReport(range = 'week') {
+            const btnId = range === 'week' ? 'btn-report-week' : 'btn-report-month';
+            const btn = document.getElementById(btnId);
+            const progress = document.getElementById('report-progress');
+
             if (btn) {
-                btn.innerHTML = '<i class="ri-loader-4-line text-base animate-spin"></i> <span>Analyzing...</span>';
-                btn.disabled = true;
+                const originalHtml = btn.innerHTML;
+                btn.classList.add('pointer-events-none', 'opacity-80');
+                btn.querySelector('.ri-download-2-line').className = 'ri-loader-4-line animate-spin text-emerald-400';
+            }
+
+            if (progress) {
+                progress.classList.remove('hidden');
+                progress.style.width = '0%';
+                setTimeout(() => progress.style.width = '100%', 100);
             }
 
             let url = `/download_report?range=${range}`;
@@ -1382,21 +1676,26 @@
                 url += `&lat=${selectedLat}&lon=${selectedLon}`;
             }
 
-            // Use a hidden link to trigger the download
-            const a = document.createElement('a');
-            a.href = url;
-            // The filename is now set by the backend Content-Disposition header
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-
-            // Restore button
+            // Trigger download after a small delay to show progress animation
             setTimeout(() => {
-                if (btn) {
-                    btn.innerHTML = '<i class="ri-file-chart-line text-base"></i> <span class="hidden sm:inline">Download Intelligence PDF</span><span class="sm:hidden">PDF Report</span>';
-                    btn.disabled = false;
-                }
-            }, 3000);
+                const a = document.createElement('a');
+                a.href = url;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                // Reset UI
+                setTimeout(() => {
+                    if (progress) {
+                        progress.style.width = '0%';
+                        setTimeout(() => progress.classList.add('hidden'), 500);
+                    }
+                    if (btn) {
+                        btn.classList.remove('pointer-events-none', 'opacity-80');
+                        btn.querySelector('.ri-loader-4-line').className = 'ri-download-2-line text-white/20';
+                    }
+                }, 1000);
+            }, 1500);
         }
 
         // --- THEME & UI ---
@@ -1424,7 +1723,7 @@
         function toggleTheme() {
             const html = document.documentElement;
             const isDark = html.classList.contains('dark');
-            
+
             if (isDark) {
                 html.classList.remove('dark');
                 localStorage.setItem('theme', 'light');
@@ -1442,7 +1741,7 @@
                     maxZoom: 19,
                     attribution: '© OpenStreetMap contributors'
                 }).addTo(map);
-                
+
                 // Update markers to match new contrast
                 updateMapMarkers();
             }
@@ -1766,13 +2065,13 @@
             const tempGradient = ctx.createLinearGradient(0, 0, 0, 300);
             tempGradient.addColorStop(0, isDark ? 'rgba(249, 115, 22, 0.25)' : 'rgba(249, 115, 22, 0.35)'); // Orange
             tempGradient.addColorStop(1, 'rgba(249, 115, 22, 0.0)');
-            
+
             const tempLineColor = '#f97316'; // Orange-500
-            
+
             const rainGradient = ctx.createLinearGradient(0, 0, 0, 300);
             rainGradient.addColorStop(0, 'rgba(56, 189, 248, 0.9)'); // Cyan
             rainGradient.addColorStop(1, 'rgba(56, 189, 248, 0.2)');
-            
+
             const rainLineColor = '#38bdf8'; // Cyan-400
 
             hourlyChartInstance = new Chart(ctx, {
@@ -2009,13 +2308,13 @@
                 document.getElementById('wind-detail').innerHTML = `${data.data.wind_speed.toFixed(1)} <span class="text-[10px] opacity-40">m/s</span>`;
                 const rainProb = data.data.precipitation_probability !== undefined ? data.data.precipitation_probability : 0;
                 document.getElementById('rain-detail').innerHTML = `${rainProb}<span class="text-[10px] opacity-40">%</span> <span class="text-[9px] text-amber-400/60 ml-1">(${data.data.rainfall.toFixed(1)}mm)</span>`;
-                
+
                 const uvDetail = document.getElementById('uv-detail');
                 if (uvDetail) uvDetail.textContent = data.data.uv_index || '--';
-                
+
                 const sunriseDetail = document.getElementById('sunrise-detail');
                 if (sunriseDetail) sunriseDetail.innerHTML = `⬆ ${data.data.sunrise || '--'}`;
-                
+
                 const sunsetDetail = document.getElementById('sunset-detail');
                 if (sunsetDetail) sunsetDetail.innerHTML = `⬇ ${data.data.sunset || '--'}`;
 
@@ -2044,6 +2343,15 @@
                 const aqiValue = Number.isFinite(Number(data?.aqi?.value))
                     ? Math.round(Number(data.aqi.value))
                     : calculateAqiFromPm25(pm25);
+
+                // BACKEND SYNC: Update base PM2.5 for map markers
+                if (data.aq_mult) {
+                    basePM25 = pm25 / data.aq_mult;
+                } else {
+                    basePM25 = pm25;
+                }
+                updateMapMarkers();
+
                 document.getElementById('pm25-large').textContent = aqiValue;
                 document.getElementById('pm10-metric').innerHTML = `${Math.round(data.data.pm10)} <span class="text-[10px] opacity-40">µg/m³</span>`;
 
@@ -2157,14 +2465,14 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             const datePicker = document.getElementById("future-date-picker");
-            if(datePicker) {
+            if (datePicker) {
                 const today = new Date();
                 const future = new Date();
                 future.setFullYear(today.getFullYear() + 10);
                 datePicker.min = today.toISOString().split("T")[0];
                 datePicker.max = future.toISOString().split("T")[0];
             }
-            
+
             // Check manual theme override
             if (localStorage.getItem('theme') === 'light' || (!('theme' in localStorage) && !window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.remove('dark');
@@ -2178,40 +2486,40 @@
 
         async function fetch10YearPrediction() {
             const picker = document.getElementById("future-date-picker");
-            if(!picker.value) {
+            if (!picker.value) {
                 alert("Please select a date first.");
                 return;
             }
-            
+
             document.getElementById("future-initial").classList.add("hidden");
             document.getElementById("future-results").classList.add("hidden");
             document.getElementById("future-loading").classList.remove("hidden");
-            
+
             try {
                 const res = await fetch(`/predict_10_years?date=${picker.value}`);
                 const data = await res.json();
-                
-                if(data.error) throw new Error(data.error);
-                
+
+                if (data.error) throw new Error(data.error);
+
                 document.getElementById("res-date").textContent = formatDateStable(data.date, { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' });
                 document.getElementById("res-temp").textContent = `${data.temp}°C`;
                 document.getElementById("res-pm25").innerHTML = `${data.pm25} <span class="text-[10px] opacity-40">µg/m³</span>`;
                 document.getElementById("res-aqi").textContent = data.aqi;
                 document.getElementById("res-reason").textContent = data.reason;
-                
+
                 const severity = getAQISeverity(data.aqi);
                 document.getElementById("res-aqi-status").textContent = severity.label;
-                
+
                 // Do NOT set text color to severity color for contrast readability. Keep text white!
                 // Only change the card border and inner glow
                 document.getElementById("res-aqi-bg").style.backgroundColor = severity.color;
                 document.getElementById("res-aqi-card").style.borderColor = severity.color + '60';
-                
+
                 // We don't color the main text, it stays bold white so it's beautiful and highly visible.
-                
+
                 document.getElementById("future-loading").classList.add("hidden");
                 document.getElementById("future-results").classList.remove("hidden");
-            } catch(e) {
+            } catch (e) {
                 alert("Failed to run simulation: " + e.message);
                 document.getElementById("future-loading").classList.add("hidden");
                 document.getElementById("future-initial").classList.remove("hidden");
@@ -2380,7 +2688,11 @@
             updateNavbarState();
             initScrollReveal();
             initKeyboardShortcuts();
-            
+
+            // Sync initial report location name
+            const reportLoc = document.getElementById('report-location-name');
+            if (reportLoc) reportLoc.textContent = selectedLocationName;
+
             // Initialize 3D effects
             if (typeof VanillaTilt !== 'undefined') {
                 VanillaTilt.init(document.querySelectorAll('.glass-panel:not(#hourly-section), .glass-card, .forecast-tile'), {

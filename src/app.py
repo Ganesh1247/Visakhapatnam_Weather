@@ -1316,11 +1316,12 @@ def predict():
         pm25 = float(main_pred.get('pm2_5', 0))
         
         # Indian Calibration: Ensure AQI reflects urban reality in Visakhapatnam
-        # Vizag's PM2.5 baseline rarely drops below 35-40 in industrial/urban zones.
+        # This calibration happens AFTER the location multipliers are applied.
         if pm25 < (35 * aq_mult):
             pm25 = (35 * aq_mult) + (pm25 * 0.2)
             main_pred['pm2_5'] = round(pm25, 2)
             
+        # CRITICAL FIX: The AQI sub-index MUST be calculated from the FINAL multiplied PM2.5
         aqi_value = calculate_india_aqi_from_pm25(pm25)
         aqi_status, aqi_color = get_aqi_status_and_color(aqi_value)
         
@@ -1329,6 +1330,7 @@ def predict():
             'location_name': loc_name,
             'location_type': loc_type,
             'data': main_pred,
+            'aq_mult': aq_mult, # Explicitly include mult for frontend sync
             'aqi': {
                 'value': aqi_value,
                 'status': aqi_status,
