@@ -418,6 +418,17 @@
 
     <!-- Main Content -->
     <main class="pt-32 pb-20 px-6 max-w-7xl mx-auto w-full flex-grow relative z-10">
+        
+        <!-- Push Notification Status Bar (Debug/Info) -->
+        <div id="push-status-bar" class="mb-4 hidden">
+            <div class="flex items-center justify-between px-6 py-3 rounded-2xl bg-brand-500/10 border border-brand-500/20 backdrop-blur-md">
+                <div class="flex items-center gap-3">
+                    <i class="ri-notification-3-line text-brand-400"></i>
+                    <span class="text-[10px] font-bold text-white/70 uppercase tracking-widest" id="push-status-text">Checking Notification Sync...</span>
+                </div>
+                <button onclick="webpushr('showPrompt')" class="text-[9px] font-black text-brand-400 uppercase tracking-widest hover:underline">Enable Alerts</button>
+            </div>
+        </div>
 
         <!-- Top Hero Section (Unified Current Weather) -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
@@ -2701,6 +2712,25 @@
                     glare: true,
                     "max-glare": 0.2,
                     perspective: 1000
+                });
+            }
+
+            // --- Webpushr Status Helper ---
+            if (typeof webpushr !== 'undefined') {
+                webpushr('isSubscribed', function(subscribed) {
+                    const statusBox = document.getElementById('push-status-bar');
+                    const statusTxt = document.getElementById('push-status-text');
+                    if (statusBox && statusTxt) {
+                        if (subscribed) {
+                            statusTxt.textContent = "Notification Sync Active: Laptop System Alerts Enabled";
+                            statusBox.classList.remove('hidden');
+                            // Hide after 6s to keep UI clean
+                            setTimeout(() => statusBox.style.display = 'none', 6000);
+                        } else {
+                            statusTxt.textContent = "Laptop System Alerts Not Active. Enable for Live Updates.";
+                            statusBox.classList.remove('hidden');
+                        }
+                    }
                 });
             }
 

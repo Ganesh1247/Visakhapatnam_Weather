@@ -219,11 +219,12 @@ def send_webpushr_notification(msg_body: str):
     # Parse title out of the message body (usually the first line)
     title = msg_body.split('\n')[0].strip() if msg_body else "EcoGlance AQI & Weather Alert"
     
+    site_url = os.environ.get('SITE_URL', 'http://127.0.0.1:5000')
     payload = {
         "title": title,
         "message": msg_body,
-        "target_url": "/", # Relative routing to root
-        "icon": "https://ganesh1247-visakhapatnam-weather.hf.space/static/favicon.svg"
+        "target_url": site_url, 
+        "icon": f"{site_url.rstrip('/')}/static/favicon.svg"
     }
     
     try:

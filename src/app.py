@@ -1528,10 +1528,13 @@ def trigger_push():
                     "Content-Type": "application/json"
                 }
                 
+                # Dynamically use the current host URL if available, else fallback to .env
+                site_url = request.host_url.rstrip('/') if request else os.environ.get('SITE_URL', 'http://127.0.0.1:5000')
+                
                 payload = {
                     "title": "EcoGlance INSTANT Alert!",
                     "message": f"AQI: {aqi} | Temp: {temp}°C | Rain Chance: {rain}%",
-                    "target_url": "https://ganesh1247-visakhapatnam-weather.hf.space"
+                    "target_url": site_url
                 }
                 
                 res = requests.post(url, headers=headers, json=payload, timeout=10)
@@ -1545,12 +1548,11 @@ def trigger_push():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-def wephush_background_job():
+def webpushr_background_job():
+    # Wait for models to load and server to stabilize before first run
+    time.sleep(30)
+    
     while True:
-        # Sleep for exactly 5 hours (18000 seconds) BEFORE triggering the automated push.
-        # This prevents spamming notifications every time the server restarts.
-        time.sleep(5 * 3600)
-        
         try:
             webpushr_key = os.environ.get('WEBPUSHR_KEY')
             webpushr_token = os.environ.get('WEBPUSHR_TOKEN')
@@ -1577,14 +1579,15 @@ def wephush_background_job():
                                     "Content-Type": "application/json"
                                 }
                                 
+                                site_url = os.environ.get('SITE_URL', 'http://127.0.0.1:5000')
                                 payload = {
                                     "title": "EcoGlance Air Quality & Weather Update",
                                     "message": f"AQI: {aqi} | Temp: {temp}°C | Rain Chance: {rain}%",
-                                    "target_url": "https://ganesh1247-visakhapatnam-weather.hf.space"
+                                    "target_url": site_url
                                 }
                                 
                                 res = requests.post(url, headers=headers, json=payload, timeout=10)
-                                print(f"[Webpushr] 5-Hour Campaign triggered: HTTP {res.status_code}")
+                                print(f"[Webpushr] Campaign triggered: HTTP {res.status_code}")
                             else:
                                 print("[Webpushr] Empty response from /predict")
                         else:
@@ -1593,15 +1596,30 @@ def wephush_background_job():
                 print("[Webpushr] Keys missing in environment. Cannot send.")
         except Exception as e:
             print(f"[Webpushr] Background job error: {str(e)}")
+            
+        # Sleep for exactly 5 hours before next automated push.
+        time.sleep(5 * 3600)
 
 # Start the notification daemon thread globally, but prevent double-execution when Flask reloader is active
 if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
-    push_thread = threading.Thread(target=wephush_background_job, daemon=True)
+    push_thread = threading.Thread(target=webpushr_background_job, daemon=True)
     push_thread.start()
 
 if __name__ == '__main__':
-    print("\n" + "="*50)
-    print("  EcoGlance - Open in browser: http://127.0.0.1:5000")
-    print("="*50 + "\n")
+    host_ip = "127.0.0.1"
+    try:
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        host_ip = s.getsockname()[0]
+        s.close()
+    except: pass
+
     port = int(os.environ.get("PORT", 5000))
+    print("\n" + "="*60)
+    print("  EcoGlance AI Dashboard is now running!")
+    print(f"  Local Host:    http://127.0.0.1:{port}")
+    print(f"  Network/Phone: http://{host_ip}:{port}")
+    print("="*60 + "\n")
+    
     app.run(host='0.0.0.0', debug=True, port=port)
