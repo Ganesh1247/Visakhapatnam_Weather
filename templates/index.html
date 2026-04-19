@@ -78,9 +78,48 @@
             }
         }
 
-        /* Adjust UI for gloomy rain */
+        /* Netflix-style Cinematic Atmospheres */
         .is-raining .bg-mesh {
-            filter: grayscale(0.5) brightness(0.7);
+            filter: grayscale(0.6) brightness(0.6) contrast(1.2);
+            animation: lightning 12s infinite;
+        }
+
+        .is-heating .bg-mesh {
+            filter: saturate(1.5) brightness(1.1);
+            animation: heatPulse 4s infinite alternate ease-in-out;
+        }
+
+        .bg-mesh {
+            transition: filter 2s ease, background 2s ease;
+        }
+
+        @keyframes lightning {
+            0%, 95%, 98%, 100% { filter: grayscale(0.6) brightness(0.6) contrast(1.2); }
+            96%, 99% { filter: grayscale(0) brightness(2) contrast(1.5); }
+        }
+
+        @keyframes heatPulse {
+            0% { filter: saturate(1.5) brightness(1.1); }
+            100% { filter: saturate(1.8) brightness(1.3); }
+        }
+
+        /* Ember Animation */
+        .ember {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: #ff5e00;
+            box-shadow: 0 0 10px #ff0000, 0 0 20px #ff5e00;
+            bottom: -5%;
+            animation: floatEmber linear infinite;
+        }
+
+        @keyframes floatEmber {
+            0% { transform: translateY(0) scale(1); opacity: 0; }
+            10% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translateY(-110vh) scale(0.5) translateX(calc(-50px + 100px * var(--drift))); opacity: 0; }
         }
 
         .bg-mesh {
@@ -102,7 +141,7 @@
         }
 
         .glass-card:hover {
-            transform: translateY(-2px);
+            
             border-color: rgba(103, 232, 249, 0.45);
         }
 
@@ -137,13 +176,13 @@
             height: 55%;
             background: radial-gradient(circle at 50% 50%, rgba(34, 211, 238, 0.18), transparent 65%);
             pointer-events: none;
-            transform: translateY(-18px);
+            
             transition: opacity 0.24s ease, transform 0.24s ease;
             opacity: 0.65;
         }
 
         .forecast-tile:hover {
-            transform: translateY(-5px);
+            
             border-color: rgba(34, 211, 238, 0.5);
             box-shadow: 0 18px 32px rgba(8, 145, 178, 0.2);
             background: linear-gradient(160deg, rgba(34, 211, 238, 0.15), rgba(255, 255, 255, 0.04));
@@ -158,19 +197,19 @@
         .forecast-tile:hover::before,
         .forecast-tile.forecast-active::before {
             opacity: 1;
-            transform: translateY(0);
+            
         }
 
         .forecast-tile .hourly-chip {
             opacity: 0;
-            transform: translateY(4px);
+            
             transition: opacity 0.2s ease, transform 0.2s ease;
         }
 
         .forecast-tile:hover .hourly-chip,
         .forecast-tile.forecast-active .hourly-chip {
             opacity: 1;
-            transform: translateY(0);
+            
         }
 
         .forecast-metric {
@@ -220,7 +259,7 @@
         #navbar {
             background: linear-gradient(to bottom, rgba(3, 10, 18, 0.9), rgba(3, 10, 18, 0.58));
             border-bottom-color: rgba(103, 232, 249, 0.14);
-            transform: translateY(0);
+            
         }
 
         #navbar.nav-scrolled {
@@ -275,11 +314,134 @@
             background: transparent !important;
             border: none !important;
         }
+
+        /* Netflix-style Entrance Reveal */
+        .reveal-init {
+            opacity: 0;
+            transform: translateY(40px) scale(0.98);
+            transition: opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1), transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform, opacity;
+        }
+
+        .reveal-visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        /* AI Scanning Line Effect */
+        .ai-scan-container {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ai-scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.8), transparent);
+            box-shadow: 0 0 15px rgba(34, 211, 238, 0.6);
+            z-index: 5;
+            animation: scanVertical 4s infinite linear;
+            pointer-events: none;
+        }
+
+        @keyframes scanVertical {
+            0% { top: -5%; opacity: 0; }
+            5% { opacity: 1; }
+            95% { opacity: 1; }
+            100% { top: 105%; opacity: 0; }
+        }
+
+        /* Shimmer Loading State */
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* Premium Glass Interactions */
+        .glass-panel {
+            transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.4s ease;
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(103, 232, 249, 0.2);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-premium:active {
+            transform: scale(0.96) translateY(1px);
+        }
+
+        /* Forecast Staggered Entrance */
+        .forecast-tile {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: entrySlideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        @keyframes entrySlideUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* AI Status Toast */
+        #ai-toast-container {
+            position: fixed;
+            top: 5.5rem;
+            right: 1.5rem;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            pointer-events: none;
+        }
+
+        .ai-toast {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            border-left: 3px solid #22d3ee;
+            padding: 1rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 280px;
+            transform: translateX(120%);
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+            pointer-events: auto;
+        }
+
+        .ai-toast.visible {
+            transform: translateX(0);
+        }
+
+        .ai-toast-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            background: rgba(34, 211, 238, 0.1);
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #22d3ee;
+        }
     </style>
 </head>
 
 <body
     class="bg-mesh font-sans antialiased text-slate-200 min-h-screen selection:bg-brand-500 selection:text-white transition-all duration-700 flex flex-col overflow-x-hidden">
+
+    <!-- AI Toast Notification Area -->
+    <div id="ai-toast-container"></div>
 
     <!-- Rain Container -->
     <div id="rain-container"
@@ -306,7 +468,7 @@
             <div class="flex items-center gap-4 group cursor-pointer" onclick="location.reload()">
                 <div class="relative">
                     <div
-                        class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-brand-400 to-sky-600 flex items-center justify-center shadow-lg shadow-brand-500/20 group-hover:rotate-12 transition-transform duration-500">
+                        class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-brand-400 to-sky-600 flex items-center justify-center shadow-lg shadow-brand-500/20  transition-transform duration-500">
                         <i class="ri-leaf-line text-xl sm:text-2xl text-white"></i>
                     </div>
                 </div>
@@ -339,7 +501,7 @@
                         class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white transition-all">
                         <i class="ri-refresh-line text-lg"></i>
                     </button>
-                    <button onclick="document.getElementById('stats-modal').classList.remove('hidden')"
+                    <button onclick="fetchStats(); document.getElementById('stats-modal').classList.remove('hidden')"
                         class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white transition-all">
                         <i class="ri-bar-chart-box-line text-lg"></i>
                     </button>
@@ -402,8 +564,8 @@
                         <i class="ri-refresh-line"></i> Sync Data
                     </button>
                     <button
-                        onclick="document.getElementById('stats-modal').classList.remove('hidden'); toggleMobileMenu()"
-                        class="flex items-center justify-center gap-3 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-sm">
+                        onclick="fetchStats(); document.getElementById('stats-modal').classList.remove('hidden'); toggleMobileMenu()"
+                        class="btn-premium flex items-center justify-center gap-3 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-sm">
                         <i class="ri-bar-chart-box-line"></i> Diagnostics
                     </button>
                 </div>
@@ -441,7 +603,7 @@
 
                     <!-- Left: Large Gauge -->
                     <div
-                        class="relative w-48 h-48 sm:w-64 sm:h-64 flex-shrink-0 group-hover:scale-105 transition-transform duration-700">
+                        class="relative w-48 h-48 sm:w-64 sm:h-64 flex-shrink-0  transition-transform duration-700">
                         <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                             <defs>
                                 <linearGradient id="aqi-glow" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -531,7 +693,7 @@
                             <span class="text-white/40 text-[9px] font-bold uppercase tracking-widest"
                                 id="current-date">--</span>
                         </div>
-                        <div class="text-6xl filter drop-shadow-[0_0_20px_rgba(255,255,255,0.2)] group-hover:scale-110 transition-transform duration-500"
+                        <div class="text-6xl filter drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]  transition-transform duration-500"
                             id="weather-icon-main">☀️</div>
                     </div>
 
@@ -576,7 +738,7 @@
                             <p class="text-[8px] font-black text-white/30 uppercase tracking-[0.2em] mb-2">Pressure</p>
                             <div class="flex items-center gap-2">
                                 <i class="ri-speed-mini-line text-purple-400 text-lg"></i>
-                                <span class="font-bold text-white/90 text-sm">1012 <span
+                                <span class="font-bold text-white/90 text-sm" id="pressure-detail">-- <span
                                         class="text-[8px] opacity-40">hPa</span></span>
                             </div>
                         </div>
@@ -633,28 +795,28 @@
                 <div class="space-y-4">
                     <div class="flex items-center gap-3 group/leg">
                         <div
-                            class="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)] group-hover/leg:scale-125 transition">
+                            class="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]  transition">
                         </div>
                         <span class="text-[11px] font-bold text-white/60">0 - 50 <span
                                 class="text-[9px] text-white/30 uppercase ml-2">Good</span></span>
                     </div>
                     <div class="flex items-center gap-3 group/leg">
                         <div
-                            class="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.6)] group-hover/leg:scale-125 transition">
+                            class="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.6)]  transition">
                         </div>
                         <span class="text-[11px] font-bold text-white/60">51 - 100 <span
                                 class="text-[9px] text-white/30 uppercase ml-2">Moderate</span></span>
                     </div>
                     <div class="flex items-center gap-3 group/leg">
                         <div
-                            class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.6)] group-hover/leg:scale-125 transition">
+                            class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.6)]  transition">
                         </div>
                         <span class="text-[11px] font-bold text-white/60">101 - 200 <span
                                 class="text-[9px] text-white/30 uppercase ml-2">Poor</span></span>
                     </div>
                     <div class="flex items-center gap-3 group/leg">
                         <div
-                            class="w-2.5 h-2.5 rounded-full bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.6)] group-hover/leg:scale-125 transition">
+                            class="w-2.5 h-2.5 rounded-full bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.6)]  transition">
                         </div>
                         <span class="text-[11px] font-bold text-white/60">201+ <span
                                 class="text-[9px] text-white/30 uppercase ml-2">Hazardous</span></span>
@@ -664,7 +826,7 @@
         </div>
 
         <!-- Location Selector & Report Download -->
-        <div id="location-report-section" class="mb-12 space-y-6">
+        <div id="location-report-section" class="mb-12 space-y-6 reveal-init">
             <!-- Location Selector Bar -->
             <div
                 class="glass-panel rounded-[40px] p-5 sm:p-6 relative overflow-hidden border border-white/5 hover:border-white/15 transition-all">
@@ -714,7 +876,7 @@
             <!-- Forecast Visuals -->
             <div class="lg:col-span-8 space-y-8">
                 <!-- HOURLY FORECAST (CAROUSEL) -->
-                <div id="hourly-section" class="glass-panel rounded-[40px] p-5 sm:p-8 relative group">
+                <div id="hourly-section" class="glass-panel rounded-[40px] p-5 sm:p-8 relative group reveal-init">
                     <div class="flex justify-between items-center mb-6">
                         <div class="flex items-center gap-4">
                             <div
@@ -776,7 +938,7 @@
                 </div>
 
                 <!-- Trend Chart -->
-                <div id="graph-analysis-section" class="glass-panel rounded-[40px] p-6 sm:p-8">
+                <div id="graph-analysis-section" class="glass-panel rounded-[40px] p-6 sm:p-8 reveal-init">
                     <div class="flex justify-between items-center mb-10">
                         <div class="flex items-center gap-4">
                             <div
@@ -819,116 +981,15 @@
                     </div>
                 </div>
 
-                <!-- Atmospheric Composition Breakdown -->
-                <div
-                    class="glass-panel rounded-[40px] p-6 sm:p-8 relative group overflow-hidden border border-slate-200 dark:border-white/5 bg-transparent transition-colors">
-                    <!-- Decorative backglow -->
-                    <div
-                        class="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
-                    </div>
+                <!-- Removed Atmospheric Composition as requested -->
 
-                    <div class="flex items-center gap-4 mb-8 relative z-10">
-                        <div
-                            class="w-10 h-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-md shadow-emerald-500/20">
-                            <i class="ri-test-tube-line text-xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-heading font-black text-lg text-slate-800 dark:text-white/90">Atmospheric
-                                Composition</h3>
-                            <p
-                                class="text-[10px] text-slate-500 dark:text-white/30 font-bold uppercase tracking-widest mt-0.5">
-                                Secondary Trace Gases</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
-                        <!-- O3 Gauge -->
-                        <div
-                            class="bg-white/80 dark:bg-black/20 p-5 rounded-3xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center text-center shadow-sm relative transition-colors group/card hover:bg-white dark:hover:bg-white/5">
-                            <i
-                                class="ri-cloud-windy-line text-slate-200 dark:text-white/5 absolute top-3 right-3 text-lg pointer-events-none group-hover/card:text-blue-500/20 transition-colors"></i>
-                            <div
-                                class="relative w-16 h-16 rounded-full border-4 border-emerald-500/20 flex items-center justify-center mb-4 inner-glow">
-                                <div
-                                    class="absolute inset-[-4px] rounded-full border-4 border-transparent border-t-emerald-400 rotate-45 group-hover/card:rotate-[225deg] transition-transform duration-1000 ease-in-out">
-                                </div>
-                                <span class="font-black text-slate-800 dark:text-white/90 text-sm z-10">34<span
-                                        class="text-[8px] text-slate-400 dark:text-white/40 block -mt-1 tracking-tight">µg/m³</span></span>
-                            </div>
-                            <span
-                                class="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-[0.2em] mb-1">Ozone
-                                (O₃)</span>
-                            <span
-                                class="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-sm">Good</span>
-                        </div>
-
-                        <!-- NO2 Gauge -->
-                        <div
-                            class="bg-white/80 dark:bg-black/20 p-5 rounded-3xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center text-center shadow-sm relative transition-colors group/card hover:bg-white dark:hover:bg-white/5">
-                            <i
-                                class="ri-car-washing-line text-slate-200 dark:text-white/5 absolute top-3 right-3 text-lg pointer-events-none group-hover/card:text-amber-500/20 transition-colors"></i>
-                            <div
-                                class="relative w-16 h-16 rounded-full border-4 border-amber-500/20 flex items-center justify-center mb-4 inner-glow">
-                                <div
-                                    class="absolute inset-[-4px] rounded-full border-4 border-transparent border-b-amber-400 -rotate-45 group-hover/card:rotate-[135deg] transition-transform duration-1000 ease-in-out">
-                                </div>
-                                <span class="font-black text-slate-800 dark:text-white/90 text-sm z-10">21<span
-                                        class="text-[8px] text-slate-400 dark:text-white/40 block -mt-1 tracking-tight">µg/m³</span></span>
-                            </div>
-                            <span
-                                class="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-[0.2em] mb-1">Nitrogen
-                                Di.</span>
-                            <span
-                                class="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded-sm">Moderate</span>
-                        </div>
-
-                        <!-- SO2 Gauge -->
-                        <div
-                            class="bg-white/80 dark:bg-black/20 p-5 rounded-3xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center text-center shadow-sm relative transition-colors group/card hover:bg-white dark:hover:bg-white/5">
-                            <i
-                                class="ri-building-3-line text-slate-200 dark:text-white/5 absolute top-3 right-3 text-lg pointer-events-none group-hover/card:text-emerald-500/20 transition-colors"></i>
-                            <div
-                                class="relative w-16 h-16 rounded-full border-4 border-emerald-500/20 flex items-center justify-center mb-4 inner-glow">
-                                <div
-                                    class="absolute inset-[-4px] rounded-full border-4 border-transparent border-l-emerald-400 rotate-90 group-hover/card:rotate-[270deg] transition-transform duration-1000 ease-in-out">
-                                </div>
-                                <span class="font-black text-slate-800 dark:text-white/90 text-sm z-10">8<span
-                                        class="text-[8px] text-slate-400 dark:text-white/40 block -mt-1 tracking-tight">µg/m³</span></span>
-                            </div>
-                            <span
-                                class="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-[0.2em] mb-1">Sulfur
-                                Di.</span>
-                            <span
-                                class="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-sm">Good</span>
-                        </div>
-
-                        <!-- CO Gauge -->
-                        <div
-                            class="bg-white/80 dark:bg-black/20 p-5 rounded-3xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center text-center shadow-sm relative transition-colors group/card hover:bg-white dark:hover:bg-white/5">
-                            <i
-                                class="ri-fire-line text-slate-200 dark:text-white/5 absolute top-3 right-3 text-lg pointer-events-none group-hover/card:text-emerald-500/20 transition-colors"></i>
-                            <div
-                                class="relative w-16 h-16 rounded-full border-4 border-emerald-500/20 flex items-center justify-center mb-4 inner-glow">
-                                <div
-                                    class="absolute inset-[-4px] rounded-full border-4 border-transparent border-r-emerald-400 -rotate-90 group-hover/card:rotate-[90deg] transition-transform duration-1000 ease-in-out">
-                                </div>
-                                <span class="font-black text-slate-800 dark:text-white/90 text-sm z-10">310<span
-                                        class="text-[8px] text-slate-400 dark:text-white/40 block -mt-1 tracking-tight">µg/m³</span></span>
-                            </div>
-                            <span
-                                class="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-[0.2em] mb-1">Carbon
-                                Mon.</span>
-                            <span
-                                class="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-sm">Good</span>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- Right Column: Advisory -->
             <div id="air-quality-section" class="lg:col-span-4 w-full relative">
                 <div class="sticky top-6 space-y-6 pb-12">
-                    <div class="glass-panel rounded-[40px] p-6 sm:p-8 h-max">
+                    <div class="glass-panel rounded-[40px] p-6 sm:p-8 h-max reveal-init ai-scan-container">
+                        <div class="ai-scan-line"></div>
                         <div class="flex items-center gap-4 mb-10">
                             <div
                                 class="w-10 h-10 rounded-2xl bg-red-500/20 flex items-center justify-center text-red-400">
@@ -1046,7 +1107,7 @@
 
                     <!-- Decade Prediction Section -->
                     <div
-                        class="glass-panel rounded-[40px] p-6 sm:p-8 border border-white/5 hover:border-white/20 dark:border-white/5 relative overflow-hidden group transition-all duration-500">
+                        class="glass-panel rounded-[40px] p-6 sm:p-8 border border-white/5 hover:border-white/20 dark:border-white/5 relative overflow-hidden group transition-all duration-500 reveal-init">
                         <div
                             class="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-transparent to-amber-500/5 group-hover:opacity-100 transition-opacity duration-700">
                         </div>
@@ -1183,113 +1244,117 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Intelligence Reporting Hub -->
-                    <div id="reporting-section"
-                        class="mt-12 mb-12 glass-panel rounded-[40px] p-6 sm:p-10 relative overflow-hidden group border border-white/5 hover:border-white/15 transition-all duration-500 reveal-init">
-                        <div
-                            class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-brand-500/5 pointer-events-none">
-                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
-                            <div class="max-w-xl">
-                                <div class="flex items-center gap-4 mb-6">
-                                    <div
-                                        class="w-12 h-12 rounded-3xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/20">
-                                        <i class="ri-file-list-3-line text-2xl"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="font-heading font-black text-2xl text-white tracking-tighter">
-                                            Intelligence Reporting Hub</h3>
-                                        <p
-                                            class="text-[10px] text-emerald-500 font-bold uppercase tracking-[0.3em] mt-1">
-                                            Export Environmental Insights</p>
-                                    </div>
-                                </div>
-                                <p class="text-sm text-white/40 leading-relaxed font-medium mb-8">
-                                    Generate and download comprehensive atmospheric analysis reports for <span
-                                        class="text-white/80" id="report-location-name">Visakhapatnam Center</span>.
-                                    Our AI processes historical trends, satellite data, and ground observations to
-                                    produce these scientific summaries.
-                                </p>
+    <!-- Intelligence Reporting Hub (Full Width Bottom Section) -->
+    <div id="reporting-section"
+        class="mt-12 mb-12 glass-panel rounded-[40px] p-6 sm:p-10 relative overflow-hidden group border border-white/5 hover:border-white/15 transition-all duration-500 reveal-init">
+                <div
+                    class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-brand-500/5 pointer-events-none">
+                </div>
 
-                                <div class="flex flex-wrap gap-4">
-                                    <div
-                                        class="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-2xl border border-white/10">
-                                        <i class="ri-check-circle-fill text-emerald-500 text-sm"></i>
-                                        <span
-                                            class="text-[10px] font-bold text-white/60 uppercase tracking-widest">Trend
-                                            Visualization</span>
-                                    </div>
-                                    <div
-                                        class="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-2xl border border-white/10">
-                                        <i class="ri-check-circle-fill text-emerald-500 text-sm"></i>
-                                        <span
-                                            class="text-[10px] font-bold text-white/60 uppercase tracking-widest">Safety
-                                            Recommendations</span>
-                                    </div>
-                                    <div
-                                        class="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-2xl border border-white/10">
-                                        <i class="ri-check-circle-fill text-emerald-500 text-sm"></i>
-                                        <span
-                                            class="text-[10px] font-bold text-white/60 uppercase tracking-widest">Scientific
-                                            Indices</span>
-                                    </div>
-                                </div>
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
+                    <div class="max-w-xl">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div
+                                class="w-12 h-12 rounded-3xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/20">
+                                <i class="ri-file-list-3-line text-2xl"></i>
                             </div>
-
-                            <div class="flex flex-col sm:flex-row gap-4 lg:min-w-[400px]">
-                                <!-- Weekly Card -->
-                                <button onclick="downloadReport('week')" id="btn-report-week"
-                                    class="flex-1 glass-card p-6 rounded-3xl border border-white/10 bg-white/5 hover:bg-emerald-500/10 hover:border-emerald-500/40 transition-all text-left group/card">
-                                    <div class="flex justify-between items-start mb-4">
-                                        <div
-                                            class="w-10 h-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover/card:scale-110 transition-transform">
-                                            <i class="ri-calendar-check-line text-xl"></i>
-                                        </div>
-                                        <i
-                                            class="ri-download-2-line text-white/20 group-hover/card:text-emerald-400 group-hover/card:translate-y-1 transition-all"></i>
-                                    </div>
-                                    <h4 class="font-bold text-white mb-1">Weekly Digest</h4>
-                                    <p class="text-[10px] text-white/30 uppercase font-black tracking-widest mb-4">Past
-                                        7 Days</p>
-                                    <div
-                                        class="flex items-center gap-2 text-[9px] font-black text-emerald-500/80 uppercase tracking-widest mt-auto">
-                                        <span>Download PDF</span>
-                                        <i class="ri-arrow-right-s-line"></i>
-                                    </div>
-                                </button>
-
-                                <!-- Monthly Card -->
-                                <button onclick="downloadReport('month')" id="btn-report-month"
-                                    class="flex-1 glass-card p-6 rounded-3xl border border-white/10 bg-white/5 hover:bg-brand-500/10 hover:border-brand-500/40 transition-all text-left group/card">
-                                    <div class="flex justify-between items-start mb-4">
-                                        <div
-                                            class="w-10 h-10 rounded-2xl bg-brand-500/20 flex items-center justify-center text-brand-400 group-hover/card:scale-110 transition-transform">
-                                            <i class="ri-archive-line text-xl"></i>
-                                        </div>
-                                        <i
-                                            class="ri-download-2-line text-white/20 group-hover/card:text-brand-400 group-hover/card:translate-y-1 transition-all"></i>
-                                    </div>
-                                    <h4 class="font-bold text-white mb-1">Monthly Analytics</h4>
-                                    <p class="text-[10px] text-white/30 uppercase font-black tracking-widest mb-4">Past
-                                        30 Days</p>
-                                    <div
-                                        class="flex items-center gap-2 text-[9px] font-black text-brand-400/80 uppercase tracking-widest mt-auto">
-                                        <span>Download PDF</span>
-                                        <i class="ri-arrow-right-s-line"></i>
-                                    </div>
-                                </button>
+                            <div>
+                                <h3 class="font-heading font-black text-2xl text-white tracking-tighter">
+                                    Intelligence Reporting Hub</h3>
+                                <p
+                                    class="text-[10px] text-emerald-500 font-bold uppercase tracking-[0.3em] mt-1">
+                                    Export Environmental Insights</p>
                             </div>
                         </div>
+                        <p class="text-sm text-white/40 leading-relaxed font-medium mb-8">
+                            Generate and download comprehensive atmospheric analysis reports for <span
+                                class="text-white/80" id="report-location-name">Visakhapatnam Center</span>.
+                            Our AI processes historical trends, satellite data, and ground observations to
+                            produce these scientific summaries.
+                        </p>
 
-                        <!-- Bottom Progress bar (hidden by default) -->
-                        <div id="report-progress"
-                            class="hidden absolute bottom-0 left-0 h-1 bg-emerald-500 transition-all duration-[3000ms] ease-out"
-                            style="width: 0%"></div>
+                        <div class="flex flex-wrap gap-4">
+                            <div
+                                class="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-2xl border border-white/10">
+                                <i class="ri-check-circle-fill text-emerald-500 text-sm"></i>
+                                <span
+                                    class="text-[10px] font-bold text-white/60 uppercase tracking-widest">Trend
+                                    Visualization</span>
+                            </div>
+                            <div
+                                class="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-2xl border border-white/10">
+                                <i class="ri-check-circle-fill text-emerald-500 text-sm"></i>
+                                <span
+                                    class="text-[10px] font-bold text-white/60 uppercase tracking-widest">Safety
+                                    Recommendations</span>
+                            </div>
+                            <div
+                                class="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-2xl border border-white/10">
+                                <i class="ri-check-circle-fill text-emerald-500 text-sm"></i>
+                                <span
+                                    class="text-[10px] font-bold text-white/60 uppercase tracking-widest">Scientific
+                                    Indices</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-4 lg:min-w-[400px]">
+                        <!-- Weekly Card -->
+                        <button onclick="downloadReport('week')" id="btn-report-week"
+                            class="flex-1 glass-card p-6 rounded-3xl border border-white/10 bg-white/5 hover:bg-emerald-500/10 hover:border-emerald-500/40 transition-all text-left group/card">
+                            <div class="flex justify-between items-start mb-4">
+                                <div
+                                    class="w-10 h-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover/card:scale-110 transition-transform">
+                                    <i class="ri-calendar-check-line text-xl"></i>
+                                </div>
+                                <i
+                                    class="ri-download-2-line text-white/20 group-hover/card:text-emerald-400 group-hover/card:translate-y-1 transition-all"></i>
+                            </div>
+                            <h4 class="font-bold text-white mb-1">Weekly Digest</h4>
+                            <p class="text-[10px] text-white/30 uppercase font-black tracking-widest mb-4">Past
+                                7 Days</p>
+                            <div
+                                class="flex items-center gap-2 text-[9px] font-black text-emerald-500/80 uppercase tracking-widest mt-auto">
+                                <span>Download PDF</span>
+                                <i class="ri-arrow-right-s-line"></i>
+                            </div>
+                        </button>
+
+                        <!-- Monthly Card -->
+                        <button onclick="downloadReport('month')" id="btn-report-month"
+                            class="flex-1 glass-card p-6 rounded-3xl border border-white/10 bg-white/5 hover:bg-brand-500/10 hover:border-brand-500/40 transition-all text-left group/card">
+                            <div class="flex justify-between items-start mb-4">
+                                <div
+                                    class="w-10 h-10 rounded-2xl bg-brand-500/20 flex items-center justify-center text-brand-400 group-hover/card:scale-110 transition-transform">
+                                    <i class="ri-archive-line text-xl"></i>
+                                </div>
+                                <i
+                                    class="ri-download-2-line text-white/20 group-hover/card:text-brand-400 group-hover/card:translate-y-1 transition-all"></i>
+                            </div>
+                            <h4 class="font-bold text-white mb-1">Monthly Analytics</h4>
+                            <p class="text-[10px] text-white/30 uppercase font-black tracking-widest mb-4">Past
+                                30 Days</p>
+                            <div
+                                class="flex items-center gap-2 text-[9px] font-black text-brand-400/80 uppercase tracking-widest mt-auto">
+                                <span>Download PDF</span>
+                                <i class="ri-arrow-right-s-line"></i>
+                            </div>
+                        </button>
                     </div>
                 </div>
 
-                <defs>
+                <!-- Bottom Progress bar (hidden by default) -->
+                <div id="report-progress"
+                    class="hidden absolute bottom-0 left-0 h-1 bg-emerald-500 transition-all duration-[3000ms] ease-out"
+                    style="width: 0%"></div>
+            </div>
+
+            <defs>
                     <linearGradient id="aqiGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                         <stop offset="0%" stop-color="#10b981" />
                         <stop offset="50%" stop-color="#eab308" />
@@ -1498,6 +1563,7 @@
         let currentMethod = 'mc_dropout';
         let currentDataCache = null;
         let forecastChart = null;
+        let fullForecastData = []; // Store all 7 days for hero panel updates
 
         // --- LOCATION STATE ---
         let selectedLat = null;
@@ -1589,7 +1655,7 @@
                     html: `
                         <div class="relative group cursor-pointer" onclick="selectLocation('${name}', ${loc.lat}, ${loc.lon})">
                             <div class="absolute -inset-2 bg-white/20 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            <div class="w-8 h-8 rounded-full border-2 border-white/20 flex flex-col items-center justify-center shadow-2xl transition-all duration-300 group-hover:scale-125" style="background: ${sev.color}">
+                            <div class="w-8 h-8 rounded-full border-2 border-white/20 flex flex-col items-center justify-center shadow-2xl transition-all duration-300 " style="background: ${sev.color}">
                                 <span class="text-[10px] font-black text-white">${stationAQI}</span>
                             </div>
                         </div>
@@ -1804,6 +1870,7 @@
         function initChart(forecastData) {
             if (!forecastData || forecastData.length === 0) return;
             currentDataCache = { forecast: forecastData };
+            fullForecastData = forecastData; // Keep reference for day-switching
 
             const ctxCheck = document.getElementById('forecastChart');
             if (!ctxCheck) return;
@@ -1992,11 +2059,17 @@
             setHourlyView('cards');
         }
 
-        function toggleRainAnimation(isRaining) {
+        function applyAtmosphericEffects(temp, rain) {
             const container = document.getElementById('rain-container');
             if (!container) return;
+            
+            const isRaining = rain > 0.5;
+            const isHeating = temp >= 35;
+
+            // Handle Rain
             if (isRaining) {
-                if (container.children.length === 0) {
+                if (container.children.length === 0 || document.documentElement.classList.contains('is-heating')) {
+                    container.innerHTML = '';
                     const dropCount = document.body.clientWidth < 768 ? 50 : 150;
                     for (let i = 0; i < dropCount; i++) {
                         const drop = document.createElement('div');
@@ -2010,9 +2083,38 @@
                 container.style.opacity = '1';
                 document.documentElement.classList.add('is-raining');
             } else {
-                container.style.opacity = '0';
-                setTimeout(() => { if (!document.documentElement.classList.contains('is-raining')) container.innerHTML = ''; }, 1000);
                 document.documentElement.classList.remove('is-raining');
+            }
+
+            // Handle Heat
+            if (isHeating && !isRaining) {
+                if (container.children.length === 0 || document.documentElement.classList.contains('is-raining')) {
+                    container.innerHTML = '';
+                    const emberCount = document.body.clientWidth < 768 ? 20 : 40;
+                    for (let i = 0; i < emberCount; i++) {
+                        const ember = document.createElement('div');
+                        ember.className = 'ember';
+                        ember.style.left = `${Math.random() * 100}%`;
+                        ember.style.setProperty('--drift', Math.random());
+                        ember.style.animationDuration = `${4 + Math.random() * 6}s`;
+                        ember.style.animationDelay = `${Math.random() * 5}s`;
+                        container.appendChild(ember);
+                    }
+                }
+                container.style.opacity = '1';
+                document.documentElement.classList.add('is-heating');
+            } else {
+                document.documentElement.classList.remove('is-heating');
+            }
+
+            // Clear container if clear weather
+            if (!isRaining && !isHeating) {
+                container.style.opacity = '0';
+                setTimeout(() => { 
+                    if (!document.documentElement.classList.contains('is-raining') && !document.documentElement.classList.contains('is-heating')) {
+                        container.innerHTML = ''; 
+                    }
+                }, 1000);
             }
         }
 
@@ -2316,7 +2418,13 @@
                     })();
                 document.getElementById('feels-like').textContent = apparentTemp + '°';
                 document.getElementById('humidity-detail').textContent = Math.round(data.data.humidity) + '%';
-                document.getElementById('wind-detail').innerHTML = `${data.data.wind_speed.toFixed(1)} <span class="text-[10px] opacity-40">m/s</span>`;
+                const windKmh = (data.data.wind_speed || 0) * 3.6;
+                document.getElementById('wind-detail').innerHTML = `${windKmh.toFixed(1)} <span class="text-[10px] opacity-40">km/h</span>`;
+                // Update Pressure from live API data
+                const pressureEl = document.getElementById('pressure-detail');
+                if (pressureEl && data.data.pressure != null) {
+                    pressureEl.innerHTML = `${Math.round(data.data.pressure)} <span class="text-[8px] opacity-40">hPa</span>`;
+                }
                 const rainProb = data.data.precipitation_probability !== undefined ? data.data.precipitation_probability : 0;
                 document.getElementById('rain-detail').innerHTML = `${rainProb}<span class="text-[10px] opacity-40">%</span> <span class="text-[9px] text-amber-400/60 ml-1">(${data.data.rainfall.toFixed(1)}mm)</span>`;
 
@@ -2340,8 +2448,8 @@
                 else if (data.data.cloud_cover > 50) condition = 'Overcast';
                 document.getElementById('weather-desc').textContent = condition;
 
-                // Toggle Rain Animation
-                toggleRainAnimation(isRaining || rainProb > 40);
+                // Toggle Cinematic Animations
+                applyAtmosphericEffects(data.data.temp_avg, (isRaining || rainProb > 40) ? 1 : 0);
 
                 // Current Date
                 document.getElementById('current-date').textContent = formatDateStable(
@@ -2537,25 +2645,109 @@
             }
         }
 
+        function updateHeroPanelForDate(d) {
+            if (!d) return;
+
+            // Temperature
+            const tempVal = Math.round(d.temp_avg || 0);
+            document.getElementById('temp-main').innerHTML = `${tempVal}<span class="text-6xl text-white/20">°</span>`;
+
+            // Humidity
+            const humidEl = document.getElementById('humidity-detail');
+            if (humidEl) humidEl.textContent = Math.round(d.humidity || 0) + '%';
+
+            // Wind → km/h
+            const windEl = document.getElementById('wind-detail');
+            if (windEl) {
+                const wKmh = ((d.wind_speed || 0) * 3.6).toFixed(1);
+                windEl.innerHTML = `${wKmh} <span class="text-[10px] opacity-40">km/h</span>`;
+            }
+
+            // Rain
+            const rainEl = document.getElementById('rain-detail');
+            if (rainEl) {
+                const rainProb = d.precipitation_probability !== undefined ? d.precipitation_probability : 0;
+                rainEl.innerHTML = `${rainProb}<span class="text-[10px] opacity-40">%</span> <span class="text-[9px] text-amber-400/60 ml-1">(${(d.rainfall || 0).toFixed(1)}mm)</span>`;
+            }
+
+            // Pressure
+            const pressureEl = document.getElementById('pressure-detail');
+            if (pressureEl && d.pressure != null) {
+                pressureEl.innerHTML = `${Math.round(d.pressure)} <span class="text-[8px] opacity-40">hPa</span>`;
+            }
+
+            // Weather icon & condition
+            const weatherIcon = getWeatherIcon(d.rainfall, d.temp_avg);
+            const wIconEl = document.getElementById('weather-icon-main');
+            if (wIconEl) wIconEl.textContent = weatherIcon;
+            let condition = 'Clear Skies';
+            if (d.rainfall > 5) condition = 'Heavy Rain';
+            else if (d.rainfall > 0.5) condition = 'Showers';
+            else if (d.cloud_cover > 50) condition = 'Overcast';
+            const wDescEl = document.getElementById('weather-desc');
+            if (wDescEl) wDescEl.textContent = condition;
+
+            // Date label
+            const dateEl = document.getElementById('current-date');
+            if (dateEl) dateEl.textContent = formatDateStable(d.date, { weekday: 'long', month: 'short', day: 'numeric' });
+
+            // AQI
+            const pm25 = parseFloat(d.pm2_5) || 0;
+            const aqiValue = calculateAqiFromPm25(pm25);
+            document.getElementById('pm25-large').textContent = aqiValue;
+            const pm10El = document.getElementById('pm10-metric');
+            if (pm10El) pm10El.innerHTML = `${Math.round(d.pm10 || 0)} <span class="text-[10px] opacity-40">µg/m³</span>`;
+            const aqiStatus = document.getElementById('aqi-status-badge');
+            const aqiColors = getAQIColor(aqiValue);
+            const sev = getAQISeverity(aqiValue);
+            if (aqiStatus) {
+                aqiStatus.textContent = sev.label;
+                aqiStatus.style.backgroundColor = aqiColors.bg;
+                aqiStatus.style.color = aqiColors.text;
+                aqiStatus.style.borderColor = aqiColors.text + '20';
+            }
+            updateAQISeverityUI(aqiValue);
+
+            // AQI ring
+            const ring = document.getElementById('aqi-ring');
+            if (ring) {
+                const circumference = 2 * Math.PI * 45;
+                ring.style.strokeDashoffset = circumference * (1 - Math.min(aqiValue / 500, 1));
+            }
+
+            // Rain animation
+            const rainProb2 = d.precipitation_probability !== undefined ? d.precipitation_probability : 0;
+            const isRaining = d.rainfall > 0.5;
+            applyAtmosphericEffects(d.temp_avg, (isRaining || rainProb2 > 40) ? 1 : 0);
+        }
+
         function selectForecastDate(dateStr, triggerFetch = false) {
             selectedForecastDate = dateStr;
             document.querySelectorAll('[data-forecast-date]').forEach((card) => {
                 const isActive = card.dataset.forecastDate === dateStr;
                 card.classList.toggle('forecast-active', isActive);
             });
+
+            // Update hero panel metrics for the selected forecast day
+            if (fullForecastData && fullForecastData.length > 0) {
+                const dayData = fullForecastData.find(d => d.date === dateStr);
+                if (dayData) updateHeroPanelForDate(dayData);
+            }
+
             if (triggerFetch && hourlyFetchUnlocked) {
                 const list = document.getElementById('forecast-list');
                 if (list) list.querySelectorAll('.forecast-cue').forEach((el) => el.remove());
                 fetchHourly(dateStr);
-                // We disabled auto-scroll to hourly outlook per user request
-                // const section = document.getElementById('hourly-section');
-                // if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
 
         function onForecastDateClick(dateStr) {
             hourlyFetchUnlocked = true;
             selectForecastDate(dateStr, true);
+            const hourlySection = document.getElementById('hourly-section');
+            if (hourlySection) {
+                hourlySection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }
 
         function renderForecastList(forecast) {
@@ -2569,7 +2761,9 @@
                 const isActive = selectedForecastDate ? selectedForecastDate === d.date : i === 0;
 
                 return `
-                    <div data-forecast-date="${d.date}" onclick="onForecastDateClick('${d.date}')" class="forecast-tile p-4 flex flex-col items-center gap-3 group cursor-pointer ${isActive ? 'forecast-active' : ''}">
+                    <div data-forecast-date="${d.date}" onclick="onForecastDateClick('${d.date}')" 
+                         class="forecast-tile p-4 flex flex-col items-center gap-3 group cursor-pointer ${isActive ? 'forecast-active' : ''}"
+                         style="animation-delay: ${i * 60}ms">
                         <div class="absolute inset-0 bg-brand-500/0 group-hover:bg-brand-500/5 transition-colors duration-300 pointer-events-none"></div>
                         
                         <div class="relative z-10 text-center">
@@ -2577,7 +2771,7 @@
                             <div class="text-xl font-heading font-black text-white/90 leading-none">${dayNum}</div>
                             <div class="text-[8px] font-black tracking-[0.2em] text-white/35">${month}</div>
                         </div>
-                        <span class="text-3xl group-hover:scale-125 transition-transform duration-500 relative z-10">${icon}</span>
+                        <span class="text-3xl  transition-transform duration-500 relative z-10">${icon}</span>
                         
                         <div class="text-center relative z-10">
                             <span class="text-base font-black text-white/90">${Math.round(d.temp_avg)}°</span>
@@ -2608,7 +2802,7 @@
                 const data = await res.json();
                 const body = document.getElementById('stats-body');
 
-                if (!data || data.length === 0) {
+                if (!Array.isArray(data) || data.length === 0) {
                     body.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-white/30 font-black uppercase tracking-widest">No diagnostics available</td></tr>';
                     return;
                 }
@@ -2630,23 +2824,48 @@
             }
         }
 
+        // --- AI SYSTEM TOASTS ---
+        function showAIToast(message, iconClass = 'ri-sparkling-line') {
+            const container = document.getElementById('ai-toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = 'ai-toast';
+            toast.innerHTML = `
+                <div class="ai-toast-icon">
+                    <i class="${iconClass} text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-0.5">AI Engine Intelligence</p>
+                    <p class="text-xs font-bold text-white/90 leading-tight">${message}</p>
+                </div>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => toast.classList.add('visible'), 50);
+            setTimeout(() => {
+                toast.classList.remove('visible');
+                setTimeout(() => toast.remove(), 600);
+            }, 5000);
+        }
+
         // --- INTERACTIVITY ---
         function initScrollReveal() {
-            const nodes = document.querySelectorAll('.glass-panel, .glass-card');
+            const nodes = document.querySelectorAll('.reveal-init');
             if (!nodes.length) return;
 
             nodes.forEach((el, index) => {
-                el.classList.add('reveal-init');
-                el.style.transitionDelay = `${Math.min(index * 35, 280)}ms`;
+                el.style.transitionDelay = `${Math.min(index * 50, 400)}ms`;
             });
 
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach((entry) => {
-                    if (!entry.isIntersecting) return;
-                    entry.target.classList.add('reveal-in');
-                    observer.unobserve(entry.target);
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('reveal-visible');
+                        observer.unobserve(entry.target);
+                    }
                 });
-            }, { threshold: 0.12 });
+            }, { threshold: 0.1 });
 
             nodes.forEach((el) => observer.observe(el));
         }
@@ -2705,7 +2924,7 @@
             if (reportLoc) reportLoc.textContent = selectedLocationName;
 
             // Initialize 3D effects
-            if (typeof VanillaTilt !== 'undefined') {
+            /* if (typeof VanillaTilt !== 'undefined') {
                 VanillaTilt.init(document.querySelectorAll('.glass-panel:not(#hourly-section), .glass-card, .forecast-tile'), {
                     max: 8,
                     speed: 400,
@@ -2713,7 +2932,7 @@
                     "max-glare": 0.2,
                     perspective: 1000
                 });
-            }
+            } */
 
             // --- Webpushr Status Helper ---
             if (typeof webpushr !== 'undefined') {
@@ -2737,6 +2956,11 @@
             setHourlyView('cards');
             setMethod('mc_dropout');
             fetchStats();
+            
+            // Showcase AI Toast
+            setTimeout(() => {
+                showAIToast('Atmospheric Intelligence System Active', 'ri-shield-flash-line');
+            }, 1500);
         });
     </script>
 </body>

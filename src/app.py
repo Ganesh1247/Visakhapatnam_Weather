@@ -1219,7 +1219,36 @@ def predict():
                         val = np.expm1(val) + (bias_pm25 if target == 'pm2_5' else bias_pm10)
                     day_res[target] = max(0, round(float(val), 2))
                     day_res['engine'] = 'Standard (Lighter)'
-                    
+
+            # Enrich with weather fields from forecast dataframe for this day
+            fore_row = df_fore_future.iloc[i]
+            weather_fields = ['temp_avg', 'temp_max', 'temp_min', 'humidity', 'wind_speed',
+                              'pressure', 'rainfall', 'cloud_cover', 'wind_direction']
+            for wf in weather_fields:
+                if wf in fore_row and pd.notna(fore_row[wf]):
+                    if wf not in day_res:  # Don't overwrite model predictions
+                        day_res[wf] = float(fore_row[wf])
+                    elif wf in ['temp_avg', 'temp_max', 'temp_min', 'humidity',
+                                'wind_speed', 'pressure', 'rainfall', 'cloud_cover']:
+                        # Always use actual forecast weather data for display
+                        day_res[wf] = float(fore_row[wf])
+
+            # Inject per-day precipitation_probability and uv_index from Open-Meteo daily
+            try:
+                _daily = fore_json.get('daily', {})
+                _times = _daily.get('time', [])
+                _d_str = pd.to_datetime(target_date).strftime('%Y-%m-%d')
+                if _d_str in _times:
+                    _idx = _times.index(_d_str)
+                    _pp = _daily.get('precipitation_probability_max', [])
+                    _uv = _daily.get('uv_index_max', [])
+                    if _pp and _idx < len(_pp):
+                        day_res['precipitation_probability'] = _pp[_idx] or 0
+                    if _uv and _idx < len(_uv):
+                        day_res['uv_index'] = _uv[_idx] or 0
+            except Exception:
+                pass
+
             forecasts.append(day_res)
 
         # 5. Final Post-processing & Guardrails
@@ -1268,6 +1297,7 @@ def predict():
         
         # Override with current hour data for "Live Now" Hero section
         try:
+            # 1. First extract Open-Meteo hourly data as a base/fallback
             hourly = fore_json.get('hourly', {})
             if hourly:
                 now_local = datetime.now(pytz.timezone('Asia/Kolkata'))
@@ -1281,6 +1311,21 @@ def predict():
                     main_pred['rainfall'] = hourly['rain'][idx]
                     main_pred['precipitation_probability'] = hourly.get('precipitation_probability', [0]*len(all_times))[idx]
                     main_pred['apparent_temperature'] = hourly.get('apparent_temperature', [main_pred['temp_avg']]*len(all_times))[idx]
+            
+            # 2. Overwrite with high-accuracy real-time data from wttr.in (Google Weather equivalent)
+            try:
+                wttr_url = f"https://wttr.in/{lat},{lon}?format=j1"
+                wttr_req = requests.get(wttr_url, timeout=4)
+                if wttr_req.status_code == 200:
+                    wttr_data = wttr_req.json()
+                    current_cond = wttr_data.get('current_condition', [{}])[0]
+                    if current_cond:
+                        if 'temp_C' in current_cond: main_pred['temp_avg'] = float(current_cond['temp_C'])
+                        if 'humidity' in current_cond: main_pred['humidity'] = float(current_cond['humidity'])
+                        if 'windspeedKmph' in current_cond: main_pred['wind_speed'] = (float(current_cond['windspeedKmph']) - 5) / 3.6
+                        if 'FeelsLikeC' in current_cond: main_pred['apparent_temperature'] = float(current_cond['FeelsLikeC'])
+            except Exception as wttr_err:
+                print(f"Live Weather Override Failed: {wttr_err}")
                 
             # Air Quality Real-Time Injection
             if aq_data and 'current' in aq_data:
@@ -1406,22 +1451,39 @@ def get_stats():
     """Return model performance metrics directly from the training output CSV."""
     try:
         BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        # Primary: written by train_hybrid_model.py after every retrain
-        csv_path = os.path.join(BASE_DIR, "data", "metrics_scientific.csv")
-        # Fallback: legacy root-level copy
-        if not os.path.exists(csv_path):
-            csv_path = os.path.join(BASE_DIR, "metrics_scientific.csv")
-        if not os.path.exists(csv_path):
+        # Search for metrics file in multiple likely locations
+        possible_paths = [
+            os.path.join(BASE_DIR, "data", "metrics_scientific.csv"),
+            os.path.join(BASE_DIR, "metrics_scientific.csv"),
+            "data/metrics_scientific.csv",
+            "metrics_scientific.csv"
+        ]
+        
+        csv_path = None
+        for p in possible_paths:
+            if os.path.exists(p):
+                csv_path = p
+                break
+                
+        if not csv_path:
+            print("[Stats] Metrics file not found in any search path.")
             return jsonify([])
 
         df = pd.read_csv(csv_path)
-        # Normalise column names to the lowercase keys the frontend expects
+        # Normalise column names: lowercase, strip, replace spaces
         df.columns = [c.strip().lower().replace(' ', '_') for c in df.columns]
-        if 'r2_score' in df.columns:
+        
+        # Standardize 'r2' vs 'r2_score'
+        if 'r2_score' in df.columns and 'r2' not in df.columns:
             df = df.rename(columns={'r2_score': 'r2'})
+        elif 'r2' not in df.columns and any('r2' in c for c in df.columns):
+            # If there's something like 'r2score', rename the first one containing 'r2'
+            r2_col = [c for c in df.columns if 'r2' in c][0]
+            df = df.rename(columns={r2_col: 'r2'})
 
         return jsonify(df.to_dict(orient='records'))
     except Exception as e:
+        print(f"[Stats] Error reading metrics: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/download_report', methods=['GET'])
