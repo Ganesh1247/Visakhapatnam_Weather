@@ -294,6 +294,12 @@
             padding: 0;
             overflow: hidden;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            animation: popupReveal 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes popupReveal {
+            from { opacity: 0; transform: translateY(10px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .premium-popup .leaflet-popup-content {
@@ -310,15 +316,74 @@
             border: none !important;
         }
 
-        .leaflet-div-icon {
-            background: transparent !important;
-            border: none !important;
+        .marker-pin {
+            width: 32px;
+            height: 32px;
+            border-radius: 50% 50% 50% 0;
+            background: #22d3ee;
+            position: absolute;
+            transform: rotate(-45deg);
+            left: 50%;
+            top: 50%;
+            margin: -16px 0 0 -16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px rgba(34, 211, 238, 0.4);
+            transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .marker-pin span {
+            transform: rotate(45deg);
+            font-size: 10px;
+            font-weight: 900;
+            color: white;
+        }
+
+        .marker-active .marker-pin {
+            transform: rotate(-45deg) scale(1.2);
+            box-shadow: 0 0 25px rgba(34, 211, 238, 0.8);
+            border-color: #fff;
+        }
+
+        .marker-pulse {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 32px;
+            height: 32px;
+            background: rgba(34, 211, 238, 0.4);
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .marker-active .marker-pulse {
+            animation: markerPulse 2s infinite;
+        }
+
+        @keyframes markerPulse {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+        }
+
+        /* Entrance Animation for Markers */
+        @keyframes markerEntrance {
+            0% { opacity: 0; transform: translateY(-40px) scale(0.5); }
+            60% { opacity: 1; transform: translateY(5px) scale(1.1); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .marker-entrance {
+            animation: markerEntrance 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
 
         /* Netflix-style Entrance Reveal */
         .reveal-init {
             opacity: 0;
-            transform: translateY(40px) scale(0.98);
+            transform: translateY(30px) scale(0.99);
             transition: opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1), transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
             will-change: transform, opacity;
         }
@@ -326,6 +391,18 @@
         .reveal-visible {
             opacity: 1;
             transform: translateY(0) scale(1);
+        }
+
+        /* Staggered Child Reveal */
+        .stagger-reveal > * {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .reveal-visible.stagger-reveal > * {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         /* AI Scanning Line Effect */
@@ -339,11 +416,11 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.8), transparent);
-            box-shadow: 0 0 15px rgba(34, 211, 238, 0.6);
+            height: 4px;
+            background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.95), transparent);
+            box-shadow: 0 0 25px rgba(34, 211, 238, 0.9), 0 0 50px rgba(34, 211, 238, 0.4);
             z-index: 5;
-            animation: scanVertical 4s infinite linear;
+            animation: scanVertical 5s infinite linear;
             pointer-events: none;
         }
 
@@ -352,6 +429,21 @@
             5% { opacity: 1; }
             95% { opacity: 1; }
             100% { top: 105%; opacity: 0; }
+        }
+
+        /* Value Transition (Count Up) Simulation */
+        .value-transition {
+            transition: all 0.5s ease;
+        }
+
+        /* Dashboard Pulse Glow */
+        .glow-pulse {
+            animation: glowPulse 3s infinite alternate;
+        }
+
+        @keyframes glowPulse {
+            0% { filter: drop-shadow(0 0 2px rgba(34, 211, 238, 0.2)); }
+            100% { filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.5)); }
         }
 
         /* Shimmer Loading State */
@@ -826,7 +918,7 @@
         </div>
 
         <!-- Location Selector & Report Download -->
-        <div id="location-report-section" class="mb-12 space-y-6 reveal-init">
+        <div id="location-report-section" class="mb-12 space-y-6 reveal-init stagger-reveal">
             <!-- Location Selector Bar -->
             <div
                 class="glass-panel rounded-[40px] p-5 sm:p-6 relative overflow-hidden border border-white/5 hover:border-white/15 transition-all">
@@ -876,7 +968,7 @@
             <!-- Forecast Visuals -->
             <div class="lg:col-span-8 space-y-8">
                 <!-- HOURLY FORECAST (CAROUSEL) -->
-                <div id="hourly-section" class="glass-panel rounded-[40px] p-5 sm:p-8 relative group reveal-init">
+                <div id="hourly-section" class="glass-panel rounded-[40px] p-5 sm:p-8 relative group reveal-init stagger-reveal">
                     <div class="flex justify-between items-center mb-6">
                         <div class="flex items-center gap-4">
                             <div
@@ -938,7 +1030,7 @@
                 </div>
 
                 <!-- Trend Chart -->
-                <div id="graph-analysis-section" class="glass-panel rounded-[40px] p-6 sm:p-8 reveal-init">
+                <div id="graph-analysis-section" class="glass-panel rounded-[40px] p-6 sm:p-8 reveal-init stagger-reveal">
                     <div class="flex justify-between items-center mb-10">
                         <div class="flex items-center gap-4">
                             <div
@@ -988,7 +1080,7 @@
             <!-- Right Column: Advisory -->
             <div id="air-quality-section" class="lg:col-span-4 w-full relative">
                 <div class="sticky top-6 space-y-6 pb-12">
-                    <div class="glass-panel rounded-[40px] p-6 sm:p-8 h-max reveal-init ai-scan-container">
+                    <div class="glass-panel rounded-[40px] p-6 sm:p-8 h-max reveal-init ai-scan-container stagger-reveal">
                         <div class="ai-scan-line"></div>
                         <div class="flex items-center gap-4 mb-10">
                             <div
@@ -1639,13 +1731,13 @@
             mapMarkers = [];
 
             const isDark = document.documentElement.classList.contains('dark');
+            const names = Object.keys(locationsData);
 
-            Object.keys(locationsData).forEach(name => {
+            names.forEach((name, index) => {
                 const loc = locationsData[name];
+                const isActive = name === selectedLocationName;
 
                 // CRITICAL FIX: To ensure consistency, calculate station AQI from base PM2.5
-                // This ensures map markers match the Hero section exactly for the selected station,
-                // and show realistic calibrated values for others based on their pollution profile.
                 const stationPM25 = basePM25 * (loc.aqi_mult || 1.0);
                 const stationAQI = calculateAqiFromPm25(stationPM25);
                 const sev = getAQISeverity(stationAQI);
@@ -1653,10 +1745,10 @@
                 const icon = L.divIcon({
                     className: 'custom-marker',
                     html: `
-                        <div class="relative group cursor-pointer" onclick="selectLocation('${name}', ${loc.lat}, ${loc.lon})">
-                            <div class="absolute -inset-2 bg-white/20 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            <div class="w-8 h-8 rounded-full border-2 border-white/20 flex flex-col items-center justify-center shadow-2xl transition-all duration-300 " style="background: ${sev.color}">
-                                <span class="text-[10px] font-black text-white">${stationAQI}</span>
+                        <div class="relative marker-entrance ${isActive ? 'marker-active' : ''}" style="animation-delay: ${index * 150}ms">
+                            <div class="marker-pulse"></div>
+                            <div class="marker-pin" style="background: ${sev.color}">
+                                <span>${stationAQI}</span>
                             </div>
                         </div>
                     `,
@@ -1665,19 +1757,76 @@
                 });
 
                 const marker = L.marker([loc.lat, loc.lon], { icon: icon }).addTo(map);
+                
+                // Fancy Popup
                 marker.bindPopup(`
-                    <div class="p-3 bg-slate-900 border border-white/10 rounded-2xl min-w-[140px]">
-                        <p class="text-[10px] font-black text-white/30 uppercase tracking-widest mb-1">Station</p>
-                        <h4 class="text-xs font-bold text-white mb-2 uppercase">${name}</h4>
-                        <div class="flex items-center justify-between">
-                            <span class="text-[9px] font-bold text-white/50">AQI Index</span>
-                            <span class="text-xs font-black" style="color: ${sev.color}">${stationAQI}</span>
+                    <div class="p-4 bg-slate-900 border border-white/10 rounded-2xl min-w-[180px] shadow-2xl">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-2 h-2 rounded-full animate-pulse" style="background: ${sev.color}"></div>
+                            <p class="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">Monitoring Hub</p>
                         </div>
+                        <h4 class="text-sm font-black text-white mb-3 uppercase tracking-tight">${name}</h4>
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between bg-white/5 p-2 rounded-xl border border-white/5">
+                                <span class="text-[9px] font-bold text-white/50 uppercase">AQI Index</span>
+                                <span class="text-sm font-black" style="color: ${sev.color}">${stationAQI}</span>
+                            </div>
+                            <div class="flex items-center justify-between px-2">
+                                <span class="text-[8px] font-bold text-white/30 uppercase">Status</span>
+                                <span class="text-[8px] font-black uppercase tracking-widest" style="color: ${sev.color}">${sev.label}</span>
+                            </div>
+                        </div>
+                        <button onclick="selectLocation('${name}', ${loc.lat}, ${loc.lon})" class="w-full mt-4 py-2 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-400 text-[9px] font-black uppercase tracking-widest hover:bg-brand-500 hover:text-white transition-all">
+                            Switch View
+                        </button>
                     </div>
-                `, { closeButton: false, className: 'premium-popup' });
+                `, { closeButton: false, className: 'premium-popup', offset: [0, -10] });
 
                 mapMarkers.push(marker);
             });
+
+            // Handle Custom/Target Location Marker (if not a station)
+            const isStation = names.some(n => {
+                const l = locationsData[n];
+                return Math.abs(l.lat - selectedLat) < 0.001 && Math.abs(l.lon - selectedLon) < 0.001;
+            });
+
+            if (!isStation && selectedLat !== null && selectedLon !== null) {
+                const targetIcon = L.divIcon({
+                    className: 'custom-marker',
+                    html: `
+                        <div class="relative marker-entrance marker-active">
+                            <div class="marker-pulse" style="background: rgba(56, 189, 248, 0.6)"></div>
+                            <div class="marker-pin" style="background: #38bdf8; border-color: #fff">
+                                <i class="ri-focus-3-line text-[14px] text-white rotate-45"></i>
+                            </div>
+                        </div>
+                    `,
+                    iconSize: [36, 36],
+                    iconAnchor: [18, 18]
+                });
+
+                const targetMarker = L.marker([selectedLat, selectedLon], { icon: targetIcon, zIndexOffset: 1000 }).addTo(map);
+                targetMarker.bindPopup(`
+                    <div class="p-4 bg-slate-900 border border-cyan-500/30 rounded-2xl min-w-[180px] shadow-2xl">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></div>
+                            <p class="text-[9px] font-black text-cyan-400/60 uppercase tracking-[0.2em]">Target Scan Point</p>
+                        </div>
+                        <h4 class="text-sm font-black text-white mb-3 uppercase tracking-tight">Active Coordinates</h4>
+                        <div class="bg-white/5 p-3 rounded-xl border border-white/5 mb-2">
+                             <p class="text-[10px] font-mono text-cyan-300/80">${selectedLat.toFixed(4)}°N, ${selectedLon.toFixed(4)}°E</p>
+                        </div>
+                        <p class="text-[9px] text-white/40 italic">Retrieving hyper-local atmosphere data...</p>
+                    </div>
+                `, { closeButton: false, className: 'premium-popup', offset: [0, -10] });
+                
+                mapMarkers.push(targetMarker);
+                map.flyTo([selectedLat, selectedLon], 14, { animate: true, duration: 2 });
+            } else if (selectedLat !== null && selectedLon !== null) {
+                // If it IS a station, we already handled it in the loop but let's ensure it's panned
+                map.flyTo([selectedLat, selectedLon], 13, { animate: true, duration: 1.5 });
+            }
         }
 
         function renderLocationPills() {
@@ -1685,7 +1834,9 @@
             if (!container || !locationsData) return;
 
             const names = Object.keys(locationsData);
-            container.innerHTML = names.map(name => {
+            const isKnownStation = names.includes(selectedLocationName);
+
+            let html = names.map(name => {
                 const loc = locationsData[name];
                 const isActive = name === selectedLocationName;
                 return `
@@ -1699,6 +1850,18 @@
                         ${name}
                     </button>`;
             }).join('');
+
+            // If it's a custom location, add a special temporary pill
+            if (!isKnownStation && selectedLocationName && selectedLocationName !== 'Visakhapatnam Center') {
+                html += `
+                    <div class="px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.12em] border bg-indigo-500/10 border-indigo-400/50 text-indigo-300 flex items-center gap-2 shadow-[0_0_20px_rgba(99,102,241,0.1)]">
+                        <i class="ri-focus-3-line text-xs text-indigo-400"></i>
+                        ${selectedLocationName}
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
         }
 
         function selectLocation(name, lat, lon) {
@@ -2267,6 +2430,48 @@
 
 
 
+        function animateValue(id, start, end, duration, suffix = '') {
+            const obj = document.getElementById(id);
+            if (!obj) return;
+            
+            // Handle non-numeric end values (like "--")
+            const endNum = parseFloat(end);
+            if (isNaN(endNum)) {
+                obj.innerHTML = end + suffix;
+                return;
+            }
+
+            const startNum = parseFloat(obj.innerText.replace(/[^\d.-]/g, '')) || 0;
+            let startTimestamp = null;
+            
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const current = Math.floor(progress * (endNum - startNum) + startNum);
+                
+                // Use innerHTML for the degree symbol or units if needed
+                if (id === 'temp-main') {
+                    obj.innerHTML = `${current}<span class="text-6xl text-white/20">°</span>`;
+                } else if (id === 'pm25-large') {
+                    obj.textContent = current;
+                } else {
+                    obj.innerHTML = `${current}${suffix}`;
+                }
+
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                } else {
+                    // Ensure final value is exact
+                    if (id === 'temp-main') {
+                        obj.innerHTML = `${Math.round(endNum)}<span class="text-6xl text-white/20">°</span>`;
+                    } else {
+                        obj.innerHTML = `${Math.round(endNum)}${suffix}`;
+                    }
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
         function getAQIColor(aqiValue) {
             const cls = { bg: 'rgba(16, 185, 129, 0.1)', text: '#10b981' };
             if (aqiValue > 50) { cls.bg = 'rgba(234, 179, 8, 0.1)'; cls.text = '#eab308'; }
@@ -2337,6 +2542,15 @@
             }
 
             loading.style.display = 'flex';
+            
+            // Map Scanning Overlay
+            const mapLoader = document.getElementById('map-loading');
+            if (mapLoader) {
+                mapLoader.style.display = 'flex';
+                mapLoader.style.opacity = '1';
+                const mapLoaderText = mapLoader.querySelector('span');
+                if (mapLoaderText) mapLoaderText.textContent = "Re-Scanning Atmospheric Grid...";
+            }
 
             let msgIdx = 0;
             const msgInterval = setInterval(() => {
@@ -2373,7 +2587,13 @@
 
                 // Update Hero Location Name
                 const locHeader = document.getElementById('selected-location-name');
-                if (locHeader && data.location_name) locHeader.textContent = data.location_name;
+                if (locHeader && data.location_name) {
+                    locHeader.textContent = data.location_name;
+                    
+                    // SYNC: Update selected name to match backend's resolved name
+                    selectedLocationName = data.location_name;
+                    renderLocationPills(); 
+                }
 
                 // Update Engine Status & Location Info
                 const statusBadge = document.getElementById('aqi-status-badge');
@@ -2393,7 +2613,8 @@
 
                 // Update Hero Content
                 const tempVal = Math.round(data.data.temp_avg);
-                document.getElementById('temp-main').innerHTML = `${tempVal}<span class="text-6xl text-white/20">°</span>`;
+                animateValue('temp-main', 0, tempVal, 1000);
+                
                 // Use apparent_temperature from API if available, else calculate via heat index formula
                 const apparentTemp = data.data.apparent_temperature != null
                     ? Math.round(data.data.apparent_temperature)
@@ -2416,20 +2637,22 @@
                         }
                         return Math.round(T);
                     })();
-                document.getElementById('feels-like').textContent = apparentTemp + '°';
-                document.getElementById('humidity-detail').textContent = Math.round(data.data.humidity) + '%';
+                animateValue('feels-like', 0, apparentTemp, 800, '°');
+                animateValue('humidity-detail', 0, Math.round(data.data.humidity), 800, '%');
+                
                 const windKmh = (data.data.wind_speed || 0) * 3.6;
                 document.getElementById('wind-detail').innerHTML = `${windKmh.toFixed(1)} <span class="text-[10px] opacity-40">km/h</span>`;
+                
                 // Update Pressure from live API data
                 const pressureEl = document.getElementById('pressure-detail');
                 if (pressureEl && data.data.pressure != null) {
-                    pressureEl.innerHTML = `${Math.round(data.data.pressure)} <span class="text-[8px] opacity-40">hPa</span>`;
+                    animateValue('pressure-detail', 0, Math.round(data.data.pressure), 1000, ' <span class="text-[8px] opacity-40">hPa</span>');
                 }
                 const rainProb = data.data.precipitation_probability !== undefined ? data.data.precipitation_probability : 0;
                 document.getElementById('rain-detail').innerHTML = `${rainProb}<span class="text-[10px] opacity-40">%</span> <span class="text-[9px] text-amber-400/60 ml-1">(${data.data.rainfall.toFixed(1)}mm)</span>`;
 
                 const uvDetail = document.getElementById('uv-detail');
-                if (uvDetail) uvDetail.textContent = data.data.uv_index || '--';
+                if (uvDetail) animateValue('uv-detail', 0, data.data.uv_index || 0, 1000);
 
                 const sunriseDetail = document.getElementById('sunrise-detail');
                 if (sunriseDetail) sunriseDetail.innerHTML = `⬆ ${data.data.sunrise || '--'}`;
@@ -2471,7 +2694,7 @@
                 }
                 updateMapMarkers();
 
-                document.getElementById('pm25-large').textContent = aqiValue;
+                animateValue('pm25-large', 0, aqiValue, 1200);
                 document.getElementById('pm10-metric').innerHTML = `${Math.round(data.data.pm10)} <span class="text-[10px] opacity-40">µg/m³</span>`;
 
                 const aqiStatus = document.getElementById('aqi-status-badge');
@@ -2579,6 +2802,12 @@
                 if (typeof msgInterval !== 'undefined') clearInterval(msgInterval);
                 const loading = document.getElementById('loading');
                 if (loading) loading.style.display = 'none';
+
+                const mapLoader = document.getElementById('map-loading');
+                if (mapLoader) {
+                    mapLoader.style.opacity = '0';
+                    setTimeout(() => { mapLoader.style.display = 'none'; }, 600);
+                }
             }
         }
 
@@ -2854,14 +3083,19 @@
             const nodes = document.querySelectorAll('.reveal-init');
             if (!nodes.length) return;
 
-            nodes.forEach((el, index) => {
-                el.style.transitionDelay = `${Math.min(index * 50, 400)}ms`;
-            });
-
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach((entry) => {
                     if (entry.isIntersecting) {
                         entry.target.classList.add('reveal-visible');
+                        
+                        // Handle staggered children if the class is present
+                        if (entry.target.classList.contains('stagger-reveal')) {
+                            const children = entry.target.children;
+                            for (let i = 0; i < children.length; i++) {
+                                children[i].style.transitionDelay = `${i * 100}ms`;
+                            }
+                        }
+                        
                         observer.unobserve(entry.target);
                     }
                 });
